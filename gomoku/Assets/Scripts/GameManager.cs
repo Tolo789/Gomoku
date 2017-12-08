@@ -91,12 +91,12 @@ public class GameManager : MonoBehaviour {
 		string[] coords = button.name.Split('-');
 		int yCoord = int.Parse(coords[0]);
 		int xCoord = int.Parse(coords[1]);
-		if (!validMove(button.name))
+		if (!validMove(yCoord, xCoord))
 			return;
 		PutStone(yCoord, xCoord);
 	}
 
-	private bool validMove(string position) {
+	private bool validMove(int yCoord, int xCoord) {
 		// TODO
 		return true;
 	}
@@ -125,6 +125,8 @@ public class GameManager : MonoBehaviour {
 
 		// check capture
 		CheckStone(yCoord, xCoord);
+
+		// TODO: update double-tree in map
 
 		// End turn, next player to play
 		playerPlaying = (playerPlaying + 1) % stoneSprites.Length;
