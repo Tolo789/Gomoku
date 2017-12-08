@@ -16,11 +16,23 @@ public class GameManager : MonoBehaviour {
 
 	public int size = 19;
 
+	private const int EMPTY_VALUE = -1;
+
 	private int playerPlaying = 0;
-	private int[][] map;
+	private int[,] map;
+	private PutStone[,] buttonsMap;
+	private int[] playerScores;
 
 	// Use this for initialization
 	void Start () {
+		// init game variables
+		map = new int[size, size];
+		buttonsMap = new PutStone[size, size];
+		playerScores = new int[stoneSprites.Length];
+		for (int i = 0; i < playerScores.Length; i++) {
+			playerScores[i] = 0;
+		}
+
 		// init board with hidden buttons
 		float width = startBoard.GetComponent<RectTransform>().rect.width ;
 		float height = startBoard.GetComponent<RectTransform>().rect.height;
@@ -34,12 +46,14 @@ public class GameManager : MonoBehaviour {
 		Vector3 tmpPos = startPos;
 		while (y < size) {
 			while (x < size) {
+				map[y, x] = EMPTY_VALUE;
 				GameObject newButton = Instantiate(emptyButton, tmpPos, Quaternion.identity);
 				newButton.name = y + "-" + x;
 				newButton.transform.SetParent(startBoard.transform);
 				newButton.transform.localScale = emptyButton.transform.localScale;
 				newButton.GetComponent<RectTransform>().sizeDelta = new Vector2(buttonSize, buttonSize);
-				newButton.GetComponent<PutStone>().gameManager = this;
+				buttonsMap[y,x] = newButton.GetComponent<PutStone>();
+				buttonsMap[y,x].gameManager = this;
 				x++;
 				tmpPos.x += step;
 			}
@@ -48,6 +62,7 @@ public class GameManager : MonoBehaviour {
 			tmpPos.x = startPos.x;
 			x = 0;
 		}
+		// InitBoard();
 	}
 	
 	// Update is called once per frame
@@ -62,10 +77,122 @@ public class GameManager : MonoBehaviour {
 		// }
 	}
 
+	void InitBoard() {
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				Debug.Log(map[y, x]);
+			}
+		}
+	}
+
 	public void TryPutStone(GameObject button) {
-		Debug.Log(button.name);
+		string[] coords = button.name.Split('-');
+		int yCoord = int.Parse(coords[0]);
+		int xCoord = int.Parse(coords[1]);
+		if (!validMove(button.name))
+			return;
+		PutStone(yCoord, xCoord);
+	}
+
+	private bool validMove(string position) {
+		// TODO
+		return true;
+	}
+
+	public void DeleteStone(int yCoord, int xCoord) {
+		map[yCoord, xCoord] = -1;
+		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		button.GetComponent<Image>().sprite = null;
+		button.transform.localScale = new Vector3(1, 1, 1);
+		Color buttonColor = button.GetComponent<Image>().color;
+		buttonColor.a = 0;
+		button.GetComponent<Image>().color = buttonColor;
+		button.GetComponent<PutStone>().isEmpty = true;
+	}
+
+	private void PutStone(int yCoord, int xCoord) {
+		// Actually put the stone
+		map[yCoord, xCoord] = playerPlaying;
+		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.GetComponent<Image>().sprite = stoneSprites[playerPlaying];
+		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
+		Color buttonColor = button.GetComponent<Image>().color;
+		buttonColor.a = 255;
+		button.GetComponent<Image>().color = buttonColor;
+		button.GetComponent<PutStone>().isEmpty = false;
+
+		// check capture
+		CheckStone(yCoord, xCoord);
+
+		// End turn, next player to play
 		playerPlaying = (playerPlaying + 1) % stoneSprites.Length;
-		button.GetComponent<PutStone>().enabled = false;
+	}
+
+	private void CheckStone(int yCoord, int xCoord) {
+		// LEFT
+		if (xCoord - 3 >= 0 && map[yCoord, xCoord - 3] == playerPlaying) {
+			if (map[yCoord, xCoord - 1] != playerPlaying && map[yCoord, xCoord - 2] != playerPlaying) {
+				if (map[yCoord, xCoord - 1] == -1 || map[yCoord, xCoord - 2] == -1) {
+					return ;
+				}
+				DeleteStone(yCoord, xCoord - 1);
+				DeleteStone(yCoord, xCoord - 2);
+			}
+		}
+		// RIGHT
+		// if (xCoord + 3 < size && map[yCoord, xCoord + 3] == playerPlaying) {
+		// 	if (map[yCoord, xCoord + 1] != playerPlaying && map[yCoord, xCoord + 2] != playerPlaying) {
+		// 		if (map[yCoord, xCoord + 1] == -1 || map[yCoord, xCoord + 2] == -1) {
+		// 			return ;
+		// 		}
+		// 		DeleteStone(yCoord, xCoord + 1);
+		// 		DeleteStone(yCoord, xCoord + 2);
+		// 	}
+		// }
+		// TOP
+		if (yCoord - 3 >= 0 && map[yCoord - 3, xCoord] == playerPlaying) {
+			if (map[yCoord - 1, xCoord] != playerPlaying && map[yCoord - 2, xCoord] != playerPlaying) {
+				if (map[yCoord - 1, xCoord] == -1 || map[yCoord - 2, xCoord] == -1) {
+					return ;
+				}
+				DeleteStone(yCoord - 1, xCoord);
+				DeleteStone(yCoord - 2, xCoord);
+			}
+		}
+		// BOT
+		if (yCoord + 3 < size && map[yCoord + 3, xCoord] == playerPlaying) {
+			if (map[yCoord + 1, xCoord] != playerPlaying && map[yCoord + 2, xCoord] != playerPlaying) {
+				if (map[yCoord + 1, xCoord] == -1 || map[yCoord + 2, xCoord] == -1) {
+					return ;
+				}
+				DeleteStone(yCoord + 1, xCoord);
+				DeleteStone(yCoord + 2, xCoord);
+			}
+		}
+
+
+		// Right
+		if (xCoord + 3 < size && map[yCoord, xCoord + 3] == playerPlaying) {
+			CheckCapture(yCoord, xCoord, 0, 1, true);
+		}
+	}
+
+	private bool CheckCapture(int yCoord, int xCoord, int yCoeff, int xCoeff, bool doCapture = false) {
+		int y1 = yCoord + yCoeff * 1;
+		int y2 = yCoord + yCoeff * 2;
+		int x1 = xCoord + xCoeff * 1;
+		int x2 = xCoord + xCoeff * 2;
+
+		if (map[y1, x1] != playerPlaying && map[y2, x2] != playerPlaying) {
+			if (map[y1, x1] != EMPTY_VALUE && map[y2, x2] != EMPTY_VALUE) {
+				if (doCapture) {
+					DeleteStone(y1, x1);
+					DeleteStone(y2, x2);
+					playerScores[playerPlaying] += 2;
+				}
+				return true;
+			}
+		}
+		return false;
 	}
 }

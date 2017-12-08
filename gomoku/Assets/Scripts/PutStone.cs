@@ -6,8 +6,11 @@ public class PutStone : MonoBehaviour {
 	[HideInInspector]
 	public GameManager gameManager;
 
+	[HideInInspector]
+	public bool isEmpty = true;
+
 	public void TryToPutStone() {
-		if (gameManager == null)
+		if (gameManager == null || !isEmpty)
 			return ;
 
 		gameManager.TryPutStone(gameObject);
