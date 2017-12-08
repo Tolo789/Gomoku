@@ -18,9 +18,15 @@ public class GameManager : MonoBehaviour {
 
 	public Text[] listPlayers;
 
-	private const int EMPTY_VALUE = -1;
+	private const int EMPTY_VALUE = 0;
+	private const int P1_VALUE = 1;
+	private const int P2_VALUE = 2;
+	private const int NP1_VALUE = -1;
+	private const int NP2_VALUE = -2;
+	private const int NP_VALUE = -3;
 
-	private int playerPlaying = 0;
+	private int currentPlayerIndex = 0;
+	private int currentPlayerVal = P1_VALUE;
 	private int[,] map;
 	private PutStone[,] buttonsMap;
 	private int[] playerScores;
@@ -64,7 +70,6 @@ public class GameManager : MonoBehaviour {
 			tmpPos.x = startPos.x;
 			x = 0;
 		}
-		// InitBoard();
 	}
 	
 	// Update is called once per frame
@@ -114,9 +119,9 @@ public class GameManager : MonoBehaviour {
 
 	private void PutStone(int yCoord, int xCoord) {
 		// Actually put the stone
-		map[yCoord, xCoord] = playerPlaying;
+		map[yCoord, xCoord] = currentPlayerVal;
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		button.GetComponent<Image>().sprite = stoneSprites[playerPlaying];
+		button.GetComponent<Image>().sprite = stoneSprites[currentPlayerIndex];
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Color buttonColor = button.GetComponent<Image>().color;
 		buttonColor.a = 255;
@@ -127,42 +132,44 @@ public class GameManager : MonoBehaviour {
 		CheckStone(yCoord, xCoord);
 
 		// TODO: update double-tree in map
+		UpdateDoubleTree();
 
 		// End turn, next player to play
-		playerPlaying = (playerPlaying + 1) % stoneSprites.Length;
+		currentPlayerIndex = 1 - currentPlayerIndex;
+		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 	}
 
 	private void CheckStone(int yCoord, int xCoord) {
 		// Left
-		if (xCoord - 3 >= 0 && map[yCoord, xCoord - 3] == playerPlaying) {
+		if (xCoord - 3 >= 0 && map[yCoord, xCoord - 3] == currentPlayerVal) {
 			CheckCapture(yCoord, xCoord, 0, -1, true);
 		}
 		// Top
-		if (yCoord - 3 >= 0 && map[yCoord - 3, xCoord] == playerPlaying) {
+		if (yCoord - 3 >= 0 && map[yCoord - 3, xCoord] == currentPlayerVal) {
 			CheckCapture(yCoord, xCoord, -1, 0, true);
 		}
 		// Bot
-		if (yCoord + 3 < size && map[yCoord + 3, xCoord] == playerPlaying) {
+		if (yCoord + 3 < size && map[yCoord + 3, xCoord] == currentPlayerVal) {
 			CheckCapture(yCoord, xCoord, 1, 0, true);
 		}
 		// Right
-		if (xCoord + 3 < size && map[yCoord, xCoord + 3] == playerPlaying) {
+		if (xCoord + 3 < size && map[yCoord, xCoord + 3] == currentPlayerVal) {
 			CheckCapture(yCoord, xCoord, 0, 1, true);
 		}
 		// Bot right
-		if (xCoord + 3 < size && yCoord + 3 < size && map[yCoord + 3, xCoord + 3] == playerPlaying) {
+		if (xCoord + 3 < size && yCoord + 3 < size && map[yCoord + 3, xCoord + 3] == currentPlayerVal) {
 			CheckCapture(yCoord, xCoord, 1, 1, true);
 		}
 		// Bot left
-		if (xCoord - 3 >= 0 && yCoord + 3 < size && map[yCoord + 3, xCoord - 3] == playerPlaying) {
+		if (xCoord - 3 >= 0 && yCoord + 3 < size && map[yCoord + 3, xCoord - 3] == currentPlayerVal) {
 			CheckCapture(yCoord, xCoord, 1, -1, true);
 		}
 		// Top left
-		if (xCoord - 3 >= 0 && yCoord - 3 >= 0 && map[yCoord - 3, xCoord - 3] == playerPlaying) {
+		if (xCoord - 3 >= 0 && yCoord - 3 >= 0 && map[yCoord - 3, xCoord - 3] == currentPlayerVal) {
 			CheckCapture(yCoord, xCoord, -1, -1, true);
 		}
 		// Top right
-		if (xCoord + 3 < size && yCoord - 3 >= 0 && map[yCoord - 3, xCoord + 3] == playerPlaying) {
+		if (xCoord + 3 < size && yCoord - 3 >= 0 && map[yCoord - 3, xCoord + 3] == currentPlayerVal) {
 			CheckCapture(yCoord, xCoord, -1, 1, true);
 		}
 	}
@@ -173,14 +180,15 @@ public class GameManager : MonoBehaviour {
 		int x1 = xCoord + xCoeff * 1;
 		int x2 = xCoord + xCoeff * 2;
 
-		if (map[y1, x1] != playerPlaying && map[y2, x2] != playerPlaying) {
+		if (map[y1, x1] != currentPlayerVal && map[y2, x2] != currentPlayerVal) {
 			if (map[y1, x1] != EMPTY_VALUE && map[y2, x2] != EMPTY_VALUE) {
 				if (doCapture) {
 					DeleteStone(y1, x1);
 					DeleteStone(y2, x2);
-					playerScores[playerPlaying] += 2;
-					listPlayers[playerPlaying].text = "Player" + (playerPlaying + 1) + ": " + playerScores[playerPlaying];
-					if (playerScores[playerPlaying] == 10) {
+					playerScores[currentPlayerIndex] += 2;
+					listPlayers[currentPlayerIndex].text = "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex];
+					if (playerScores[currentPlayerIndex] == 10) {
+						// TODO: display winner and stop playing
 						Debug.Log("You won");
 					}
 				}
@@ -188,5 +196,13 @@ public class GameManager : MonoBehaviour {
 			}
 		}
 		return false;
+	}
+
+	private void UpdateDoubleTree() {
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				// TODO: do checks for both players
+			}
+		}
 	}
 }
