@@ -16,6 +16,8 @@ public class GameManager : MonoBehaviour {
 
 	public int size = 19;
 
+	public Text[] listPlayers;
+
 	private const int EMPTY_VALUE = -1;
 
 	private int playerPlaying = 0;
@@ -129,51 +131,37 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private void CheckStone(int yCoord, int xCoord) {
-		// LEFT
+		// Left
 		if (xCoord - 3 >= 0 && map[yCoord, xCoord - 3] == playerPlaying) {
-			if (map[yCoord, xCoord - 1] != playerPlaying && map[yCoord, xCoord - 2] != playerPlaying) {
-				if (map[yCoord, xCoord - 1] == -1 || map[yCoord, xCoord - 2] == -1) {
-					return ;
-				}
-				DeleteStone(yCoord, xCoord - 1);
-				DeleteStone(yCoord, xCoord - 2);
-			}
+			CheckCapture(yCoord, xCoord, 0, -1, true);
 		}
-		// RIGHT
-		// if (xCoord + 3 < size && map[yCoord, xCoord + 3] == playerPlaying) {
-		// 	if (map[yCoord, xCoord + 1] != playerPlaying && map[yCoord, xCoord + 2] != playerPlaying) {
-		// 		if (map[yCoord, xCoord + 1] == -1 || map[yCoord, xCoord + 2] == -1) {
-		// 			return ;
-		// 		}
-		// 		DeleteStone(yCoord, xCoord + 1);
-		// 		DeleteStone(yCoord, xCoord + 2);
-		// 	}
-		// }
-		// TOP
+		// Top
 		if (yCoord - 3 >= 0 && map[yCoord - 3, xCoord] == playerPlaying) {
-			if (map[yCoord - 1, xCoord] != playerPlaying && map[yCoord - 2, xCoord] != playerPlaying) {
-				if (map[yCoord - 1, xCoord] == -1 || map[yCoord - 2, xCoord] == -1) {
-					return ;
-				}
-				DeleteStone(yCoord - 1, xCoord);
-				DeleteStone(yCoord - 2, xCoord);
-			}
+			CheckCapture(yCoord, xCoord, -1, 0, true);
 		}
-		// BOT
+		// Bot
 		if (yCoord + 3 < size && map[yCoord + 3, xCoord] == playerPlaying) {
-			if (map[yCoord + 1, xCoord] != playerPlaying && map[yCoord + 2, xCoord] != playerPlaying) {
-				if (map[yCoord + 1, xCoord] == -1 || map[yCoord + 2, xCoord] == -1) {
-					return ;
-				}
-				DeleteStone(yCoord + 1, xCoord);
-				DeleteStone(yCoord + 2, xCoord);
-			}
+			CheckCapture(yCoord, xCoord, 1, 0, true);
 		}
-
-
 		// Right
 		if (xCoord + 3 < size && map[yCoord, xCoord + 3] == playerPlaying) {
 			CheckCapture(yCoord, xCoord, 0, 1, true);
+		}
+		// Bot right
+		if (xCoord + 3 < size && yCoord + 3 < size && map[yCoord + 3, xCoord + 3] == playerPlaying) {
+			CheckCapture(yCoord, xCoord, 1, 1, true);
+		}
+		// Bot left
+		if (xCoord - 3 >= 0 && yCoord + 3 < size && map[yCoord + 3, xCoord - 3] == playerPlaying) {
+			CheckCapture(yCoord, xCoord, 1, -1, true);
+		}
+		// Top left
+		if (xCoord - 3 >= 0 && yCoord - 3 >= 0 && map[yCoord - 3, xCoord - 3] == playerPlaying) {
+			CheckCapture(yCoord, xCoord, -1, -1, true);
+		}
+		// Top right
+		if (xCoord + 3 < size && yCoord - 3 >= 0 && map[yCoord - 3, xCoord + 3] == playerPlaying) {
+			CheckCapture(yCoord, xCoord, -1, 1, true);
 		}
 	}
 
@@ -189,6 +177,10 @@ public class GameManager : MonoBehaviour {
 					DeleteStone(y1, x1);
 					DeleteStone(y2, x2);
 					playerScores[playerPlaying] += 2;
+					listPlayers[playerPlaying].text = "Player" + (playerPlaying + 1) + ": " + playerScores[playerPlaying];
+					if (playerScores[playerPlaying] == 10) {
+						Debug.Log("You won");
+					}
 				}
 				return true;
 			}
