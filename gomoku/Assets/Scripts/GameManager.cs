@@ -8,6 +8,8 @@ public class GameManager : MonoBehaviour {
 	public GameObject[] stones;
 	public Sprite[] stoneSprites;
 
+	public Sprite notAllowedSprite;
+
 	public GameObject emptyButton;
 
 	public GameObject startBoard;
@@ -17,13 +19,17 @@ public class GameManager : MonoBehaviour {
 	public int size = 19;
 
 	public Text[] listPlayers;
+	public bool moveIntoCapture = false;
 
 	private const int EMPTY_VALUE = 0;
 	private const int P1_VALUE = 1;
 	private const int P2_VALUE = 2;
-	private const int NP1_VALUE = -1;
-	private const int NP2_VALUE = -2;
-	private const int NP_VALUE = -3;
+	private const int DF_P1_VALUE = -1;
+	private const int DF_P2_VALUE = -2;
+	private const int DF_P_VALUE = -3;
+	private const int NA_P1_VALUE = -4;
+	private const int NA_P2_VALUE = -5;
+	private const int NA_P_VALUE = -6;
 
 	private int currentPlayerIndex = 0;
 	private int currentPlayerVal = P1_VALUE;
@@ -131,12 +137,20 @@ public class GameManager : MonoBehaviour {
 		// check capture
 		CheckStone(yCoord, xCoord);
 
-		// TODO: update double-tree in map
-		UpdateDoubleTree();
-
 		// End turn, next player to play
 		currentPlayerIndex = 1 - currentPlayerIndex;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
+
+		// TODO: update double-tree in map
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				if (map[y, x] != P1_VALUE && map[y, x] != P1_VALUE) {
+					UpdateDoubleTree(y, x);
+					if (!moveIntoCapture)
+						UpdateCaptureProhibited(y, x);
+				}
+			}
+		}
 	}
 
 	private void CheckStone(int yCoord, int xCoord) {
@@ -198,11 +212,99 @@ public class GameManager : MonoBehaviour {
 		return false;
 	}
 
-	private void UpdateDoubleTree() {
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
-				// TODO: do checks for both players
+	private void UpdateDoubleTree(int yCoord, int xCoord) {
+		// TODO: do checks for both players
+
+	}
+
+	private bool CheckSelfCapture(int yCoord, int xCoord, int yCoeff, int xCoeff) {
+		int y1 = yCoord + yCoeff * 1;
+		int y2 = yCoord + yCoeff * 2;
+		int x1 = xCoord + xCoeff * 1;
+		int x2 = xCoord + xCoeff * 2;
+
+		Debug.Log(map[y1, x1]);
+		Debug.Log(map[y2, x2]);
+		if (map[y1, x1] == currentPlayerVal && map[y2, x2] != currentPlayerVal) {
+			if (map[y2, x2] != EMPTY_VALUE) {
+				return true;
 			}
 		}
+		return false;
+	}
+
+	private void UpdateCaptureProhibited(int yCoord, int xCoord) {
+		// Left
+
+		Debug.Log("toto " + yCoord +" "+ xCoord);
+
+		if (xCoord - 2 >= 0) {
+			if (xCoord + 1 < size && map[yCoord, xCoord + 1] == currentPlayerVal) {
+				Debug.Log(CheckSelfCapture(yCoord, xCoord, 0, -1));
+			}
+		}
+		// Top
+		// if (yCoord - 3 >= 0 && map[yCoord - 3, xCoord] == currentPlayerVal) {
+		// 	CheckCapture(yCoord, xCoord, -1, 0, true);
+		// }
+		// // Bot
+		// if (yCoord + 3 < size && map[yCoord + 3, xCoord] == currentPlayerVal) {
+		// 	CheckCapture(yCoord, xCoord, 1, 0, true);
+		// }
+		// Right
+		if (xCoord + 2 < size) {
+			if (xCoord - 1 >= 0 && map[yCoord, xCoord - 1] == currentPlayerVal) {
+				Debug.Log(CheckSelfCapture(yCoord, xCoord, 0, 1));
+			}
+		}
+		// Bot right
+		// if (xCoord + 3 < size && yCoord + 3 < size && map[yCoord + 3, xCoord + 3] == currentPlayerVal) {
+		// 	CheckCapture(yCoord, xCoord, 1, 1, true);
+		// }
+		// // Bot left
+		// if (xCoord - 3 >= 0 && yCoord + 3 < size && map[yCoord + 3, xCoord - 3] == currentPlayerVal) {
+		// 	CheckCapture(yCoord, xCoord, 1, -1, true);
+		// }
+		// // Top left
+		// if (xCoord - 3 >= 0 && yCoord - 3 >= 0 && map[yCoord - 3, xCoord - 3] == currentPlayerVal) {
+		// 	CheckCapture(yCoord, xCoord, -1, -1, true);
+		// }
+		// // Top right
+		// if (xCoord + 3 < size && yCoord - 3 >= 0 && map[yCoord - 3, xCoord + 3] == currentPlayerVal) {
+		// 	CheckCapture(yCoord, xCoord, -1, 1, true);
+		// }
+
+		// TODO: do checks for both players
+		// if (yCoord == 0 && xCoord == 0) {
+		// 	map[yCoord, xCoord] = DF_P1_VALUE;
+		// 	// change sprite only if is next player prohibited movement
+		// 	if (currentPlayerVal == P1_VALUE) {
+		// 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		// 		button.GetComponent<Image>().sprite = notAllowedSprite;
+		// 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
+		// 		Color buttonColor = button.GetComponent<Image>().color;
+		// 		buttonColor.a = 255;
+		// 		button.GetComponent<Image>().color = buttonColor;
+		// 		button.GetComponent<PutStone>().isEmpty = false;
+		// 	}
+		// 	else {
+		// 		DeleteStone(yCoord, xCoord);
+		// 	}
+		// }
+		// if (yCoord == 1 && xCoord == 1) {
+		// 	map[yCoord, xCoord] = DF_P2_VALUE;
+		// 	if (currentPlayerVal == P2_VALUE) {
+		// 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		// 		button.GetComponent<Image>().sprite = notAllowedSprite;
+		// 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
+		// 		Color buttonColor = button.GetComponent<Image>().color;
+		// 		buttonColor.a = 255;
+		// 		button.GetComponent<Image>().color = buttonColor;
+		// 		button.GetComponent<PutStone>().isEmpty = false;
+		// 	}
+		// 	else {
+		// 		DeleteStone(yCoord, xCoord);
+		// 	}
+		// }
 	}
 }
