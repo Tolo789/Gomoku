@@ -12,7 +12,10 @@ public class PutStone : MonoBehaviour {
 	public void TryToPutStone() {
 		if (gameManager == null || !isEmpty)
 			return ;
+		string[] coords = gameObject.name.Split('-');
+		int yCoord = int.Parse(coords[0]);
+		int xCoord = int.Parse(coords[1]);
 
-		gameManager.TryPutStone(gameObject);
+		gameManager.PutStone(yCoord, xCoord);
 	}
 }
