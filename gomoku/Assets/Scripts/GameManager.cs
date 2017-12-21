@@ -5,7 +5,6 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour {
 
-	public GameObject[] stones;
 	public Sprite[] stoneSprites;
 
 	public Sprite notAllowedSprite;
@@ -61,9 +60,12 @@ public class GameManager : MonoBehaviour {
 		int y = 0;
 		Vector3 tmpPos = startPos;
 		while (y < size) {
+			tmpPos.x = startPos.x;
+			x = 0;
 			while (x < size) {
 				map[y, x] = EMPTY_VALUE;
-				GameObject newButton = Instantiate(emptyButton, tmpPos, Quaternion.identity);
+				GameObject newButton = GameObject.Instantiate(emptyButton, tmpPos, Quaternion.identity);
+				newButton.transform.position = tmpPos;
 				newButton.name = y + "-" + x;
 				newButton.transform.SetParent(startBoard.transform);
 				newButton.transform.localScale = emptyButton.transform.localScale;
@@ -75,21 +77,11 @@ public class GameManager : MonoBehaviour {
 			}
 			y++;
 			tmpPos.y -= step;
-			tmpPos.x = startPos.x;
-			x = 0;
 		}
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		// if (Input.GetMouseButtonDown(0)) {
-		// 	Debug.Log("Mouse click");
-		// 	Vector3 pos = Input.mousePosition;
-		// 	pos = Camera.main.ScreenToWorldPoint(pos);
-		// 	pos.z = 0;
-		// 	// Instantiate(stones[0], pos, Quaternion.identity);
-
-		// }
 	}
 
 	void DispalyBoard() {
