@@ -96,9 +96,6 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-	public void TryPutStone(GameObject button) {
-	}
-
 	public void DeleteStone(int yCoord, int xCoord) {
 		map[yCoord, xCoord] = EMPTY_VALUE;
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
@@ -135,7 +132,8 @@ public class GameManager : MonoBehaviour {
 			for (int x = 0; x < size; x++) {
 				if (map[y, x] != P1_VALUE && map[y, x] != P2_VALUE) {
 					DeleteStone(y, x);
-					UpdateDoubleTree(y, x);
+					if (x > 0 && x < size -1 && y > 0 && y < size -1) // Can't have a free-tree in the borders
+						UpdateDoubleThree(y, x);
 					if (!moveIntoCapture)
 						UpdateCaptureProhibited(y, x);
 				}
@@ -202,9 +200,157 @@ public class GameManager : MonoBehaviour {
 		return false;
 	}
 
-	private void UpdateDoubleTree(int yCoord, int xCoord) {
+	private void UpdateDoubleThree(int yCoord, int xCoord) {
 		// TODO: do checks for both players
 
+		// check in every direction and count number of free three, if n >= 2 break and add prohibition
+		int currentPlayerFreeTree = 0;
+		int otherPlayerFreeTree = 0;
+
+		// Left
+		if (IsFreeThree(yCoord, xCoord, 0, -1, currentPlayerVal, otherPlayerVal, true)) {
+			currentPlayerFreeTree++;
+		}
+		if (IsFreeThree(yCoord, xCoord, 0, -1, otherPlayerVal, currentPlayerVal, true)) {
+			otherPlayerFreeTree++;
+		}
+		// Right
+		if (IsFreeThree(yCoord, xCoord, 0, 1, currentPlayerVal, otherPlayerVal)) {
+			currentPlayerFreeTree++;
+		}
+		if (IsFreeThree(yCoord, xCoord, 0, 1, otherPlayerVal, currentPlayerVal)) {
+			otherPlayerFreeTree++;
+		}
+		// Top
+		if (currentPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, -1, 0, currentPlayerVal, otherPlayerVal, true)) {
+			currentPlayerFreeTree++;
+		}
+		if (otherPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, -1, 0, otherPlayerVal, currentPlayerVal, true)) {
+			otherPlayerFreeTree++;
+		}
+		// Bot
+		if (currentPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, 1, 0, currentPlayerVal, otherPlayerVal)) {
+			currentPlayerFreeTree++;
+		}
+		if (otherPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, 1, 0, otherPlayerVal, currentPlayerVal)) {
+			otherPlayerFreeTree++;
+		}
+		// Top Left
+		if (currentPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, -1, -1, currentPlayerVal, otherPlayerVal, true)) {
+			currentPlayerFreeTree++;
+		}
+		if (otherPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, -1, -1, otherPlayerVal, currentPlayerVal, true)) {
+			otherPlayerFreeTree++;
+		}
+		// Top Right
+		if (currentPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, -1, 1, currentPlayerVal, otherPlayerVal, true)) {
+			currentPlayerFreeTree++;
+		}
+		if (otherPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, -1, 1, otherPlayerVal, currentPlayerVal, true)) {
+			otherPlayerFreeTree++;
+		}
+		// Bot Left
+		if (currentPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, 1, -1, currentPlayerVal, otherPlayerVal)) {
+			currentPlayerFreeTree++;
+		}
+		if (otherPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, 1, -1, otherPlayerVal, currentPlayerVal)) {
+			otherPlayerFreeTree++;
+		}
+		// Bot Right
+		if (currentPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, 1, 1, currentPlayerVal, otherPlayerVal)) {
+			currentPlayerFreeTree++;
+		}
+		if (otherPlayerFreeTree != 2 && IsFreeThree(yCoord, xCoord, 1, 1, otherPlayerVal, currentPlayerVal)) {
+			otherPlayerFreeTree++;
+		}
+
+
+		// Change map values and buttons where needed
+		if (currentPlayerFreeTree == 2) {
+			GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+			button.GetComponent<Image>().sprite = notAllowedSprite; // TODO: use double-three sprite
+			button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
+			Color buttonColor = button.GetComponent<Image>().color;
+			buttonColor.a = 255;
+			button.GetComponent<Image>().color = buttonColor;
+			button.GetComponent<PutStone>().isEmpty = false;
+
+			if (otherPlayerFreeTree == 2) {
+				Debug.Log("Both players have double-three in " + yCoord + " " + xCoord);
+				map[yCoord, xCoord] = DT_P_VALUE;
+			}
+			else {
+				Debug.Log("Current player has double-three in " + yCoord + " " + xCoord);
+				map[yCoord, xCoord] = (currentPlayerIndex == 0) ? DT_P1_VALUE : DT_P2_VALUE;
+			}
+
+		}
+		else if (otherPlayerFreeTree == 2) {
+			Debug.Log("Other player has double-three in " + yCoord + " " + xCoord);
+			map[yCoord, xCoord] = (currentPlayerIndex == 0) ? DT_P2_VALUE : DT_P1_VALUE;
+
+		}
+	}
+
+	private bool IsFreeThree(int yCoord, int xCoord, int yCoeff, int xCoeff, int myVal, int enemyVal, bool middleCheck = false) {
+		if (map[yCoord + yCoeff * -1, xCoord + xCoeff * -1] == enemyVal || map[yCoord + yCoeff * 1, xCoord + xCoeff * 1] == enemyVal)
+			return false;
+
+		// common vars
+		int x = 0;
+		int y = 0;
+		int allyStones = 0;
+
+		// check when coord is middle of free-tree
+		if (map[yCoord + yCoeff * -1, xCoord + xCoeff * -1] == myVal) {
+			y = yCoord + yCoeff * -2;
+			x = xCoord + yCoeff * -2;
+			if (x >= 0 && x < size && y >= 0 && y < size && map[y, x] != enemyVal) {
+				y = yCoord + yCoeff * 2;
+				x = xCoord + yCoeff * 2;
+				if (x >= 0 && x < size && y >= 0 && y < size) {
+					if (map[yCoord + yCoeff, xCoord + xCoeff] == myVal) {
+						if (map[y, x] != enemyVal && map[y, x] != myVal && middleCheck)
+							return true;
+					}
+					else if (map[y, x] == myVal) {
+						y += yCoeff;
+						x += xCoeff;
+						if (x >= 0 && x < size && y >= 0 && y < size && map[y, x] != myVal && map[y, x] != enemyVal) {
+							return true;
+						}
+					}
+				}
+
+			} 
+		}
+		// check when coord is start of free-tree
+		else if (yCoord + yCoeff * 3 < size && yCoord + yCoeff * 3 >= 0 && xCoord + xCoeff * 3 < size && xCoord + xCoeff * 3 >= 0) {
+			x = 0;
+			x = 0;
+			allyStones = 0;
+			while (x <= 3 && x >= -3 && y <= 3 && y >= -3) {
+				if (map[yCoord + y, xCoord + x] == enemyVal)
+					break;
+				if (map[yCoord + y, xCoord + x] == myVal) {
+					allyStones++;
+					if (allyStones == 2) {
+						break;
+					}
+				}
+				x += xCoeff;
+				y += yCoeff;
+			}
+			if (allyStones == 2) {
+				x += xCoeff;
+				y += yCoeff;
+				if (xCoord + x >= 0 && xCoord + x < size && yCoord + y >= 0 && xCoord + y < size)
+					if (map[yCoord + y, xCoord + x] != enemyVal && map[yCoord + y, xCoord + x] != myVal)
+						return true;
+			}
+		}
+
+		return false;
 	}
 
 	private bool CheckSelfCapture(int yCoord, int xCoord, int yCoeff, int xCoeff, int myVal, int enemyVal) {
@@ -273,24 +419,25 @@ public class GameManager : MonoBehaviour {
 		}
 
 		if (currentProhibited) {
-			Debug.Log("Current player can't play in " + yCoord + " " + xCoord);
-				GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-				button.GetComponent<Image>().sprite = notAllowedSprite;
-				button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
-				Color buttonColor = button.GetComponent<Image>().color;
-				buttonColor.a = 255;
-				button.GetComponent<Image>().color = buttonColor;
-				button.GetComponent<PutStone>().isEmpty = false;
+			GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+			button.GetComponent<Image>().sprite = notAllowedSprite;
+			button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
+			Color buttonColor = button.GetComponent<Image>().color;
+			buttonColor.a = 255;
+			button.GetComponent<Image>().color = buttonColor;
+			button.GetComponent<PutStone>().isEmpty = false;
 
-				if (otherProhibited) {
-					map[yCoord, xCoord] = NA_P_VALUE;
-					Debug.Log("Other player can't play in " + yCoord + " " + xCoord);
-				}
-				else
-					map[yCoord, xCoord] = (currentPlayerIndex == 0) ? NA_P1_VALUE : NA_P2_VALUE;
+			if (otherProhibited) {
+				Debug.Log("Other player can't play in " + yCoord + " " + xCoord);
+				map[yCoord, xCoord] = NA_P_VALUE;
+			}
+			else {
+				Debug.Log("Both players can't play in " + yCoord + " " + xCoord);
+				map[yCoord, xCoord] = (currentPlayerIndex == 0) ? NA_P1_VALUE : NA_P2_VALUE;
+			}
 		}
 		else if (otherProhibited) {
-			DeleteStone(yCoord, xCoord);
+			// DeleteStone(yCoord, xCoord); // TODO: Check if this DeleteStone() is needed
 			map[yCoord, xCoord] = (currentPlayerIndex == 0) ? NA_P2_VALUE : NA_P1_VALUE;
 			Debug.Log("Other player can't play in " + yCoord + " " + xCoord);
 		}
