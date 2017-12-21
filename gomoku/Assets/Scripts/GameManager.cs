@@ -119,7 +119,7 @@ public class GameManager : MonoBehaviour {
 		button.GetComponent<PutStone>().isEmpty = false;
 
 		// check capture
-		CheckStone(yCoord, xCoord);
+		CheckCaptures(yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
 
 		// End turn, next player to play
 		currentPlayerIndex = 1 - currentPlayerIndex;
@@ -140,51 +140,55 @@ public class GameManager : MonoBehaviour {
 			}
 		}
 		
-		DispalyBoard();
+		// DispalyBoard();
 	}
 
-	private void CheckStone(int yCoord, int xCoord) {
+	private bool CheckCaptures(int yCoord, int xCoord, int myVal, int enemyVal, bool doCapture = true) {
+		bool canCapture = false;
+
 		// Left
-		if (xCoord - 3 >= 0 && map[yCoord, xCoord - 3] == currentPlayerVal) {
-			CheckCapture(yCoord, xCoord, 0, -1, true);
+		if (xCoord - 3 >= 0 && map[yCoord, xCoord - 3] == myVal) {
+			canCapture = CanCapture(yCoord, xCoord, 0, -1, enemyVal, doCapture) || canCapture;
 		}
 		// Top
-		if (yCoord - 3 >= 0 && map[yCoord - 3, xCoord] == currentPlayerVal) {
-			CheckCapture(yCoord, xCoord, -1, 0, true);
+		if (yCoord - 3 >= 0 && map[yCoord - 3, xCoord] == myVal) {
+			canCapture = CanCapture(yCoord, xCoord, -1, 0, enemyVal, doCapture) || canCapture;
 		}
 		// Bot
-		if (yCoord + 3 < size && map[yCoord + 3, xCoord] == currentPlayerVal) {
-			CheckCapture(yCoord, xCoord, 1, 0, true);
+		if (yCoord + 3 < size && map[yCoord + 3, xCoord] == myVal) {
+			canCapture = CanCapture(yCoord, xCoord, 1, 0, enemyVal, doCapture) || canCapture;
 		}
 		// Right
-		if (xCoord + 3 < size && map[yCoord, xCoord + 3] == currentPlayerVal) {
-			CheckCapture(yCoord, xCoord, 0, 1, true);
+		if (xCoord + 3 < size && map[yCoord, xCoord + 3] == myVal) {
+			canCapture = CanCapture(yCoord, xCoord, 0, 1, enemyVal, doCapture) || canCapture;
 		}
 		// Bot right
-		if (xCoord + 3 < size && yCoord + 3 < size && map[yCoord + 3, xCoord + 3] == currentPlayerVal) {
-			CheckCapture(yCoord, xCoord, 1, 1, true);
+		if (xCoord + 3 < size && yCoord + 3 < size && map[yCoord + 3, xCoord + 3] == myVal) {
+			canCapture = CanCapture(yCoord, xCoord, 1, 1, enemyVal, doCapture) || canCapture;
 		}
 		// Bot left
-		if (xCoord - 3 >= 0 && yCoord + 3 < size && map[yCoord + 3, xCoord - 3] == currentPlayerVal) {
-			CheckCapture(yCoord, xCoord, 1, -1, true);
+		if (xCoord - 3 >= 0 && yCoord + 3 < size && map[yCoord + 3, xCoord - 3] == myVal) {
+			canCapture = CanCapture(yCoord, xCoord, 1, -1, enemyVal, doCapture) || canCapture;
 		}
 		// Top left
-		if (xCoord - 3 >= 0 && yCoord - 3 >= 0 && map[yCoord - 3, xCoord - 3] == currentPlayerVal) {
-			CheckCapture(yCoord, xCoord, -1, -1, true);
+		if (xCoord - 3 >= 0 && yCoord - 3 >= 0 && map[yCoord - 3, xCoord - 3] == myVal) {
+			canCapture = CanCapture(yCoord, xCoord, -1, -1, enemyVal, doCapture) || canCapture;
 		}
 		// Top right
-		if (xCoord + 3 < size && yCoord - 3 >= 0 && map[yCoord - 3, xCoord + 3] == currentPlayerVal) {
-			CheckCapture(yCoord, xCoord, -1, 1, true);
+		if (xCoord + 3 < size && yCoord - 3 >= 0 && map[yCoord - 3, xCoord + 3] == myVal) {
+			canCapture = CanCapture(yCoord, xCoord, -1, 1, enemyVal, doCapture) || canCapture;
 		}
+
+		return canCapture;
 	}
 
-	private bool CheckCapture(int yCoord, int xCoord, int yCoeff, int xCoeff, bool doCapture = false) {
+	private bool CanCapture(int yCoord, int xCoord, int yCoeff, int xCoeff, int enemyVal, bool doCapture = false) {
 		int y1 = yCoord + yCoeff * 1;
 		int y2 = yCoord + yCoeff * 2;
 		int x1 = xCoord + xCoeff * 1;
 		int x2 = xCoord + xCoeff * 2;
 
-		if (map[y1, x1] == otherPlayerVal && map[y2, x2] == otherPlayerVal) {
+		if (map[y1, x1] == enemyVal && map[y2, x2] == enemyVal) {
 			if (doCapture) {
 				DeleteStone(y1, x1);
 				DeleteStone(y2, x2);
@@ -264,6 +268,13 @@ public class GameManager : MonoBehaviour {
 			otherPlayerFreeTree++;
 		}
 
+		// Is not double-three if there is a capture
+		if (currentPlayerFreeTree == 2 && CheckCaptures(yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: false)) {
+			currentPlayerFreeTree = 0;
+		}
+		if (otherPlayerFreeTree == 2 && CheckCaptures(yCoord, xCoord, otherPlayerVal, currentPlayerVal, doCapture: false)) {
+			otherPlayerFreeTree = 0;
+		}
 
 		// Change map values and buttons where needed
 		if (currentPlayerFreeTree == 2) {
@@ -293,30 +304,32 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private bool IsFreeThree(int yCoord, int xCoord, int yCoeff, int xCoeff, int myVal, int enemyVal, bool middleCheck = false) {
-		if (map[yCoord + yCoeff * -1, xCoord + xCoeff * -1] == enemyVal || map[yCoord + yCoeff * 1, xCoord + xCoeff * 1] == enemyVal)
+		if (map[yCoord - yCoeff, xCoord - xCoeff] == enemyVal || map[yCoord + yCoeff, xCoord + xCoeff] == enemyVal)
 			return false;
 
 		// common vars
 		int x = 0;
 		int y = 0;
-		int allyStones = 0;
 
 		// check when coord is middle of free-tree
-		if (map[yCoord + yCoeff * -1, xCoord + xCoeff * -1] == myVal) {
+		if (map[yCoord - yCoeff, xCoord - xCoeff] == myVal) {
 			y = yCoord + yCoeff * -2;
-			x = xCoord + yCoeff * -2;
-			if (x >= 0 && x < size && y >= 0 && y < size && map[y, x] != enemyVal) {
+			x = xCoord + xCoeff * -2;
+			if (x >= 0 && x < size && y >= 0 && y < size && map[y, x] != enemyVal && map[y, x] != myVal) {
 				y = yCoord + yCoeff * 2;
-				x = xCoord + yCoeff * 2;
+				x = xCoord + xCoeff * 2;
 				if (x >= 0 && x < size && y >= 0 && y < size) {
 					if (map[yCoord + yCoeff, xCoord + xCoeff] == myVal) {
-						if (map[y, x] != enemyVal && map[y, x] != myVal && middleCheck)
+						if (map[y, x] != enemyVal && map[y, x] != myVal && middleCheck) {
+							// Debug.Log("Free tree type1 at " + yCoord + " " + xCoord + " coeff " + yCoeff + " " + xCoeff);
 							return true;
+						}
 					}
 					else if (map[y, x] == myVal) {
 						y += yCoeff;
 						x += xCoeff;
 						if (x >= 0 && x < size && y >= 0 && y < size && map[y, x] != myVal && map[y, x] != enemyVal) {
+							// Debug.Log("Free tree type2 at " + yCoord + " " + xCoord + " coeff " + yCoeff + " " + xCoeff);
 							return true;
 						}
 					}
@@ -328,7 +341,7 @@ public class GameManager : MonoBehaviour {
 		else if (yCoord + yCoeff * 3 < size && yCoord + yCoeff * 3 >= 0 && xCoord + xCoeff * 3 < size && xCoord + xCoeff * 3 >= 0) {
 			x = 0;
 			x = 0;
-			allyStones = 0;
+			int allyStones = 0;
 			while (x <= 3 && x >= -3 && y <= 3 && y >= -3) {
 				if (map[yCoord + y, xCoord + x] == enemyVal)
 					break;
@@ -344,9 +357,11 @@ public class GameManager : MonoBehaviour {
 			if (allyStones == 2) {
 				x += xCoeff;
 				y += yCoeff;
-				if (xCoord + x >= 0 && xCoord + x < size && yCoord + y >= 0 && xCoord + y < size)
-					if (map[yCoord + y, xCoord + x] != enemyVal && map[yCoord + y, xCoord + x] != myVal)
+				if (xCoord + x >= 0 && xCoord + x < size && yCoord + y >= 0 && yCoord + y < size)
+					if (map[yCoord + y, xCoord + x] != enemyVal && map[yCoord + y, xCoord + x] != myVal) {
+						// Debug.Log("Free tree type3 at " + yCoord + " " + xCoord + " coeff " + yCoeff + " " + xCoeff);
 						return true;
+					}
 			}
 		}
 
