@@ -364,7 +364,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1096178433}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1876686150}
+        m_MethodName: TaRace
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_TypeName: UnityEngine.UI.Button+ButtonClickedEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
 --- !u!114 &1096178433
@@ -464,6 +475,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   StartColor: {r: 1, g: 0.7725491, b: 0.03137255, a: 1}
   MouseOverColor: {r: 0.7352941, g: 0.76997966, b: 1, a: 0.978}
+  cursorTexture: {fileID: 0}
+  cursorMode: 0
+  hotSpot: {x: 0, y: 0}
 --- !u!1001 &1149362706
 Prefab:
   m_ObjectHideFlags: 0
@@ -595,6 +609,21 @@ Prefab:
   m_Modification:
     m_TransformParent: {fileID: 1345519837}
     m_Modifications:
+    - target: {fileID: 114901565560212884, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_Delegates.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 114454256606816388, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114901565560212884, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_Delegates.Array.data[2].callback.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 224103863759438644, guid: 84eb2d46084034a529054aa7e9d6dbda,
         type: 2}
       propertyPath: m_LocalPosition.x
@@ -693,6 +722,72 @@ Prefab:
         type: 2}
       propertyPath: m_Text
       value: SETTINGS
+      objectReference: {fileID: 0}
+    - target: {fileID: 114454256606816388, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114454256606816388, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 114454256606816388, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1876686150}
+    - target: {fileID: 114454256606816388, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: TaRace
+      objectReference: {fileID: 0}
+    - target: {fileID: 114454256606816388, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 114454256606816388, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_Transition
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114901565560212884, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_Delegates.Array.data[2].eventID
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 114901565560212884, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_Delegates.Array.data[2].callback.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1876686150}
+    - target: {fileID: 114901565560212884, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_Delegates.Array.data[2].callback.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: TaRace
+      objectReference: {fileID: 0}
+    - target: {fileID: 114901565560212884, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_Delegates.Array.data[2].callback.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114901565560212884, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_Delegates.Array.data[2].callback.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 114901565560212884, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_Delegates.Array.data[2].callback.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 114901565560212884, guid: 84eb2d46084034a529054aa7e9d6dbda,
+        type: 2}
+      propertyPath: m_Delegates.Array.data[2].callback.m_TypeName
+      value: UnityEngine.EventSystems.EventTrigger+TriggerEvent, UnityEngine.UI, Version=1.0.0.0,
+        Culture=neutral, PublicKeyToken=null
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 84eb2d46084034a529054aa7e9d6dbda, type: 2}
@@ -955,4 +1050,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7aaf4fcce935b4fa0a71d911bc9c7fe3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  yourButton: {fileID: 0}
