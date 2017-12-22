@@ -2069,7 +2069,7 @@ GameObject:
   - component: {fileID: 1450190450}
   - component: {fileID: 1450190449}
   m_Layer: 5
-  m_Name: GO (1)
+  m_Name: GOBACK
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2736,6 +2736,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7aaf4fcce935b4fa0a71d911bc9c7fe3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  versus: {fileID: 1948066282}
+  firstPlayer: {fileID: 1219540407}
 --- !u!1 &1901680479
 GameObject:
   m_ObjectHideFlags: 0

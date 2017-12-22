@@ -20,6 +20,8 @@ public class GameManager : MonoBehaviour {
 
 	public Text[] listPlayers;
 	public bool moveIntoCapture = false;
+	[HideInInspector]
+	public bool isGameEnded = false;
 
 	private const int EMPTY_VALUE = 0;
 	private const int P1_VALUE = 1;
@@ -52,11 +54,26 @@ public class GameManager : MonoBehaviour {
 		}
 		isHumanPlayer = new bool[2];
 		isHumanPlayer[0] = true;
-		isHumanPlayer[1] = false;
 		isAIPlaying = new bool[2];
 		isAIPlaying[0] = false;
 		isAIPlaying[1] = false;
 		// TODO: handle who starts first
+		if (PlayerPrefs.HasKey(CommonDefines.VERSUS_IA) && PlayerPrefs.GetInt(CommonDefines.VERSUS_IA) == 1) {
+			isHumanPlayer[1] = false;
+		}
+		else {
+			isHumanPlayer[1] = true;
+		}
+
+		if (PlayerPrefs.HasKey(CommonDefines.FIRST_PLAYER_PLAYING)) {
+			currentPlayerIndex = PlayerPrefs.GetInt(CommonDefines.FIRST_PLAYER_PLAYING);
+			if (currentPlayerIndex == 2) {
+				 currentPlayerIndex = Random.Range(0, 1);
+			}
+		}
+		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
+		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
+		playerPlaying.text = "Player actually playing: Player" + currentPlayerVal;
 
 		// init board with hidden buttons
 		float width = startBoard.GetComponent<RectTransform>().rect.width ;
@@ -92,7 +109,7 @@ public class GameManager : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (!isHumanPlayer[currentPlayerIndex] && !isAIPlaying[currentPlayerIndex]) {
+		if (!isGameEnded && !isHumanPlayer[currentPlayerIndex] && !isAIPlaying[currentPlayerIndex]) {
 			isAIPlaying[currentPlayerIndex] = true;
 
 			// start AI decision making
@@ -255,6 +272,9 @@ public class GameManager : MonoBehaviour {
 				if (playerScores[currentPlayerIndex] == 10) {
 					// TODO: display winner and stop playing
 					Debug.Log("You won");
+					isGameEnded = true;
+					// CODE ICI
+
 				}
 			}
 			return true;

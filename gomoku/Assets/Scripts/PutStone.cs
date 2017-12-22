@@ -10,7 +10,7 @@ public class PutStone : MonoBehaviour {
 	public bool isEmpty = true;
 
 	public void TryToPutStone() {
-		if (gameManager == null || !isEmpty || !gameManager.IsHumanTurn())
+		if (gameManager == null || !isEmpty || !gameManager.IsHumanTurn() || gameManager.isGameEnded)
 			return ;
 		string[] coords = gameObject.name.Split('-');
 		int yCoord = int.Parse(coords[0]);
