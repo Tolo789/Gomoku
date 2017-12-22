@@ -37,16 +37,26 @@ public class GameManager : MonoBehaviour {
 	private int[,] map;
 	private PutStone[,] buttonsMap;
 	private int[] playerScores;
+	private bool[] isHumanPlayer;
+	private bool[] isAIPlaying;
+	private int playerStarting;
 
 	// Use this for initialization
 	void Start () {
 		// init game variables
 		map = new int[size, size];
 		buttonsMap = new PutStone[size, size];
-		playerScores = new int[stoneSprites.Length];
+		playerScores = new int[2];
 		for (int i = 0; i < playerScores.Length; i++) {
 			playerScores[i] = 0;
 		}
+		isHumanPlayer = new bool[2];
+		isHumanPlayer[0] = true;
+		isHumanPlayer[1] = false;
+		isAIPlaying = new bool[2];
+		isAIPlaying[0] = false;
+		isAIPlaying[1] = false;
+		// TODO: handle who starts first
 
 		// init board with hidden buttons
 		float width = startBoard.GetComponent<RectTransform>().rect.width ;
@@ -82,6 +92,12 @@ public class GameManager : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+		if (!isHumanPlayer[currentPlayerIndex] && !isAIPlaying[currentPlayerIndex]) {
+			isAIPlaying[currentPlayerIndex] = true;
+
+			// start AI decision making
+			StartCoroutine(StartMinMax());			
+		}
 	}
 
 	void DispalyBoard() {
@@ -96,15 +112,8 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-	public void DeleteStone(int yCoord, int xCoord) {
-		map[yCoord, xCoord] = EMPTY_VALUE;
-		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		button.GetComponent<Image>().sprite = null;
-		button.transform.localScale = new Vector3(1, 1, 1);
-		Color buttonColor = button.GetComponent<Image>().color;
-		buttonColor.a = 0;
-		button.GetComponent<Image>().color = buttonColor;
-		button.GetComponent<PutStone>().isEmpty = true;
+	public bool IsHumanTurn() {
+		return isHumanPlayer[currentPlayerIndex];
 	}
 
 	public void PutStone(int yCoord, int xCoord) {
@@ -141,6 +150,55 @@ public class GameManager : MonoBehaviour {
 		}
 		
 		// DispalyBoard();
+	}
+
+	private IEnumerator StartMinMax() {
+		Debug.Log("Start MinMax");
+		yield return new WaitForSeconds(3.0f);
+
+		// TODO: Take best move and play it
+		bool found = false;
+		List<int> allowedSpaces = new List<int>();
+		allowedSpaces.Add(EMPTY_VALUE);
+		if (currentPlayerIndex == 0) {
+			allowedSpaces.Add(DT_P2_VALUE);
+			allowedSpaces.Add(NA_P2_VALUE);
+		}
+		else {
+			allowedSpaces.Add(DT_P1_VALUE);
+			allowedSpaces.Add(NA_P1_VALUE);
+		}
+
+		int bestY = 0;
+		int bestX = 0;
+
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				if (allowedSpaces.Contains(map[y, x])) {
+					found = true;
+					bestY = y;
+					bestX = x;
+					break;
+				}
+			}
+			if (found)
+				break;
+		}
+
+		Debug.Log("End MinMax");
+		isAIPlaying[currentPlayerIndex] = false;
+		PutStone(bestY, bestX);
+	}
+
+	private void DeleteStone(int yCoord, int xCoord) {
+		map[yCoord, xCoord] = EMPTY_VALUE;
+		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		button.GetComponent<Image>().sprite = null;
+		button.transform.localScale = new Vector3(1, 1, 1);
+		Color buttonColor = button.GetComponent<Image>().color;
+		buttonColor.a = 0;
+		button.GetComponent<Image>().color = buttonColor;
+		button.GetComponent<PutStone>().isEmpty = true;
 	}
 
 	private bool CheckCaptures(int yCoord, int xCoord, int myVal, int enemyVal, bool doCapture = true) {
