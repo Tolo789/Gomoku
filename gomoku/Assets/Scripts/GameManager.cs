@@ -14,6 +14,8 @@ public class GameManager : MonoBehaviour {
 	public GameObject startBoard;
 	public Text playerPlaying;
 
+	public GameObject playSettings;
+
 	public Canvas canvas;
 
 	public int size = 19;
@@ -211,6 +213,7 @@ public class GameManager : MonoBehaviour {
 	private void DisplayWinner(int winnerIndex) {
 		// TODO: display winner and stop playing
 		int winner = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
+		playSettings.SetActive(true);
 		Debug.Log("Player " + winner + " won !");
 		isGameEnded = true;
 	}

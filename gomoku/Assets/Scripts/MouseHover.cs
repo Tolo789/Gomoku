@@ -15,7 +15,7 @@ public class MouseHover : MonoBehaviour {
     }
 
     public void OnMouseExit(){
-        GetComponent<Button>().GetComponentInChildren<Text>().color= StartColor;
+        GetComponent<Button>().GetComponentInChildren<Text>().color = StartColor;
         Cursor.SetCursor(null, Vector2.zero, cursorMode);
     }
     
