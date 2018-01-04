@@ -18,6 +18,6 @@ public class InGameMenu : MonoBehaviour {
     public void GoClick(GameObject playSettings) {
         playSettings.SetActive(false);
         Cursor.SetCursor(null, Vector2.zero, cursorMode);
-        SceneManager.LoadScene("Main");
+        SceneManager.LoadScene("Game");
     }
 }

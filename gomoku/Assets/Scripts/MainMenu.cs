@@ -32,7 +32,7 @@ public class MainMenu : MonoBehaviour {
     public void GoClick(GameObject playSettings) {
         GetSettingsGameInfo();
         playSettings.SetActive(false);
-        SceneManager.LoadScene("Main");
+        SceneManager.LoadScene("Game");
     }
      public void GoBack(GameObject playSettings) {
        playSettings.SetActive(false);
