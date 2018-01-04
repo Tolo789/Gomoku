@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 public class GameManager : MonoBehaviour {
 
@@ -32,6 +33,9 @@ public class GameManager : MonoBehaviour {
 	private const int NA_P1_VALUE = -4;
 	private const int NA_P2_VALUE = -5;
 	private const int NA_P_VALUE = -6;
+
+	private const int IA_DEPTH = 3;
+	private const float IA_SEARCH_TIME = 0.5f;
 
 	private int currentPlayerIndex = 0;
 	private int currentPlayerVal = P1_VALUE;
@@ -222,8 +226,6 @@ public class GameManager : MonoBehaviour {
 		Debug.Log("Start MinMax");
 		yield return new WaitForSeconds(3.0f);
 
-		// TODO: Take best move and play it
-		bool found = false;
 		List<int> allowedSpaces = new List<int>();
 		allowedSpaces.Add(EMPTY_VALUE);
 		if (currentPlayerIndex == 0) {
@@ -235,25 +237,54 @@ public class GameManager : MonoBehaviour {
 			allowedSpaces.Add(NA_P1_VALUE);
 		}
 
-		int bestY = 0;
-		int bestX = 0;
-
+		Vector3Int bestMove = new Vector3Int(-1, -1, -1);
+		List<Vector3Int> allowedMoves = new List<Vector3Int>();
+		int heuristicVal = 0;
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
 				if (allowedSpaces.Contains(map[y, x])) {
-					found = true;
-					bestY = y;
-					bestX = x;
-					break;
+					heuristicVal = GetHeuristicValue(y, x, currentPlayerVal, otherPlayerVal);
+					allowedMoves.Add(new Vector3Int(x, y, heuristicVal));
 				}
 			}
-			if (found)
-				break;
 		}
+
+		// TODO: what if there is no allowed move ?
+
+		allowedMoves = allowedMoves.OrderByDescending(move => move.z).ToList();
+		int i = 1;
+		while (i < allowedMoves.Count) {
+			if (allowedMoves[i].z < allowedMoves[0].z) {
+				allowedMoves.RemoveRange(i, allowedMoves.Count - i);
+				break;
+			}
+			i++;
+		}
+		bestMove = allowedMoves[Random.Range(0, allowedMoves.Count - 1)];
 
 		Debug.Log("End MinMax");
 		isAIPlaying[currentPlayerIndex] = false;
-		PutStone(bestY, bestX);
+		if (bestMove.x != -1 && bestMove.y != -1)
+			PutStone(bestMove.y, bestMove.x);
+	}
+
+	private int GetHeuristicValue(int yCoord, int xCoord, int myVal, int enemyVal) {
+		int score = 0;
+
+		// Score based on board position
+		if (yCoord != 0 && xCoord != 0 && yCoord != size -1 && xCoord != size -1) {
+			if (yCoord == 9 && xCoord == 9)
+				score += 4;
+			else if (xCoord >= 6 && xCoord <= 12 && yCoord >= 6 && yCoord <= 12)
+				score += 3;
+			else if (xCoord >= 3 && xCoord <= 15 && yCoord >= 3 && yCoord <= 15)
+				score += 2;
+			else if (xCoord >= 1 && xCoord <= 17 && yCoord >= 1 && yCoord <= 17)
+				score += 1;
+
+		}
+
+		return score;
 	}
 	#endregion
 
