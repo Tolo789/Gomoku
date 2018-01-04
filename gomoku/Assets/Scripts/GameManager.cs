@@ -31,10 +31,10 @@ public class GameManager : MonoBehaviour {
 	private const int NA_P2_VALUE = -5;
 	private const int NA_P_VALUE = -6;
 
-	private const int AI_DEPTH = 5;
-	private const float AI_SEARCH_TIME = 0.1f;
-	private const int MAX_CHOICE_PER_DEPTH = 5;
-	private float TOTAL_SEARCHES = Mathf.Pow(MAX_CHOICE_PER_DEPTH, AI_DEPTH - 1);
+	private const int AI_DEPTH = 2;
+	private const float AI_SEARCH_TIME = 9f;
+	private const int MAX_CHOICE_PER_DEPTH = 2;
+	private float TOTAL_SEARCHES = Mathf.Pow(MAX_CHOICE_PER_DEPTH, AI_DEPTH);
 	private float searchesCompleted;
 	private float startSearchTime;
 	private float searchTime;
@@ -303,15 +303,15 @@ public class GameManager : MonoBehaviour {
 #region AI
 	private IEnumerator StopSearchTimer() {
 		startSearchTime = Time.time;
-		yield return new WaitForSeconds(AI_SEARCH_TIME);
+		yield return new WaitForSecondsRealtime(AI_SEARCH_TIME);
 		searchTime = Time.time - startSearchTime;
 		AIHasResult = true;
 		// Debug.Log("Time's UP !! " + AIHasResult + " " + AI_SEARCH_TIME);
 	}
 
 	private IEnumerator StartMinMaxSearch() {
-		// Depth 1;
-		yield return new WaitForSeconds(0f);
+		// Depth 0
+		Debug.Log("StartMinMax");
 
 		List<int> allowedSpaces = new List<int>();
 		allowedSpaces.Add(EMPTY_VALUE);
@@ -338,31 +338,22 @@ public class GameManager : MonoBehaviour {
 		// TODO: what if there is no allowed move ?
 
 		allowedMoves = allowedMoves.OrderByDescending(move => move.z).ToList();
-		// int i = 1;
-		// while (i < allowedMoves.Count) {
-		// 	if (allowedMoves[i].z < allowedMoves[0].z) {
-		// 		allowedMoves.RemoveRange(i, allowedMoves.Count - i);
-		// 		break;
-		// 	}
-		// 	i++;
-		// }
-		// bestMove = allowedMoves[Random.Range(0, allowedMoves.Count - 1)];
 		bestMove = allowedMoves[0];
 		bestMove.z = -10000;
-		if (AI_DEPTH > 1) {
+		if (AI_DEPTH >= 1) {
 			for (int i = 0; i < MAX_CHOICE_PER_DEPTH; i++) {
 				if (i < allowedMoves.Count -1) {
 					int[,] newMap = CopyMap(boardMap);
 					FakePutStone(newMap, allowedMoves[i].y, allowedMoves[i].x, currentPlayerVal, otherPlayerVal);
-					StartCoroutine(MinMaxSearch(newMap, 2, otherPlayerVal, currentPlayerIndex, allowedMoves[i], currentPlayerVal));
+					StartCoroutine(MinMaxSearch(newMap, 1, otherPlayerVal, currentPlayerVal, allowedMoves[i], currentPlayerVal));
 				}
 			}
 		}
+		yield return new WaitForSeconds(0f);
 	}
 
 	private IEnumerator MinMaxSearch(int[,] map, int depth, int myVal, int enemyVal, Vector3Int rootMove, int rootVal) {
-		// Debug.Log("Depth: " + depth);
-		yield return new WaitForSeconds(0f);
+		Debug.Log("Depth: " + depth + ", root move: " + rootMove);
 		List<int> allowedSpaces = new List<int>();
 		allowedSpaces.Add(EMPTY_VALUE);
 		if (currentPlayerIndex == 0) {
@@ -390,23 +381,26 @@ public class GameManager : MonoBehaviour {
 
 		allowedMoves = allowedMoves.OrderByDescending(move => move.z).ToList();
 		if (depth != AI_DEPTH) {
+			depth++;
 			for (int i = 0; i < MAX_CHOICE_PER_DEPTH; i++) {
 				if (i < allowedMoves.Count -1) {
 					int[,] newMap = CopyMap(map);
 					FakePutStone(newMap, allowedMoves[i].y, allowedMoves[i].x, myVal, enemyVal);
-					rootMove.z += (myVal == rootVal) ? allowedMoves[0].z : -allowedMoves[0].z;
-					StartCoroutine(MinMaxSearch(newMap, depth + 1, enemyVal, myVal, rootMove, rootVal));
-					rootMove.z -= (myVal == rootVal) ? allowedMoves[0].z : -allowedMoves[0].z;
+					rootMove.z += (myVal == rootVal) ? allowedMoves[i].z : -allowedMoves[i].z;
+					StartCoroutine(MinMaxSearch(newMap, depth, enemyVal, myVal, new Vector3Int(rootMove.x, rootMove.y, rootMove.z), rootVal));
+					rootMove.z -= (myVal == rootVal) ? allowedMoves[i].z : -allowedMoves[i].z;
 				}
 			}
 		}
 		else {
 			rootMove.z += (myVal == rootVal) ? allowedMoves[0].z : -allowedMoves[0].z;
+			Debug.Log("End of search: " + rootMove);
 			if (rootMove.z > bestMove.z)
 				bestMove = rootMove;
 			// Debug.Log("Reached end of MinMax depth");
 			searchesCompleted++;
 		}
+		yield return new WaitForSeconds(0f);
 	}
 
 	private int GetHeuristicValue(int[,] map, int yCoord, int xCoord, int myVal, int enemyVal) {
