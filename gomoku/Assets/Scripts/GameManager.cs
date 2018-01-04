@@ -42,8 +42,8 @@ public class GameManager : MonoBehaviour {
 	private bool[] isHumanPlayer;
 	private bool[] isAIPlaying;
 	private int playerStarting;
+	private List<Vector2Int> counterMoves;
 
-	// Use this for initialization
 	void Start () {
 		// init game variables
 		map = new int[size, size];
@@ -57,7 +57,9 @@ public class GameManager : MonoBehaviour {
 		isAIPlaying = new bool[2];
 		isAIPlaying[0] = false;
 		isAIPlaying[1] = false;
-		// TODO: handle who starts first
+		counterMoves = new List<Vector2Int>();
+
+		// Handle who starts first
 		if (PlayerPrefs.HasKey(CommonDefines.VERSUS_IA) && PlayerPrefs.GetInt(CommonDefines.VERSUS_IA) == 1) {
 			isHumanPlayer[1] = false;
 		}
@@ -107,7 +109,6 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 	
-	// Update is called once per frame
 	void Update () {
 		if (!isGameEnded && !isHumanPlayer[currentPlayerIndex] && !isAIPlaying[currentPlayerIndex]) {
 			isAIPlaying[currentPlayerIndex] = true;
@@ -133,6 +134,7 @@ public class GameManager : MonoBehaviour {
 		return isHumanPlayer[currentPlayerIndex];
 	}
 
+#region MainFunctions
 	public void PutStone(int yCoord, int xCoord) {
 		// Actually put the stone
 		map[yCoord, xCoord] = currentPlayerVal;
@@ -144,8 +146,34 @@ public class GameManager : MonoBehaviour {
 		button.GetComponent<Image>().color = buttonColor;
 		button.GetComponent<PutStone>().isEmpty = false;
 
-		// check capture
+		// check captures
 		CheckCaptures(yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
+		if (isGameEnded)
+			return;
+
+		// If player needed to play a counter move and didnt do it, then he has lost
+		if (counterMoves.Count != 0) {
+			bool hasCountered = false;
+			foreach (Vector2Int counterMove in counterMoves) {
+				if (counterMove.x == xCoord && counterMove.y == yCoord) {
+					hasCountered = true;
+					break;
+				}
+			}
+			if (hasCountered) {
+				counterMoves.Clear();
+			}
+			else {
+				DisplayWinner(1 - currentPlayerIndex);
+				return;
+			}
+		}
+
+		// check if win by allignement
+		if (IsWinByAlignment(yCoord, xCoord)) {
+			DisplayWinner(currentPlayerIndex);
+			return;
+		}
 
 		// End turn, next player to play
 		currentPlayerIndex = 1 - currentPlayerIndex;
@@ -153,7 +181,7 @@ public class GameManager : MonoBehaviour {
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
 		playerPlaying.text = "Player actually playing: Player" + currentPlayerVal;
 
-		// TODO: update double-tree in map
+		// update allowed movements in map
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
 				if (map[y, x] != P1_VALUE && map[y, x] != P2_VALUE) {
@@ -161,7 +189,7 @@ public class GameManager : MonoBehaviour {
 					if (x > 0 && x < size -1 && y > 0 && y < size -1) // Can't have a free-tree in the borders
 						UpdateDoubleThree(y, x);
 					if (!moveIntoCapture)
-						UpdateCaptureProhibited(y, x);
+						UpdateSelfCapture(y, x);
 				}
 			}
 		}
@@ -169,6 +197,27 @@ public class GameManager : MonoBehaviour {
 		// DispalyBoard();
 	}
 
+	private void DeleteStone(int yCoord, int xCoord) {
+		map[yCoord, xCoord] = EMPTY_VALUE;
+		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		button.GetComponent<Image>().sprite = null;
+		button.transform.localScale = new Vector3(1, 1, 1);
+		Color buttonColor = button.GetComponent<Image>().color;
+		buttonColor.a = 0;
+		button.GetComponent<Image>().color = buttonColor;
+		button.GetComponent<PutStone>().isEmpty = true;
+	}
+
+	private void DisplayWinner(int winnerIndex) {
+		// TODO: display winner and stop playing
+		int winner = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
+		Debug.Log("Player " + winner + " won !");
+		isGameEnded = true;
+	}
+
+	#endregion
+
+#region AI
 	private IEnumerator StartMinMax() {
 		Debug.Log("Start MinMax");
 		yield return new WaitForSeconds(3.0f);
@@ -206,18 +255,9 @@ public class GameManager : MonoBehaviour {
 		isAIPlaying[currentPlayerIndex] = false;
 		PutStone(bestY, bestX);
 	}
+	#endregion
 
-	private void DeleteStone(int yCoord, int xCoord) {
-		map[yCoord, xCoord] = EMPTY_VALUE;
-		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		button.GetComponent<Image>().sprite = null;
-		button.transform.localScale = new Vector3(1, 1, 1);
-		Color buttonColor = button.GetComponent<Image>().color;
-		buttonColor.a = 0;
-		button.GetComponent<Image>().color = buttonColor;
-		button.GetComponent<PutStone>().isEmpty = true;
-	}
-
+#region Captures
 	private bool CheckCaptures(int yCoord, int xCoord, int myVal, int enemyVal, bool doCapture = true) {
 		bool canCapture = false;
 
@@ -270,18 +310,17 @@ public class GameManager : MonoBehaviour {
 				playerScores[currentPlayerIndex] += 2;
 				listPlayers[currentPlayerIndex].text = "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex];
 				if (playerScores[currentPlayerIndex] == 10) {
-					// TODO: display winner and stop playing
-					Debug.Log("You won");
-					isGameEnded = true;
 					// CODE ICI
-
+					DisplayWinner(currentPlayerIndex);
 				}
 			}
 			return true;
 		}
 		return false;
 	}
+	#endregion
 
+#region FreeTree
 	private void UpdateDoubleThree(int yCoord, int xCoord) {
 		// TODO: do checks for both players
 
@@ -445,24 +484,10 @@ public class GameManager : MonoBehaviour {
 
 		return false;
 	}
+	#endregion
 
-	private bool CheckSelfCapture(int yCoord, int xCoord, int yCoeff, int xCoeff, int myVal, int enemyVal) {
-		int y1 = yCoord + yCoeff * 1;
-		int y2 = yCoord + yCoeff * 2;
-		int y3 = yCoord + yCoeff * -1;
-		int x1 = xCoord + xCoeff * 1;
-		int x2 = xCoord + xCoeff * 2;
-		int x3 = xCoord + xCoeff * -1;
-
-		// Debug.Log(map[y1, x1]);
-		// Debug.Log(map[y2, x2]);
-		if (map[y1, x1] == myVal && map[y2, x2] == enemyVal && map[y3, x3] == enemyVal) {
-			return true;
-		}
-		return false;
-	}
-
-	private void UpdateCaptureProhibited(int yCoord, int xCoord) {
+#region SelfCapture
+	private void UpdateSelfCapture(int yCoord, int xCoord) {
 		bool currentProhibited = false;
 		bool otherProhibited = false;
 
@@ -530,9 +555,57 @@ public class GameManager : MonoBehaviour {
 			}
 		}
 		else if (otherProhibited) {
-			// DeleteStone(yCoord, xCoord); // TODO: Check if this DeleteStone() is needed
+			// TODO: what if this is double-tree for current player ??
 			map[yCoord, xCoord] = (currentPlayerIndex == 0) ? NA_P2_VALUE : NA_P1_VALUE;
 			Debug.Log("Other player can't play in " + yCoord + " " + xCoord);
 		}
 	}
+
+	private bool CheckSelfCapture(int yCoord, int xCoord, int yCoeff, int xCoeff, int myVal, int enemyVal) {
+		int y1 = yCoord + yCoeff * 1;
+		int y2 = yCoord + yCoeff * 2;
+		int y3 = yCoord + yCoeff * -1;
+		int x1 = xCoord + xCoeff * 1;
+		int x2 = xCoord + xCoeff * 2;
+		int x3 = xCoord + xCoeff * -1;
+
+		// Debug.Log(map[y1, x1]);
+		// Debug.Log(map[y2, x2]);
+		if (map[y1, x1] == myVal && map[y2, x2] == enemyVal && map[y3, x3] == enemyVal) {
+			return true;
+		}
+		return false;
+	}
+	#endregion
+
+#region WinningAlignemts
+	private bool IsWinByAlignment(int yCoord, int xCoord) {
+		// TODO: find all winning alignements, if any is found check if there is any counter-move available
+		List<int[,]> winningAlignements = new List<int[,]>();
+		int[,] tmpAlignement;
+
+		// Horizontal check
+		tmpAlignement = GetWinningAlignement(0, 1);
+		if (tmpAlignement != null) {
+			winningAlignements.Add(tmpAlignement);
+		}
+
+		if (winningAlignements.Count == 0)
+			return false;
+		UpdateCounterMoves(winningAlignements);
+
+		return (counterMoves.Count == 0);
+	}
+
+	private int[,] GetWinningAlignement(int yCoeff, int xCoeff) {
+		// TODO
+		return null;
+	}
+
+	private void UpdateCounterMoves(List<int[,]> winningAlignements) {
+		// TODO
+		return ;
+	}
+	#endregion
+
 }
