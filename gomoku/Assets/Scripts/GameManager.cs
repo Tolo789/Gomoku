@@ -3,8 +3,40 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using System;
+
+public struct State {
+	public int[,] map;
+	public int rootPlayerScore;
+
+	public int otherPlayerScore;
+	public int myVal; 
+	public int enemyVal; 
+	public int rootVal;
+
+	public int winner;
+
+	public int depth;
+
+	public State(State state) {
+		map = new int[GameManager.size, GameManager.size];
+		rootPlayerScore = state.rootPlayerScore;
+		otherPlayerScore = state.otherPlayerScore;
+		myVal = state.myVal;
+		enemyVal = state.enemyVal;
+		rootVal = state.rootVal;
+		winner = state.winner;
+		depth = state.depth;
+		for (int y = 0; y < GameManager.size; y++) {
+			for (int x = 0; x < GameManager.size; x++) {
+				map[y,x] = state.map[y,x];
+			}
+		}
+	}
+}
 
 public class GameManager : MonoBehaviour {
+
 
 	public Sprite[] stoneSprites;
 	public Sprite notAllowedSprite;
@@ -16,7 +48,7 @@ public class GameManager : MonoBehaviour {
 	public Text[] listPlayers;
 	public Text AiTimer;
 
-	public int size = 19;
+	public static int size = 19;
 	public bool moveIntoCapture = false;
 	[HideInInspector]
 	public bool isGameEnded = false;
@@ -32,7 +64,7 @@ public class GameManager : MonoBehaviour {
 	private const int NA_P_VALUE = -6;
 
 	private const int AI_DEPTH = 2;
-	private const float AI_SEARCH_TIME = 9f;
+	private const float AI_SEARCH_TIME = 60f;
 	private const int MAX_CHOICE_PER_DEPTH = 2;
 	private float TOTAL_SEARCHES = Mathf.Pow(MAX_CHOICE_PER_DEPTH, AI_DEPTH);
 	private float searchesCompleted;
@@ -78,7 +110,7 @@ public class GameManager : MonoBehaviour {
 		if (PlayerPrefs.HasKey(CommonDefines.FIRST_PLAYER_PLAYING)) {
 			currentPlayerIndex = PlayerPrefs.GetInt(CommonDefines.FIRST_PLAYER_PLAYING);
 			if (currentPlayerIndex == 2) {
-				 currentPlayerIndex = Random.Range(0, 1);
+				 currentPlayerIndex = UnityEngine.Random.Range(0, 1);
 			}
 		}
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
@@ -128,20 +160,16 @@ public class GameManager : MonoBehaviour {
 				searchesCompleted = 0;
 				// start AI decision making
 				StartCoroutine(StopSearchTimer());
-				StartCoroutine(StartMinMaxSearch());
+				StartCoroutine(StartMinMax());
 			}
 			else if (AIHasResult) {
 				StopAllCoroutines();
-				Debug.Log("Search time: " + searchTime + " (" + searchesCompleted + "/" + TOTAL_SEARCHES + " searches completed)");
+				Debug.Log("Search time: " + searchTime);
 				AiTimer.text = "AI Timer: " + searchTime.ToString();
 				if (bestMove.x != -1 && bestMove.y != -1)
 					PutStone(bestMove.y, bestMove.x);
 				AIHasResult = false;
 				isAIPlaying = false;
-			}
-			else if (searchesCompleted == TOTAL_SEARCHES) {
-				searchTime = Time.time - startSearchTime;
-				AIHasResult = true;
 			}
 		}
 	}
@@ -158,7 +186,7 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-	private int[,] CopyMap(int[,] map) {
+	public int[,] CopyMap(int[,] map) {
 		int[,] newMap = new int[size, size];
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
@@ -171,6 +199,162 @@ public class GameManager : MonoBehaviour {
 	public bool IsHumanTurn() {
 		return isHumanPlayer[currentPlayerIndex];
 	}
+
+#region AI
+
+	private IEnumerator StopSearchTimer() {
+		startSearchTime = Time.time;
+		yield return new WaitForSecondsRealtime(AI_SEARCH_TIME);
+		searchTime = Time.time - startSearchTime;
+		AIHasResult = true;
+		// Debug.Log("Time's UP !! " + AIHasResult + " " + AI_SEARCH_TIME);
+	}
+
+private List<Vector3Int> GetAllowedMoves(State state) {
+		List<int> allowedSpaces = new List<int>();
+		allowedSpaces.Add(EMPTY_VALUE);
+		if (currentPlayerIndex == 0) {
+			allowedSpaces.Add(DT_P2_VALUE);
+			allowedSpaces.Add(NA_P2_VALUE);
+		}
+		else {
+			allowedSpaces.Add(DT_P1_VALUE);
+			allowedSpaces.Add(NA_P1_VALUE);
+		}
+
+		List<Vector3Int> allowedMoves = new List<Vector3Int>();
+		int heuristicVal = 0;
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				if (allowedSpaces.Contains(state.map[y, x])) {
+					heuristicVal = GetMoveHeuristic(state, y, x);
+					allowedMoves.Add(new Vector3Int(x, y, heuristicVal));
+				}
+			}
+		}
+		allowedMoves = allowedMoves.OrderByDescending(move => move.z).ToList();
+		return allowedMoves;
+}
+	private int GetMoveHeuristic(State state, int yCoord, int xCoord) {
+		int score = 0;
+
+		// Score based on board position
+		if (yCoord != 0 && xCoord != 0 && yCoord != size -1 && xCoord != size -1) {
+			if (yCoord == 9 && xCoord == 9)
+				score += 4;
+			else if (xCoord >= 6 && xCoord <= 12 && yCoord >= 6 && yCoord <= 12)
+				score += 3;
+			else if (xCoord >= 3 && xCoord <= 15 && yCoord >= 3 && yCoord <= 15)
+				score += 2;
+			else if (xCoord >= 1 && xCoord <= 17 && yCoord >= 1 && yCoord <= 17)
+				score += 1;
+		}
+
+		if (CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true))
+			score += 10;
+
+		return score;
+	}
+
+private IEnumerator StartMinMax() {
+		// Depth 0
+		Debug.Log("StartMinMax");
+		State state = new State();
+		state.map = CopyMap(boardMap);
+		state.enemyVal = otherPlayerVal;
+		state.myVal = currentPlayerVal;
+		state.rootVal = state.myVal;
+		state.rootPlayerScore = playerScores[currentPlayerIndex];
+		state.otherPlayerScore = playerScores[1 - currentPlayerIndex];
+		state.depth = 0;
+		state.winner = -1;
+		List<Vector3Int> allowedMoves = GetAllowedMoves(state);
+
+		bestMove = allowedMoves[0];
+		int v = MaxValue(state, Int32.MinValue, Int32.MaxValue);
+		AIHasResult = true;
+		yield return new WaitForSeconds(0f);
+	}
+
+private int GetStateHeuristic(State state) {
+	if (state.rootPlayerScore > state.otherPlayerScore){
+		return 20;
+	}
+	else if (state.rootPlayerScore < state.otherPlayerScore){
+		return -20;
+	}
+	return 0;
+}
+
+private int Utility(State state) {
+	if (state.winner == state.rootVal) {
+		return Int32.MaxValue;
+	}
+	else if (state.winner == state.enemyVal) {
+		return Int32.MinValue;
+	}
+	return GetStateHeuristic(state);
+}
+
+private bool GameEnded(State state) {
+	if (state.depth == AI_DEPTH) {
+		return true;
+	}
+	if (state.rootPlayerScore == 10 || CheckIfAlign(state.map, state.rootVal)) {
+		state.winner = state.rootVal;
+		return true;
+	}
+	else if (state.otherPlayerScore == 10 || CheckIfAlign(state.map, state.enemyVal)){
+		state.winner = state.enemyVal;
+		return true;
+	}
+	return false;
+}
+
+private State ResultOfMove(State state, Vector3Int move) {
+	State newState = new State(state);
+	FakePutStone(state, move.y, move.x);
+	newState.depth++;
+	return newState;
+}
+
+
+
+private int MaxValue(State state, int alpha, int beta) {
+	if (GameEnded(state)) {
+		return Utility(state);
+	}
+	int v = Int32.MaxValue;
+	foreach (Vector3Int move in GetAllowedMoves(state)) {
+		int minValue = MinValue(ResultOfMove(state, move), alpha, beta);
+		v = (minValue > v ) ? minValue : v;
+		if (v >= beta) {
+			return v;
+		}
+		if (v > alpha)
+			alpha = v;
+	}
+	return v;
+}
+
+private int MinValue(State state, int alpha, int beta) {
+	if (GameEnded(state)) {
+		return Utility(state);
+	}
+	int v = Int32.MaxValue;
+	foreach (Vector3Int move in GetAllowedMoves(state)) {
+		int maxValue = MaxValue(ResultOfMove(state, move), alpha, beta);
+		v = (maxValue < v ) ? maxValue : v;
+		if (v <= alpha) {
+			return v;
+		}
+		if (v < beta)
+			beta = v;
+	}
+	return v;
+}
+
+#endregion
 
 #region MainFunctions
 	public void PutStone(int yCoord, int xCoord) {
@@ -234,12 +418,19 @@ public class GameManager : MonoBehaviour {
 		
 		// DispalyBoard(boardMap);
 	}
-	public void FakePutStone(int[,] map, int yCoord, int xCoord, int myVal, int enemyVal) {
+	public void FakePutStone(State state, int yCoord, int xCoord) {
 		// Actually put the stone
-		map[yCoord, xCoord] = myVal;
+		state.map[yCoord, xCoord] = state.myVal;
 
 		// check captures
-		CheckCaptures(map, yCoord, xCoord, myVal, enemyVal, doCapture: true, isAiSimulation: true);
+		if (CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture: true, isAiSimulation: true)) {
+			if (state.myVal == state.rootVal) {
+				state.rootPlayerScore += 2;
+			}
+			else {
+				state.otherPlayerScore += 2;
+			}
+		}
 
 		// If player needed to play a counter move and didnt do it, then he has lost
 		if (counterMoves.Count != 0) {
@@ -263,15 +454,18 @@ public class GameManager : MonoBehaviour {
 		if (IsWinByAlignment(yCoord, xCoord)) {
 		}
 
+		int tmp = state.myVal;
+		state.myVal = state.enemyVal;
+		state.enemyVal = tmp;
 		// update allowed movements in map
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
-				if (map[y, x] != P1_VALUE && map[y, x] != P2_VALUE) {
-					DeleteStone(map, y, x, isAiSimulation: true);
+				if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
+					DeleteStone(state.map, y, x, isAiSimulation: true);
 					if (x > 0 && x < size -1 && y > 0 && y < size -1) // Can't have a free-tree in the borders
-						UpdateDoubleThree(map, y, x, myVal, enemyVal, isAiSimulation: true);
+						UpdateDoubleThree(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
 					if (!moveIntoCapture)
-						UpdateSelfCapture(map, y, x, myVal, enemyVal, isAiSimulation: true);
+						UpdateSelfCapture(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
 				}
 			}
 		}
@@ -300,7 +494,8 @@ public class GameManager : MonoBehaviour {
 
 	#endregion
 
-#region AI
+/*
+#region oldAI
 	private IEnumerator StopSearchTimer() {
 		startSearchTime = Time.time;
 		yield return new WaitForSecondsRealtime(AI_SEARCH_TIME);
@@ -309,7 +504,7 @@ public class GameManager : MonoBehaviour {
 		// Debug.Log("Time's UP !! " + AIHasResult + " " + AI_SEARCH_TIME);
 	}
 
-	private IEnumerator StartMinMaxSearch() {
+	private IEnumerator StartAlgoSearch() {
 		// Depth 0
 		Debug.Log("StartMinMax");
 
@@ -345,14 +540,14 @@ public class GameManager : MonoBehaviour {
 				if (i < allowedMoves.Count -1) {
 					int[,] newMap = CopyMap(boardMap);
 					FakePutStone(newMap, allowedMoves[i].y, allowedMoves[i].x, currentPlayerVal, otherPlayerVal);
-					StartCoroutine(MinMaxSearch(newMap, 1, otherPlayerVal, currentPlayerVal, allowedMoves[i], currentPlayerVal));
+					StartCoroutine(DoSearch(newMap, 1, otherPlayerVal, currentPlayerVal, allowedMoves[i], currentPlayerVal));
 				}
 			}
 		}
 		yield return new WaitForSeconds(0f);
 	}
 
-	private IEnumerator MinMaxSearch(int[,] map, int depth, int myVal, int enemyVal, Vector3Int rootMove, int rootVal) {
+	private IEnumerator DoSearch(int[,] map, int depth, int myVal, int enemyVal, Vector3Int rootMove, int rootVal) {
 		Debug.Log("Depth: " + depth + ", root move: " + rootMove);
 		List<int> allowedSpaces = new List<int>();
 		allowedSpaces.Add(EMPTY_VALUE);
@@ -387,7 +582,7 @@ public class GameManager : MonoBehaviour {
 					int[,] newMap = CopyMap(map);
 					FakePutStone(newMap, allowedMoves[i].y, allowedMoves[i].x, myVal, enemyVal);
 					rootMove.z += (myVal == rootVal) ? allowedMoves[i].z : -allowedMoves[i].z;
-					StartCoroutine(MinMaxSearch(newMap, depth, enemyVal, myVal, new Vector3Int(rootMove.x, rootMove.y, rootMove.z), rootVal));
+					StartCoroutine(DoSearch(newMap, depth, enemyVal, myVal, new Vector3Int(rootMove.x, rootMove.y, rootMove.z), rootVal));
 					rootMove.z -= (myVal == rootVal) ? allowedMoves[i].z : -allowedMoves[i].z;
 				}
 			}
@@ -424,7 +619,7 @@ public class GameManager : MonoBehaviour {
 		return score;
 	}
 	#endregion
-
+*/
 #region Captures
 	private bool CheckCaptures(int[,] map, int yCoord, int xCoord, int myVal, int enemyVal, bool doCapture = true, bool isAiSimulation = false) {
 		bool canCapture = false;
@@ -758,6 +953,12 @@ public class GameManager : MonoBehaviour {
 	#endregion
 
 #region WinningAlignemts
+
+	private bool CheckIfAlign(int[,] map, int myVal = -1) {
+		//MAKE FUNC
+		return true;
+	}
+
 	private bool IsWinByAlignment(int yCoord, int xCoord) {
 		// TODO: find all winning alignements, if any is found check if there is any counter-move available
 		List<int[,]> winningAlignements = new List<int[,]>();
