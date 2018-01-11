@@ -19,17 +19,17 @@ public struct State {
 	public int depth;
 
 	public State(State state) {
-		map = new int[GameManager.size, GameManager.size];
-		rootPlayerScore = state.rootPlayerScore;
-		otherPlayerScore = state.otherPlayerScore;
-		myVal = state.myVal;
-		enemyVal = state.enemyVal;
-		rootVal = state.rootVal;
-		winner = state.winner;
-		depth = state.depth;
+		this.map = new int[GameManager.size, GameManager.size];
+		this.rootPlayerScore = state.rootPlayerScore;
+		this.otherPlayerScore = state.otherPlayerScore;
+		this.myVal = state.myVal;
+		this.enemyVal = state.enemyVal;
+		this.rootVal = state.rootVal;
+		this.winner = state.winner;
+		this.depth = state.depth;
 		for (int y = 0; y < GameManager.size; y++) {
 			for (int x = 0; x < GameManager.size; x++) {
-				map[y,x] = state.map[y,x];
+				this.map[y,x] = state.map[y,x];
 			}
 		}
 	}
@@ -64,10 +64,8 @@ public class GameManager : MonoBehaviour {
 	private const int NA_P_VALUE = -6;
 
 	private const int AI_DEPTH = 2;
-	private const float AI_SEARCH_TIME = 60f;
+	private const float AI_SEARCH_TIME = 300f;
 	private const int MAX_CHOICE_PER_DEPTH = 2;
-	private float TOTAL_SEARCHES = Mathf.Pow(MAX_CHOICE_PER_DEPTH, AI_DEPTH);
-	private float searchesCompleted;
 	private float startSearchTime;
 	private float searchTime;
 
@@ -157,7 +155,6 @@ public class GameManager : MonoBehaviour {
 				bestMove.x = -1;
 				bestMove.y = -1;
 				bestMove.z = -1;
-				searchesCompleted = 0;
 				// start AI decision making
 				StartCoroutine(StopSearchTimer());
 				StartCoroutine(StartMinMax());
@@ -202,13 +199,13 @@ public class GameManager : MonoBehaviour {
 
 #region AI
 
-	private IEnumerator StopSearchTimer() {
-		startSearchTime = Time.time;
-		yield return new WaitForSecondsRealtime(AI_SEARCH_TIME);
-		searchTime = Time.time - startSearchTime;
-		AIHasResult = true;
-		// Debug.Log("Time's UP !! " + AIHasResult + " " + AI_SEARCH_TIME);
-	}
+private IEnumerator StopSearchTimer() {
+	startSearchTime = Time.time;
+	yield return new WaitForSecondsRealtime(AI_SEARCH_TIME);
+	searchTime = Time.time - startSearchTime;
+	AIHasResult = true;
+	// Debug.Log("Time's UP !! " + AIHasResult + " " + AI_SEARCH_TIME);
+}
 
 private List<Vector3Int> GetAllowedMoves(State state) {
 		List<int> allowedSpaces = new List<int>();
@@ -235,55 +232,57 @@ private List<Vector3Int> GetAllowedMoves(State state) {
 		allowedMoves = allowedMoves.OrderByDescending(move => move.z).ToList();
 		return allowedMoves;
 }
-	private int GetMoveHeuristic(State state, int yCoord, int xCoord) {
-		int score = 0;
+private int GetMoveHeuristic(State state, int yCoord, int xCoord) {
+	int score = 0;
 
-		// Score based on board position
-		if (yCoord != 0 && xCoord != 0 && yCoord != size -1 && xCoord != size -1) {
-			if (yCoord == 9 && xCoord == 9)
-				score += 4;
-			else if (xCoord >= 6 && xCoord <= 12 && yCoord >= 6 && yCoord <= 12)
-				score += 3;
-			else if (xCoord >= 3 && xCoord <= 15 && yCoord >= 3 && yCoord <= 15)
-				score += 2;
-			else if (xCoord >= 1 && xCoord <= 17 && yCoord >= 1 && yCoord <= 17)
-				score += 1;
-		}
-
-		if (CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true))
-			score += 10;
-
-		return score;
+	// Score based on board position
+	if (yCoord != 0 && xCoord != 0 && yCoord != size -1 && xCoord != size -1) {
+		if (yCoord == 9 && xCoord == 9)
+			score += 4;
+		else if (xCoord >= 6 && xCoord <= 12 && yCoord >= 6 && yCoord <= 12)
+			score += 3;
+		else if (xCoord >= 3 && xCoord <= 15 && yCoord >= 3 && yCoord <= 15)
+			score += 2;
+		else if (xCoord >= 1 && xCoord <= 17 && yCoord >= 1 && yCoord <= 17)
+			score += 1;
 	}
+
+	// if (CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true))
+	// 	score += 10;
+
+	return score;
+}
 
 private IEnumerator StartMinMax() {
-		// Depth 0
-		Debug.Log("StartMinMax");
-		State state = new State();
-		state.map = CopyMap(boardMap);
-		state.enemyVal = otherPlayerVal;
-		state.myVal = currentPlayerVal;
-		state.rootVal = state.myVal;
-		state.rootPlayerScore = playerScores[currentPlayerIndex];
-		state.otherPlayerScore = playerScores[1 - currentPlayerIndex];
-		state.depth = 0;
-		state.winner = -1;
-		List<Vector3Int> allowedMoves = GetAllowedMoves(state);
+	// Depth 0
+	Debug.Log("StartMinMax");
+	State state = new State();
+	state.map = CopyMap(boardMap);
+	state.myVal = currentPlayerVal;
+	state.enemyVal = otherPlayerVal;
+	state.rootVal = state.myVal;
+	state.rootPlayerScore = playerScores[currentPlayerIndex];
+	state.otherPlayerScore = playerScores[1 - currentPlayerIndex];
+	state.depth = 0;
+	state.winner = -1;
+	List<Vector3Int> allowedMoves = GetAllowedMoves(state);
 
-		bestMove = allowedMoves[0];
-		int v = MaxValue(state, Int32.MinValue, Int32.MaxValue);
-		AIHasResult = true;
-		yield return new WaitForSeconds(0f);
-	}
+	bestMove = allowedMoves[0];
+	int v = MaxValue(state, Int32.MinValue, Int32.MaxValue);
+	// searchTime = Time.time - startSearchTime;
+	// AIHasResult = true;
+	yield break;
+}
 
 private int GetStateHeuristic(State state) {
-	if (state.rootPlayerScore > state.otherPlayerScore){
-		return 20;
-	}
-	else if (state.rootPlayerScore < state.otherPlayerScore){
-		return -20;
-	}
-	return 0;
+	int stateScore = 0;
+
+	// Consider both score individually
+	Debug.Log("ROOT PLAYER SCORE: " + state.rootPlayerScore);
+	stateScore += 100 * state.rootPlayerScore;
+	stateScore -= 100 * state.otherPlayerScore;
+
+	return stateScore;
 }
 
 private int Utility(State state) {
@@ -313,31 +312,47 @@ private bool GameEnded(State state) {
 
 private State ResultOfMove(State state, Vector3Int move) {
 	State newState = new State(state);
-	FakePutStone(state, move.y, move.x);
+	FakePutStone(newState, move.y, move.x);
 	newState.depth++;
 	return newState;
 }
 
-
-
 private int MaxValue(State state, int alpha, int beta) {
+	// Debug.Log("Start MaxValue");
+	// DebugState(state);
+	// Wait();
 	if (GameEnded(state)) {
 		return Utility(state);
 	}
-	int v = Int32.MaxValue;
+	int v = Int32.MinValue;
+	int i = 0;
 	foreach (Vector3Int move in GetAllowedMoves(state)) {
 		int minValue = MinValue(ResultOfMove(state, move), alpha, beta);
+		// Debug.Log(i + ") Val: " + minValue);
 		v = (minValue > v ) ? minValue : v;
 		if (v >= beta) {
+			Debug.Log("Exiting..");
 			return v;
 		}
-		if (v > alpha)
+		if (v > alpha) {
 			alpha = v;
+			Debug.Log("Update max");
+			// Check if need to update best choice
+			if (state.depth == 0) {
+				Debug.Log("Update best move");
+				bestMove = move;
+				bestMove.z = alpha;
+			}
+		}
+		i++;
 	}
 	return v;
 }
 
 private int MinValue(State state, int alpha, int beta) {
+	// Debug.Log("Start MinValue");
+	// DebugState(state);
+	// Wait();
 	if (GameEnded(state)) {
 		return Utility(state);
 	}
@@ -352,6 +367,26 @@ private int MinValue(State state, int alpha, int beta) {
 			beta = v;
 	}
 	return v;
+}
+
+private void DebugState(State state) {
+	Debug.Log("--- Start debug state ------------");
+	Debug.Log("Depth: " + state.depth);
+	Debug.Log("Score: " + state.rootPlayerScore + "-" + state.otherPlayerScore);
+	// DispalyBoard(state.map);
+	Debug.Log("------------ End debug state ---");
+}
+
+private void Wait() {
+	// for(int i = Int32.MinValue; i < Int32.MaxValue; i++) {
+		// for(int j = Int32.MinValue; j < Int32.MaxValue; j++) {
+		// 	for(int k = Int32.MinValue; k < Int32.MaxValue; k++) {
+		// 		for(int l = Int32.MinValue; l < Int32.MaxValue; l++) {
+		// 			for(int m = Int32.MinValue; m < Int32.MaxValue; m++) {}
+		// 		}
+		// 	}
+		// }
+	// }
 }
 
 #endregion
@@ -426,6 +461,7 @@ private int MinValue(State state, int alpha, int beta) {
 		if (CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture: true, isAiSimulation: true)) {
 			if (state.myVal == state.rootVal) {
 				state.rootPlayerScore += 2;
+				Debug.Log("Capture detected, score: " + state.rootPlayerScore + " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 			}
 			else {
 				state.otherPlayerScore += 2;
@@ -433,6 +469,7 @@ private int MinValue(State state, int alpha, int beta) {
 		}
 
 		// If player needed to play a counter move and didnt do it, then he has lost
+		// TODO: adapt this to simulation
 		if (counterMoves.Count != 0) {
 			bool hasCountered = false;
 			foreach (Vector2Int counterMove in counterMoves) {
@@ -454,9 +491,11 @@ private int MinValue(State state, int alpha, int beta) {
 		if (IsWinByAlignment(yCoord, xCoord)) {
 		}
 
+		// End turn, next player to play
 		int tmp = state.myVal;
 		state.myVal = state.enemyVal;
 		state.enemyVal = tmp;
+
 		// update allowed movements in map
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
@@ -491,11 +530,10 @@ private int MinValue(State state, int alpha, int beta) {
 		Debug.Log("Player " + winner + " won !");
 		isGameEnded = true;
 	}
-
 	#endregion
 
-/*
 #region oldAI
+/*
 	private IEnumerator StopSearchTimer() {
 		startSearchTime = Time.time;
 		yield return new WaitForSecondsRealtime(AI_SEARCH_TIME);
@@ -618,8 +656,9 @@ private int MinValue(State state, int alpha, int beta) {
 
 		return score;
 	}
-	#endregion
 */
+	#endregion
+
 #region Captures
 	private bool CheckCaptures(int[,] map, int yCoord, int xCoord, int myVal, int enemyVal, bool doCapture = true, bool isAiSimulation = false) {
 		bool canCapture = false;
@@ -956,7 +995,7 @@ private int MinValue(State state, int alpha, int beta) {
 
 	private bool CheckIfAlign(int[,] map, int myVal = -1) {
 		//MAKE FUNC
-		return true;
+		return false;
 	}
 
 	private bool IsWinByAlignment(int yCoord, int xCoord) {
