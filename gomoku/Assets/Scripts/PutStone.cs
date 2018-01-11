@@ -16,6 +16,7 @@ public class PutStone : MonoBehaviour {
 		int yCoord = int.Parse(coords[0]);
 		int xCoord = int.Parse(coords[1]);
 
-		gameManager.PutStone(yCoord, xCoord);
+		// gameManager.PutStone(yCoord, xCoord);
+		gameManager.SavePlayerMove(yCoord, xCoord);
 	}
 }
