@@ -64,7 +64,7 @@ public class GameManager : MonoBehaviour {
 	private const int NA_P_VALUE = -6;
 
 	private const int AI_DEPTH = 2;
-	private const float AI_SEARCH_TIME = 300f;
+	private const float AI_SEARCH_TIME = 3f;
 	private const int MAX_CHOICE_PER_DEPTH = 2;
 	private float startSearchTime;
 	private float searchTime;
@@ -269,8 +269,8 @@ private IEnumerator StartMinMax() {
 
 	bestMove = allowedMoves[0];
 	int v = MaxValue(state, Int32.MinValue, Int32.MaxValue);
-	// searchTime = Time.time - startSearchTime;
-	// AIHasResult = true;
+	searchTime = Time.time - startSearchTime;
+	AIHasResult = true;
 	yield break;
 }
 
@@ -278,7 +278,6 @@ private int GetStateHeuristic(State state) {
 	int stateScore = 0;
 
 	// Consider both score individually
-	Debug.Log("ROOT PLAYER SCORE: " + state.rootPlayerScore);
 	stateScore += 100 * state.rootPlayerScore;
 	stateScore -= 100 * state.otherPlayerScore;
 
@@ -312,36 +311,35 @@ private bool GameEnded(State state) {
 
 private State ResultOfMove(State state, Vector3Int move) {
 	State newState = new State(state);
-	FakePutStone(newState, move.y, move.x);
+	FakePutStone(ref newState, move.y, move.x);
 	newState.depth++;
 	return newState;
 }
 
 private int MaxValue(State state, int alpha, int beta) {
-	// Debug.Log("Start MaxValue");
-	// DebugState(state);
-	// Wait();
 	if (GameEnded(state)) {
+		// Debug.Log("In MaxValue");
+		// DebugState(state);
+		// Wait();
 		return Utility(state);
 	}
 	int v = Int32.MinValue;
 	int i = 0;
 	foreach (Vector3Int move in GetAllowedMoves(state)) {
 		int minValue = MinValue(ResultOfMove(state, move), alpha, beta);
-		// Debug.Log(i + ") Val: " + minValue);
+		// Debug.Log("Depth: " + state.depth + ", check: " + i + ", val: " + minValue);
 		v = (minValue > v ) ? minValue : v;
 		if (v >= beta) {
-			Debug.Log("Exiting..");
+			// Debug.Log("Exiting..");
 			return v;
 		}
 		if (v > alpha) {
 			alpha = v;
-			Debug.Log("Update max");
 			// Check if need to update best choice
 			if (state.depth == 0) {
-				Debug.Log("Update best move");
 				bestMove = move;
 				bestMove.z = alpha;
+				Debug.Log("Update best move: " + bestMove);
 			}
 		}
 		i++;
@@ -350,10 +348,10 @@ private int MaxValue(State state, int alpha, int beta) {
 }
 
 private int MinValue(State state, int alpha, int beta) {
-	// Debug.Log("Start MinValue");
-	// DebugState(state);
-	// Wait();
 	if (GameEnded(state)) {
+		// Debug.Log("In MinValue");
+		// DebugState(state);
+		// Wait();
 		return Utility(state);
 	}
 	int v = Int32.MaxValue;
@@ -378,7 +376,7 @@ private void DebugState(State state) {
 }
 
 private void Wait() {
-	// for(int i = Int32.MinValue; i < Int32.MaxValue; i++) {
+	for(int i = 0; i < Int32.MaxValue; i++) {
 		// for(int j = Int32.MinValue; j < Int32.MaxValue; j++) {
 		// 	for(int k = Int32.MinValue; k < Int32.MaxValue; k++) {
 		// 		for(int l = Int32.MinValue; l < Int32.MaxValue; l++) {
@@ -386,7 +384,7 @@ private void Wait() {
 		// 		}
 		// 	}
 		// }
-	// }
+	}
 }
 
 #endregion
@@ -453,7 +451,7 @@ private void Wait() {
 		
 		// DispalyBoard(boardMap);
 	}
-	public void FakePutStone(State state, int yCoord, int xCoord) {
+	public void FakePutStone(ref State state, int yCoord, int xCoord) {
 		// Actually put the stone
 		state.map[yCoord, xCoord] = state.myVal;
 
