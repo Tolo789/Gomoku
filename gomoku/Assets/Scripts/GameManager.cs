@@ -54,29 +54,22 @@ public class GameManager : MonoBehaviour {
 	[HideInInspector]
 	public bool isGameEnded = false;
 
+	private const int EMPTY_VALUE = 0;
+	private const int P1_VALUE = 1;
+	private const int P2_VALUE = 2;
+	private const int DT_P1_VALUE = -1;
+	private const int DT_P2_VALUE = -2;
+	private const int DT_P_VALUE = -3;
+	private const int NA_P1_VALUE = -4;
+	private const int NA_P2_VALUE = -5;
+	private const int NA_P_VALUE = -6;
 
-// Map values
-	private const int EMPTY_VALUE = 1 << 0;		// 1
-	private const int P1_VALUE = 1 << 1;		// 2
-	private const int P2_VALUE = 1 << 2;		// 4
-	private const int DT_P1_VALUE = 1 << 3;		// 8
-	private const int DT_P2_VALUE = 1 << 4;		// 16
-	private const int DT_P_VALUE = 1 << 5;		// 32
-	private const int NA_P1_VALUE = 1 << 6;		// 64
-	private const int NA_P2_VALUE = 1 << 7;		// 128
-	private const int NA_P_VALUE = 1 << 8;		// 256
-	private const int MASK_P1_CAN_PLAY = EMPTY_VALUE | DT_P2_VALUE | NA_P2_VALUE;		// 145
-	private const int MASK_P2_CAN_PLAY = EMPTY_VALUE | DT_P1_VALUE | NA_P1_VALUE;		// 73
-	private const int MASK_PLAYERS_STONES = P1_VALUE | P2_VALUE;		// 6
-
-// AI Settings
-	private const int AI_DEPTH = 2;
-	private const float AI_SEARCH_TIME = 10f;
-	private const int AI_MAX_SEARCHES_PER_DEPTH = 2000;
+	private const int AI_DEPTH = 10;
+	private const float AI_SEARCH_TIME = 100f;
+	private const int AI_MAX_SEARCHES_PER_DEPTH = 2;
 	private float startSearchTime;
 	private float searchTime;
 
-// Game vars
 	private int currentPlayerIndex = 0;
 	private int currentPlayerVal = P1_VALUE;
 	private int otherPlayerVal = P2_VALUE;
@@ -164,21 +157,31 @@ public class GameManager : MonoBehaviour {
 			if (!isAIPlaying) {
 				isAIPlaying = true;
 				AIHasResult = false;
-				moveIsReady = false;
 				bestMove.x = -1;
 				bestMove.y = -1;
 				bestMove.z = -1;
 				// start AI decision making
+				startSearchTime = Time.realtimeSinceStartup;
+				// searchTime = 0;
+				// StartCoroutine(StopSearchTimer());
+				// StartCoroutine(StartMinMax());
 				StartMinMax();
 			}
-			else if (AIHasResult && !moveIsReady) {
+			else if (AIHasResult) {
+				searchTime = Time.realtimeSinceStartup - startSearchTime;
+				// searchTime += Time.deltaTime;
+				StopAllCoroutines();
 				Debug.Log("Search time: " + searchTime);
 				AiTimer.text = "AI Timer: " + searchTime.ToString();
 				if (bestMove.z == -1)
 					Debug.LogWarning("Ai didnt find a move");
-				moveIsReady = true;
-				// PutStone(bestMove.y, bestMove.x);
+				PutStone(bestMove.y, bestMove.x);
+				AIHasResult = false;
+				isAIPlaying = false;
 			}
+			// else {
+			// 	searchTime += Time.deltaTime;
+			// }
 		}
 	}
 
@@ -186,10 +189,6 @@ public class GameManager : MonoBehaviour {
 		if (moveIsReady) {
 			moveIsReady = false;
 			PutStone(bestMove.y, bestMove.x);
-			if (isAIPlaying) {
-				AIHasResult = false;
-				isAIPlaying = false;
-			}
 		}
 	}
 
@@ -231,13 +230,22 @@ private IEnumerator StopSearchTimer() {
 }
 
 private List<Vector3Int> GetAllowedMoves(State state) {
-		int allowedMask = GetAllowedMaskForPlayer(state.myVal);
+		List<int> allowedSpaces = new List<int>();
+		allowedSpaces.Add(EMPTY_VALUE);
+		if (currentPlayerIndex == 0) {
+			allowedSpaces.Add(DT_P2_VALUE);
+			allowedSpaces.Add(NA_P2_VALUE);
+		}
+		else {
+			allowedSpaces.Add(DT_P1_VALUE);
+			allowedSpaces.Add(NA_P1_VALUE);
+		}
 
 		List<Vector3Int> allowedMoves = new List<Vector3Int>();
 		int heuristicVal = 0;
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
-				if ((state.map[y, x] & allowedMask) != 0) {
+				if (allowedSpaces.Contains(state.map[y, x])) {
 					heuristicVal = GetMoveHeuristic(state, y, x);
 					allowedMoves.Add(new Vector3Int(x, y, heuristicVal));
 				}
@@ -271,9 +279,6 @@ private int GetMoveHeuristic(State state, int yCoord, int xCoord) {
 }
 
 private void StartMinMax() {
-	// Start timer
-	startSearchTime = Time.realtimeSinceStartup;
-
 	// Depth 0
 	Debug.Log("StartMinMax");
 	State state = new State();
@@ -290,13 +295,13 @@ private void StartMinMax() {
 	bestMove = allowedMoves[0];
 	bestMove.z = -1;
 	// int v = MaxValue(state, Int32.MinValue, Int32.MaxValue);
+	// int outVal = 0;
 	AlphaBeta(state, Int32.MinValue, Int32.MaxValue, true);
-
-	// Solution found (or time's up) -> stop timer and signal AI is ready
-	searchTime = Time.realtimeSinceStartup - startSearchTime;
+	// yield return new WaitForSecondsRealtime(AI_SEARCH_TIME - 1f);
+	// Debug.Log("MinMax took " + searchTime + " seconds");
 	AIHasResult = true;
+	// yield break;
 }
-
 private int AlphaBeta(State state, int alpha, int beta, bool maximizingPlayer) {
 	if (GameEnded(state)) {
 		return Utility(state);
@@ -325,6 +330,7 @@ private int AlphaBeta(State state, int alpha, int beta, bool maximizingPlayer) {
 					break ;
 				}
 			}
+			// outVal = v;
 			return v;
 		}
 		else {
@@ -345,9 +351,11 @@ private int AlphaBeta(State state, int alpha, int beta, bool maximizingPlayer) {
 					break ;
 				}
 			}
+			// outVal = v;
 			return v;
 		}
 	}
+	// yield break;
 }
 
 private int GetStateHeuristic(State state) {
@@ -521,7 +529,7 @@ private void Wait() {
 		// update allowed movements in map
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
-				if ((boardMap[y, x] & MASK_PLAYERS_STONES) == 0) {
+				if (boardMap[y, x] != P1_VALUE && boardMap[y, x] != P2_VALUE) {
 					DeleteStone(boardMap, y, x);
 					if (x > 0 && x < size -1 && y > 0 && y < size -1) // Can't have a free-tree in the borders
 						UpdateDoubleThree(boardMap, y, x, currentPlayerVal, otherPlayerVal);
@@ -585,7 +593,7 @@ private void Wait() {
 		// update allowed movements in map
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
-				if ((boardMap[y, x] & MASK_PLAYERS_STONES) == 0) {
+				if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
 					DeleteStone(state.map, y, x, isAiSimulation: true);
 					if (x > 0 && x < size -1 && y > 0 && y < size -1) // Can't have a free-tree in the borders
 						UpdateDoubleThree(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
@@ -608,27 +616,6 @@ private void Wait() {
 		button.GetComponent<Image>().color = buttonColor;
 		button.GetComponent<PutStone>().isEmpty = true;
 		button.transform.GetChild(0).gameObject.SetActive(false);
-	}
-
-	private int GetAllowedMaskForPlayer(int playerVal) {
-		if (playerVal == P1_VALUE) {
-			return MASK_P1_CAN_PLAY;
-		}
-		return MASK_P2_CAN_PLAY;
-	}
-
-	private int GetDoubleTreeValForPlayer(int playerVal) {
-		if (playerVal == P1_VALUE) {
-			return DT_P1_VALUE;
-		}
-		return DT_P2_VALUE;
-	}
-
-	private int GetNotAllowedMoveForPlayer(int playerVal) {
-		if (playerVal == P1_VALUE) {
-			return NA_P1_VALUE;
-		}
-		return NA_P2_VALUE;
 	}
 
 	private void DisplayWinner(int winnerIndex) {
@@ -924,14 +911,14 @@ private void Wait() {
 			else {
 				if (!isAiSimulation)
 					Debug.Log("Current player has double-three in " + yCoord + " " + xCoord);
-				map[yCoord, xCoord] = GetDoubleTreeValForPlayer(myVal);
+				map[yCoord, xCoord] = (currentPlayerIndex == 0) ? DT_P1_VALUE : DT_P2_VALUE;
 			}
 
 		}
 		else if (otherPlayerFreeTree == 2) {
 			if (!isAiSimulation)
 				Debug.Log("Other player has double-three in " + yCoord + " " + xCoord);
-			map[yCoord, xCoord] = GetDoubleTreeValForPlayer(enemyVal);
+			map[yCoord, xCoord] = (currentPlayerIndex == 0) ? DT_P2_VALUE : DT_P1_VALUE;
 
 		}
 	}
@@ -948,12 +935,12 @@ private void Wait() {
 		if (map[yCoord - yCoeff, xCoord - xCoeff] == myVal) {
 			y = yCoord + yCoeff * -2;
 			x = xCoord + xCoeff * -2;
-			if (x >= 0 && x < size && y >= 0 && y < size && (map[y, x] & MASK_PLAYERS_STONES) == 0) {
+			if (x >= 0 && x < size && y >= 0 && y < size && map[y, x] != enemyVal && map[y, x] != myVal) {
 				y = yCoord + yCoeff * 2;
 				x = xCoord + xCoeff * 2;
 				if (x >= 0 && x < size && y >= 0 && y < size) {
 					if (map[yCoord + yCoeff, xCoord + xCoeff] == myVal) {
-						if ((map[y, x] & MASK_PLAYERS_STONES) == 0 && middleCheck) {
+						if (map[y, x] != enemyVal && map[y, x] != myVal && middleCheck) {
 							// Debug.Log("Free tree type1 at " + yCoord + " " + xCoord + " coeff " + yCoeff + " " + xCoeff);
 							return true;
 						}
@@ -961,7 +948,7 @@ private void Wait() {
 					else if (map[y, x] == myVal) {
 						y += yCoeff;
 						x += xCoeff;
-						if (x >= 0 && x < size && y >= 0 && y < size && (map[y, x] & MASK_PLAYERS_STONES) == 0) {
+						if (x >= 0 && x < size && y >= 0 && y < size && map[y, x] != myVal && map[y, x] != enemyVal) {
 							// Debug.Log("Free tree type2 at " + yCoord + " " + xCoord + " coeff " + yCoeff + " " + xCoeff);
 							return true;
 						}
@@ -991,7 +978,7 @@ private void Wait() {
 				x += xCoeff;
 				y += yCoeff;
 				if (xCoord + x >= 0 && xCoord + x < size && yCoord + y >= 0 && yCoord + y < size)
-					if ((map[yCoord + y, xCoord + x] & MASK_PLAYERS_STONES) == 0) {
+					if (map[yCoord + y, xCoord + x] != enemyVal && map[yCoord + y, xCoord + x] != myVal) {
 						// Debug.Log("Free tree type3 at " + yCoord + " " + xCoord + " coeff " + yCoeff + " " + xCoeff);
 						return true;
 					}
@@ -1066,25 +1053,17 @@ private void Wait() {
 			if (otherProhibited) {
 				if (!isAiSimulation)
 					Debug.Log("Both players can't play in " + yCoord + " " + xCoord);
-				if (map[yCoord, xCoord] == EMPTY_VALUE)
-					map[yCoord, xCoord] = NA_P_VALUE;
-				else
-					map[yCoord, xCoord] |= NA_P_VALUE;
+				map[yCoord, xCoord] = NA_P_VALUE;
 			}
 			else {
 				if (!isAiSimulation)
 					Debug.Log("Current player can't play in " + yCoord + " " + xCoord);
-				if (map[yCoord, xCoord] == EMPTY_VALUE)
-					map[yCoord, xCoord] = GetNotAllowedMoveForPlayer(myVal);
-				else
-					map[yCoord, xCoord] |= GetNotAllowedMoveForPlayer(myVal);
+				map[yCoord, xCoord] = (currentPlayerIndex == 0) ? NA_P1_VALUE : NA_P2_VALUE;
 			}
 		}
 		else if (otherProhibited) {
-			if (map[yCoord, xCoord] == EMPTY_VALUE)
-				map[yCoord, xCoord] = GetNotAllowedMoveForPlayer(enemyVal);
-			else
-				map[yCoord, xCoord] |= GetNotAllowedMoveForPlayer(enemyVal);
+			// TODO: what if this is double-tree for current player ??
+			map[yCoord, xCoord] = (currentPlayerIndex == 0) ? NA_P2_VALUE : NA_P1_VALUE;
 			if (!isAiSimulation)
 				Debug.Log("Other player can't play in " + yCoord + " " + xCoord);
 		}
@@ -1098,6 +1077,8 @@ private void Wait() {
 		int x2 = xCoord + xCoeff * 2;
 		int x3 = xCoord + xCoeff * -1;
 
+		// Debug.Log(map[y1, x1]);
+		// Debug.Log(map[y2, x2]);
 		if (map[y1, x1] == myVal && map[y2, x2] == enemyVal && map[y3, x3] == enemyVal) {
 			return true;
 		}
