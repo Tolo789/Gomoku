@@ -64,9 +64,9 @@ public class GameManager : MonoBehaviour {
 	private const int NA_P2_VALUE = -5;
 	private const int NA_P_VALUE = -6;
 
-	private const int AI_DEPTH = 10;
+	private const int AI_DEPTH = 3;
 	private const float AI_SEARCH_TIME = 100f;
-	private const int AI_MAX_SEARCHES_PER_DEPTH = 2;
+	private const int AI_MAX_SEARCHES_PER_DEPTH = 20;
 	private float startSearchTime;
 	private float searchTime;
 
@@ -232,7 +232,7 @@ private IEnumerator StopSearchTimer() {
 private List<Vector3Int> GetAllowedMoves(State state) {
 		List<int> allowedSpaces = new List<int>();
 		allowedSpaces.Add(EMPTY_VALUE);
-		if (currentPlayerIndex == 0) {
+		if (state.myVal == P1_VALUE) {
 			allowedSpaces.Add(DT_P2_VALUE);
 			allowedSpaces.Add(NA_P2_VALUE);
 		}
@@ -911,14 +911,14 @@ private void Wait() {
 			else {
 				if (!isAiSimulation)
 					Debug.Log("Current player has double-three in " + yCoord + " " + xCoord);
-				map[yCoord, xCoord] = (currentPlayerIndex == 0) ? DT_P1_VALUE : DT_P2_VALUE;
+				map[yCoord, xCoord] = (myVal == P1_VALUE) ? DT_P1_VALUE : DT_P2_VALUE;
 			}
 
 		}
 		else if (otherPlayerFreeTree == 2) {
 			if (!isAiSimulation)
 				Debug.Log("Other player has double-three in " + yCoord + " " + xCoord);
-			map[yCoord, xCoord] = (currentPlayerIndex == 0) ? DT_P2_VALUE : DT_P1_VALUE;
+			map[yCoord, xCoord] = (myVal == P1_VALUE) ? DT_P2_VALUE : DT_P1_VALUE;
 
 		}
 	}
@@ -1058,12 +1058,13 @@ private void Wait() {
 			else {
 				if (!isAiSimulation)
 					Debug.Log("Current player can't play in " + yCoord + " " + xCoord);
-				map[yCoord, xCoord] = (currentPlayerIndex == 0) ? NA_P1_VALUE : NA_P2_VALUE;
+				map[yCoord, xCoord] = (myVal == P1_VALUE) ? NA_P1_VALUE : NA_P2_VALUE;
 			}
 		}
 		else if (otherProhibited) {
 			// TODO: what if this is double-tree for current player ??
-			map[yCoord, xCoord] = (currentPlayerIndex == 0) ? NA_P2_VALUE : NA_P1_VALUE;
+			if (map[yCoord, xCoord] == EMPTY_VALUE)
+				map[yCoord, xCoord] = (myVal == P1_VALUE) ? NA_P2_VALUE : NA_P1_VALUE;
 			if (!isAiSimulation)
 				Debug.Log("Other player can't play in " + yCoord + " " + xCoord);
 		}
