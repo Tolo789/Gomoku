@@ -66,7 +66,7 @@ public class GameManager : MonoBehaviour {
 
 	private const int AI_DEPTH = 3;
 	private const float AI_SEARCH_TIME = 100f;
-	private const int AI_MAX_SEARCHES_PER_DEPTH = 20;
+	private const int AI_MAX_SEARCHES_PER_DEPTH = 30;
 	private float startSearchTime;
 	private float searchTime;
 
@@ -966,8 +966,8 @@ private void Wait() {
 
 		// check when coord is middle of free-tree
 		if (map[yCoord - yCoeff, xCoord - xCoeff] == myVal) {
-			y = yCoord + yCoeff * -2;
-			x = xCoord + xCoeff * -2;
+			y = yCoord - yCoeff * 2;
+			x = xCoord - xCoeff * 2;
 			if (x >= 0 && x < size && y >= 0 && y < size && map[y, x] != enemyVal && map[y, x] != myVal) {
 				y = yCoord + yCoeff * 2;
 				x = xCoord + xCoeff * 2;
@@ -1103,16 +1103,9 @@ private void Wait() {
 	}
 
 	private bool CheckSelfCapture(int[,] map, int yCoord, int xCoord, int yCoeff, int xCoeff, int myVal, int enemyVal) {
-		int y1 = yCoord + yCoeff * 1;
-		int y2 = yCoord + yCoeff * 2;
-		int y3 = yCoord + yCoeff * -1;
-		int x1 = xCoord + xCoeff * 1;
-		int x2 = xCoord + xCoeff * 2;
-		int x3 = xCoord + xCoeff * -1;
-
-		// Debug.Log(map[y1, x1]);
-		// Debug.Log(map[y2, x2]);
-		if (map[y1, x1] == myVal && map[y2, x2] == enemyVal && map[y3, x3] == enemyVal) {
+		if (map[yCoord + yCoeff, xCoord + xCoeff] == myVal &&
+			map[yCoord + yCoeff * 2, xCoord + xCoeff * 2] == enemyVal &&
+			map[yCoord - yCoeff, xCoord - xCoeff] == enemyVal) {
 			return true;
 		}
 		return false;
@@ -1175,8 +1168,8 @@ private void Wait() {
 	}
 
 	private bool RadialCheckAlign(int myVal, int enemyVal, int[,] map, int yCoord, int xCoord, int xCoeff, int yCoeff) {
-		int x1 = xCoord + xCoeff * 1;
-		int y1 = yCoord + yCoeff * 1;
+		int x1 = xCoord + xCoeff;
+		int y1 = yCoord + yCoeff;
 		int x2 = xCoord + xCoeff + xCoeff + xCoeff + xCoeff;
 		int y2 = yCoord + yCoeff + yCoeff + yCoeff + yCoeff;
 		if (x2 < size && y2 < size && map[y2, x2] == myVal) {
