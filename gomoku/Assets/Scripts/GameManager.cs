@@ -117,6 +117,8 @@ public class GameManager : MonoBehaviour {
 		}
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
+		listPlayers[currentPlayerIndex].color = Color.cyan;
+		listPlayers[1 - currentPlayerIndex].color = Color.white;
 		playerPlaying.text = "Player actually playing: Player" + currentPlayerVal;
 
 		// init board with hidden buttons
@@ -530,6 +532,8 @@ private void Wait() {
 		currentPlayerIndex = 1 - currentPlayerIndex;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
+		listPlayers[currentPlayerIndex].color = Color.cyan;
+		listPlayers[1 - currentPlayerIndex].color = Color.white;
 		playerPlaying.text = "Player actually playing: Player" + currentPlayerVal;
 
 		// update allowed movements in map
