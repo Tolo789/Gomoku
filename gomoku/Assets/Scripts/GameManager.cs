@@ -64,9 +64,9 @@ public class GameManager : MonoBehaviour {
 	private const int NA_P2_VALUE = -5;
 	private const int NA_P_VALUE = -6;
 
-	private const int AI_DEPTH = 10;
+	private const int AI_DEPTH = 3;
 	private const float AI_SEARCH_TIME = 100f;
-	private const int AI_MAX_SEARCHES_PER_DEPTH = 2;
+	private const int AI_MAX_SEARCHES_PER_DEPTH = 20;
 	private float startSearchTime;
 	private float searchTime;
 
@@ -520,6 +520,12 @@ private void Wait() {
 			return;
 		}
 
+		// check if win by allignement 2
+		if (GetWinningAlignement2(currentPlayerVal, otherPlayerVal, boardMap)) {
+			DisplayWinner(currentPlayerIndex);
+			return;
+		}
+
 		// End turn, next player to play
 		currentPlayerIndex = 1 - currentPlayerIndex;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
@@ -583,7 +589,15 @@ private void Wait() {
 
 		// check if win by allignement
 		if (IsWinByAlignment(yCoord, xCoord)) {
+
 		}
+
+		// check if win by allignement 2
+		if (GetWinningAlignement2(state.myVal, state.enemyVal, state.map)) {
+			Debug.Log("ALIGNEMENT");
+		}
+
+
 
 		// End turn, next player to play
 		int tmp = state.myVal;
@@ -1114,6 +1128,53 @@ private void Wait() {
 	private int[,] GetWinningAlignement(int yCoeff, int xCoeff) {
 		// TODO
 		return null;
+	}
+
+	private bool GetWinningAlignement2(int myVal, int enemyVal, int[,] map) {
+		// TODO
+		for (int yCoord = 0; yCoord < size; yCoord++) {
+			for (int xCoord = 0; xCoord < size; xCoord++) {
+				if (map[yCoord, xCoord] == myVal && (RadialCheckAlign(myVal, enemyVal, map, yCoord, xCoord, 1, 0) || RadialCheckAlign(myVal, enemyVal, map, yCoord, xCoord, 0, 1) || RadialCheckAlign(myVal, enemyVal, map, yCoord, xCoord, 1, 1)))
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private bool LastAlignCheck(int[,] map, int myVal, int enemyVal) {
+		if (otherPlayerVal == 8) {
+			for (int y = 0; y < 19; y++) {
+				for (int x = 0; x < 19; x++) {
+					if (CheckCaptures(map, y, x, myVal, enemyVal, false, true)) {
+						Debug.Log("ENEMY CAN WIN BY CAPTURE");
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	private bool RadialCheckAlign(int myVal, int enemyVal, int[,] map, int yCoord, int xCoord, int xCoeff, int yCoeff) {
+		int x1 = xCoord + xCoeff * 1;
+		int y1 = yCoord + yCoeff * 1;
+		int x2 = xCoord + xCoeff + xCoeff + xCoeff + xCoeff;
+		int y2 = yCoord + yCoeff + yCoeff + yCoeff + yCoeff;
+		if (x2 < size && y2 < size && map[y2, x2] == myVal) {
+			while (y1 <= y2 && x1 <= x2) {
+				if (map[y1, x1] != myVal) {
+					return false;
+				}
+				y1+= yCoeff;
+				x1+= xCoeff;
+			}
+			if (xCoord - xCoeff >= 0 && yCoord - yCoeff >= 0) {
+				if (map[yCoord - yCoeff, xCoord - xCoeff] == myVal)
+					return false;
+			}
+			return LastAlignCheck(map, myVal, enemyVal);
+		}
+		return false;
 	}
 
 	private void UpdateCounterMoves(List<int[,]> winningAlignements) {
