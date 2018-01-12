@@ -1146,7 +1146,7 @@ private void Wait() {
 			for (int y = 0; y < 19; y++) {
 				for (int x = 0; x < 19; x++) {
 					if (CheckCaptures(map, y, x, myVal, enemyVal, false, true)) {
-						Debug.Log("ENEMY CAN WIN BY CAPTURE");
+						Debug.Log("ENEMY CAN WIN BY CAPTURE!!");
 						return false;
 					}
 				}
