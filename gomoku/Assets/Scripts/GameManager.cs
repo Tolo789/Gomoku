@@ -232,7 +232,7 @@ private IEnumerator StopSearchTimer() {
 private List<Vector3Int> GetAllowedMoves(State state) {
 		List<int> allowedSpaces = new List<int>();
 		allowedSpaces.Add(EMPTY_VALUE);
-		if (currentPlayerIndex == 0) {
+		if (state.myVal == P1_VALUE) {
 			allowedSpaces.Add(DT_P2_VALUE);
 			allowedSpaces.Add(NA_P2_VALUE);
 		}
@@ -537,8 +537,7 @@ private void Wait() {
 			for (int x = 0; x < size; x++) {
 				if (boardMap[y, x] != P1_VALUE && boardMap[y, x] != P2_VALUE) {
 					DeleteStone(boardMap, y, x);
-					if (x > 0 && x < size -1 && y > 0 && y < size -1) // Can't have a free-tree in the borders
-						UpdateDoubleThree(boardMap, y, x, currentPlayerVal, otherPlayerVal);
+					UpdateDoubleThree(boardMap, y, x, currentPlayerVal, otherPlayerVal);
 					if (!moveIntoCapture)
 						UpdateSelfCapture(boardMap, y, x, currentPlayerVal, otherPlayerVal);
 				}
@@ -609,8 +608,7 @@ private void Wait() {
 			for (int x = 0; x < size; x++) {
 				if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
 					DeleteStone(state.map, y, x, isAiSimulation: true);
-					if (x > 0 && x < size -1 && y > 0 && y < size -1) // Can't have a free-tree in the borders
-						UpdateDoubleThree(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
+					UpdateDoubleThree(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
 					if (!moveIntoCapture)
 						UpdateSelfCapture(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
 				}
@@ -634,7 +632,7 @@ private void Wait() {
 
 	private void DisplayWinner(int winnerIndex) {
 		// TODO: display winner and stop playing
-		int winner = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
+		int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
 		playSettings.SetActive(true);
 		Debug.Log("Player " + winner + " won !");
 		isGameEnded = true;
@@ -834,67 +832,84 @@ private void Wait() {
 
 #region FreeTree
 	private void UpdateDoubleThree(int[,] map, int yCoord, int xCoord, int myVal, int enemyVal, bool isAiSimulation = false) {
-		// TODO: do checks for both players
-
 		// check in every direction and count number of free three, if n >= 2 break and add prohibition
 		int currentPlayerFreeTree = 0;
 		int otherPlayerFreeTree = 0;
 
+		bool checkHorizontal = xCoord > 0 && xCoord < size -1;
+		bool checkVertical = yCoord > 0 && yCoord < size -1;
+
 		// Left
-		if (IsFreeThree(map, yCoord, xCoord, 0, -1, myVal, enemyVal, true)) {
-			currentPlayerFreeTree++;
-		}
-		if (IsFreeThree(map, yCoord, xCoord, 0, -1, enemyVal, myVal, true)) {
-			otherPlayerFreeTree++;
+		if (checkHorizontal) {
+			if (IsFreeThree(map, yCoord, xCoord, 0, -1, myVal, enemyVal, true)) {
+				currentPlayerFreeTree++;
+			}
+			if (IsFreeThree(map, yCoord, xCoord, 0, -1, enemyVal, myVal, true)) {
+				otherPlayerFreeTree++;
+			}
 		}
 		// Right
-		if (IsFreeThree(map, yCoord, xCoord, 0, 1, myVal, enemyVal)) {
-			currentPlayerFreeTree++;
-		}
-		if (IsFreeThree(map, yCoord, xCoord, 0, 1, enemyVal, myVal)) {
-			otherPlayerFreeTree++;
+		if (checkHorizontal) {
+			if (IsFreeThree(map, yCoord, xCoord, 0, 1, myVal, enemyVal)) {
+				currentPlayerFreeTree++;
+			}
+			if (IsFreeThree(map, yCoord, xCoord, 0, 1, enemyVal, myVal)) {
+				otherPlayerFreeTree++;
+			}
 		}
 		// Top
-		if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, 0, myVal, enemyVal, true)) {
-			currentPlayerFreeTree++;
-		}
-		if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, 0, enemyVal, myVal, true)) {
-			otherPlayerFreeTree++;
+		if (checkVertical) {
+			if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, 0, myVal, enemyVal, true)) {
+				currentPlayerFreeTree++;
+			}
+			if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, 0, enemyVal, myVal, true)) {
+				otherPlayerFreeTree++;
+			}
 		}
 		// Bot
-		if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, 0, myVal, enemyVal)) {
-			currentPlayerFreeTree++;
-		}
-		if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, 0, enemyVal, myVal)) {
-			otherPlayerFreeTree++;
+		if (checkVertical) {
+			if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, 0, myVal, enemyVal)) {
+				currentPlayerFreeTree++;
+			}
+			if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, 0, enemyVal, myVal)) {
+				otherPlayerFreeTree++;
+			}
 		}
 		// Top Left
-		if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, -1, myVal, enemyVal, true)) {
-			currentPlayerFreeTree++;
-		}
-		if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, -1, enemyVal, myVal, true)) {
-			otherPlayerFreeTree++;
+		if (checkVertical && checkHorizontal) {
+			if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, -1, myVal, enemyVal, true)) {
+				currentPlayerFreeTree++;
+			}
+			if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, -1, enemyVal, myVal, true)) {
+				otherPlayerFreeTree++;
+			}
 		}
 		// Top Right
-		if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, 1, myVal, enemyVal, true)) {
-			currentPlayerFreeTree++;
-		}
-		if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, 1, enemyVal, myVal, true)) {
-			otherPlayerFreeTree++;
+		if (checkVertical && checkHorizontal) {
+			if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, 1, myVal, enemyVal, true)) {
+				currentPlayerFreeTree++;
+			}
+			if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, -1, 1, enemyVal, myVal, true)) {
+				otherPlayerFreeTree++;
+			}
 		}
 		// Bot Left
-		if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, -1, myVal, enemyVal)) {
-			currentPlayerFreeTree++;
-		}
-		if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, -1, enemyVal, myVal)) {
-			otherPlayerFreeTree++;
+		if (checkVertical && checkHorizontal) {
+			if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, -1, myVal, enemyVal)) {
+				currentPlayerFreeTree++;
+			}
+			if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, -1, enemyVal, myVal)) {
+				otherPlayerFreeTree++;
+			}
 		}
 		// Bot Right
-		if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, 1, myVal, enemyVal)) {
-			currentPlayerFreeTree++;
-		}
-		if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, 1, enemyVal, myVal)) {
-			otherPlayerFreeTree++;
+		if (checkVertical && checkHorizontal) {
+			if (currentPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, 1, myVal, enemyVal)) {
+				currentPlayerFreeTree++;
+			}
+			if (otherPlayerFreeTree != 2 && IsFreeThree(map, yCoord, xCoord, 1, 1, enemyVal, myVal)) {
+				otherPlayerFreeTree++;
+			}
 		}
 
 		// Is not double-three if there is a capture
@@ -925,14 +940,14 @@ private void Wait() {
 			else {
 				if (!isAiSimulation)
 					Debug.Log("Current player has double-three in " + yCoord + " " + xCoord);
-				map[yCoord, xCoord] = (currentPlayerIndex == 0) ? DT_P1_VALUE : DT_P2_VALUE;
+				map[yCoord, xCoord] = (myVal == P1_VALUE) ? DT_P1_VALUE : DT_P2_VALUE;
 			}
 
 		}
 		else if (otherPlayerFreeTree == 2) {
 			if (!isAiSimulation)
 				Debug.Log("Other player has double-three in " + yCoord + " " + xCoord);
-			map[yCoord, xCoord] = (currentPlayerIndex == 0) ? DT_P2_VALUE : DT_P1_VALUE;
+			map[yCoord, xCoord] = (myVal == P1_VALUE) ? DT_P2_VALUE : DT_P1_VALUE;
 
 		}
 	}
@@ -1072,12 +1087,12 @@ private void Wait() {
 			else {
 				if (!isAiSimulation)
 					Debug.Log("Current player can't play in " + yCoord + " " + xCoord);
-				map[yCoord, xCoord] = (currentPlayerIndex == 0) ? NA_P1_VALUE : NA_P2_VALUE;
+				map[yCoord, xCoord] = (myVal == P1_VALUE) ? NA_P1_VALUE : NA_P2_VALUE;
 			}
 		}
 		else if (otherProhibited) {
 			// TODO: what if this is double-tree for current player ??
-			map[yCoord, xCoord] = (currentPlayerIndex == 0) ? NA_P2_VALUE : NA_P1_VALUE;
+			map[yCoord, xCoord] = (myVal == P1_VALUE) ? NA_P2_VALUE : NA_P1_VALUE;
 			if (!isAiSimulation)
 				Debug.Log("Other player can't play in " + yCoord + " " + xCoord);
 		}
