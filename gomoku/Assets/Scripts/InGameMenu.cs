@@ -20,4 +20,12 @@ public class InGameMenu : MonoBehaviour {
         Cursor.SetCursor(null, Vector2.zero, cursorMode);
         SceneManager.LoadScene("Game");
     }
+
+    public void RedirectButton() {
+        int numScenes = SceneManager.sceneCountInBuildSettings;
+        Debug.Log(numScenes - 1);
+        Debug.Log(SceneManager.GetActiveScene().buildIndex);
+        int nextScene = (SceneManager.GetActiveScene().buildIndex + 1) % numScenes;
+        SceneManager.LoadScene(nextScene);
+    }
 }
