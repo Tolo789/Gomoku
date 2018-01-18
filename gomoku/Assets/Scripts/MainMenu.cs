@@ -9,6 +9,9 @@ using UnityEngine.SceneManagement;
 public class MainMenu : MonoBehaviour {
     public ToggleGroup versus;
     public ToggleGroup firstPlayer;
+
+    public GameObject settingsPanel;
+
     
     void Start() {
 		if (PlayerPrefs.HasKey(CommonDefines.VERSUS_IA)) {
@@ -36,6 +39,12 @@ public class MainMenu : MonoBehaviour {
     }
      public void GoBack(GameObject playSettings) {
        playSettings.SetActive(false);
+    }
+
+
+    //A CHANGER
+     public void closeSettings() {
+       settingsPanel.SetActive(false);
     }
 
     public void GetSettingsGameInfo() {
