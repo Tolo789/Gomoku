@@ -66,7 +66,7 @@ public class GameManager : MonoBehaviour {
 
 	private const int AI_DEPTH = 3;
 	private const float AI_SEARCH_TIME = 100f;
-	private const int AI_MAX_SEARCHES_PER_DEPTH = 30;
+	private const int AI_MAX_SEARCHES_PER_DEPTH = 20;
 	private float startSearchTime;
 	private float searchTime;
 
@@ -84,6 +84,7 @@ public class GameManager : MonoBehaviour {
 	private Vector3Int bestMove;
 	private bool moveIsReady = false;
 	private Vector2Int lastMove;
+	private bool simulatingMove = false;
 
 	void Start () {
 		// init game variables
@@ -163,16 +164,9 @@ public class GameManager : MonoBehaviour {
 				bestMove.y = -1;
 				bestMove.z = -1;
 				// start AI decision making
-				startSearchTime = Time.realtimeSinceStartup;
-				// searchTime = 0;
-				// StartCoroutine(StopSearchTimer());
-				// StartCoroutine(StartMinMax());
 				StartMinMax();
 			}
 			else if (AIHasResult) {
-				searchTime = Time.realtimeSinceStartup - startSearchTime;
-				// searchTime += Time.deltaTime;
-				StopAllCoroutines();
 				Debug.Log("Search time: " + searchTime);
 				AiTimer.text = "AI Timer: " + searchTime.ToString();
 				if (bestMove.z == -1)
@@ -281,6 +275,8 @@ private int GetMoveHeuristic(State state, int yCoord, int xCoord) {
 }
 
 private void StartMinMax() {
+	startSearchTime = Time.realtimeSinceStartup;
+
 	// Depth 0
 	Debug.Log("StartMinMax");
 	State state = new State();
@@ -294,16 +290,18 @@ private void StartMinMax() {
 	state.winner = -1;
 	List<Vector3Int> allowedMoves = GetAllowedMoves(state);
 
+	// Save first move as default move
 	bestMove = allowedMoves[0];
 	bestMove.z = -1;
-	// int v = MaxValue(state, Int32.MinValue, Int32.MaxValue);
-	// int outVal = 0;
+
+	// Actually begin MinMax
 	AlphaBeta(state, Int32.MinValue, Int32.MaxValue, true);
-	// yield return new WaitForSecondsRealtime(AI_SEARCH_TIME - 1f);
-	// Debug.Log("MinMax took " + searchTime + " seconds");
+
+	// Save searchTime and signal that AI has result
+	searchTime = Time.realtimeSinceStartup - startSearchTime;
 	AIHasResult = true;
-	// yield break;
 }
+
 private int AlphaBeta(State state, int alpha, int beta, bool maximizingPlayer) {
 	if (GameEnded(state)) {
 		return Utility(state);
@@ -476,9 +474,21 @@ private void Wait() {
 #endregion
 
 #region MainFunctions
+
+	public bool PlayerCanPutStone() {
+		if (!IsHumanTurn() || isGameEnded || simulatingMove)
+			return false;
+		return true;
+	}
 	public void SavePlayerMove(int yCoord, int xCoord) {
 		bestMove = new Vector3Int(xCoord, yCoord, -1);
 		moveIsReady = true;
+	}
+
+	public void SimulateAiMove() {
+		if (PlayerCanPutStone()) {
+			simulatingMove = true;
+		}
 	}
 
 	public void PutStone(int yCoord, int xCoord) {
