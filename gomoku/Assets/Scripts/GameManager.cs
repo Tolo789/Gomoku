@@ -50,10 +50,17 @@ public class GameManager : MonoBehaviour {
 	public Text AiTimer;
 
 	public static int size = 19;
-	public bool moveIntoCapture = false;
 	[HideInInspector]
 	public bool isGameEnded = false;
 
+	// Game settings
+	private int AI_DEPTH = 3;
+	private float AI_SEARCH_TIME = 100f;
+	private int AI_MAX_SEARCHES_PER_DEPTH = 20;
+	public bool DOUBLE_THREE_RULE = true;
+	public bool SELF_CAPTURE_RULE = true;
+
+	// Map values
 	private const int EMPTY_VALUE = 0;
 	private const int P1_VALUE = 1;
 	private const int P2_VALUE = 2;
@@ -64,12 +71,9 @@ public class GameManager : MonoBehaviour {
 	private const int NA_P2_VALUE = -5;
 	private const int NA_P_VALUE = -6;
 
-	private const int AI_DEPTH = 3;
-	private const float AI_SEARCH_TIME = 100f;
-	private const int AI_MAX_SEARCHES_PER_DEPTH = 20;
+	// Private var
 	private float startSearchTime;
 	private float searchTime;
-
 	private int currentPlayerIndex = 0;
 	private int currentPlayerVal = P1_VALUE;
 	private int otherPlayerVal = P2_VALUE;
@@ -78,15 +82,31 @@ public class GameManager : MonoBehaviour {
 	private int[] playerScores;
 	private bool[] isHumanPlayer;
 	private bool isAIPlaying;
-	private int playerStarting;
 	private List<Vector2Int> counterMoves;
 	private Vector3Int bestMove;
-	private bool moveIsReady = false;
 	private Vector2Int lastMove;
 	private Vector2Int highlightedMove;
+	private bool moveIsReady = false;
 	private bool simulatingMove = false;
 
 	void Start () {
+		// Retrieve game rules
+		if (PlayerPrefs.HasKey(CommonDefines.AI_DEPTH_SETTING)) {
+			AI_DEPTH = PlayerPrefs.GetInt(CommonDefines.AI_DEPTH_SETTING);
+		}
+		if (PlayerPrefs.HasKey(CommonDefines.AI_MOVES_NB_SETTING)) {
+			AI_MAX_SEARCHES_PER_DEPTH = PlayerPrefs.GetInt(CommonDefines.AI_MOVES_NB_SETTING);
+		}
+		if (PlayerPrefs.HasKey(CommonDefines.AI_TIME_SETTING)) {
+			AI_SEARCH_TIME = PlayerPrefs.GetFloat(CommonDefines.AI_TIME_SETTING);
+		}
+		if (PlayerPrefs.HasKey(CommonDefines.DOUBLE_THREE_SETTING)) {
+			DOUBLE_THREE_RULE = (PlayerPrefs.GetInt(CommonDefines.DOUBLE_THREE_SETTING) == 1) ? true : false;
+		}
+		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
+			SELF_CAPTURE_RULE = (PlayerPrefs.GetInt(CommonDefines.SELF_CAPTURE_SETTING) == 1) ? true : false;
+		}
+
 		// init game variables
 		boardMap = new int[size, size];
 		buttonsMap = new PutStone[size, size];
@@ -456,8 +476,9 @@ public class GameManager : MonoBehaviour {
 			for (int x = 0; x < size; x++) {
 				if (boardMap[y, x] != P1_VALUE && boardMap[y, x] != P2_VALUE) {
 					DeleteStone(boardMap, y, x);
-					UpdateDoubleThree(boardMap, y, x, currentPlayerVal, otherPlayerVal);
-					if (!moveIntoCapture)
+					if (DOUBLE_THREE_RULE)
+						UpdateDoubleThree(boardMap, y, x, currentPlayerVal, otherPlayerVal);
+					if (SELF_CAPTURE_RULE)
 						UpdateSelfCapture(boardMap, y, x, currentPlayerVal, otherPlayerVal);
 				}
 			}
@@ -527,8 +548,9 @@ public class GameManager : MonoBehaviour {
 			for (int x = 0; x < size; x++) {
 				if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
 					DeleteStone(state.map, y, x, isAiSimulation: true);
-					UpdateDoubleThree(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
-					if (!moveIntoCapture)
+					if (DOUBLE_THREE_RULE)
+						UpdateDoubleThree(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
+					if (SELF_CAPTURE_RULE)
 						UpdateSelfCapture(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
 				}
 			}
