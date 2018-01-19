@@ -9,9 +9,6 @@ public class SettingMenu : MonoBehaviour {
 	public Slider aiDepthSlider;
 	public Text aiDephText;
 
-	public Slider aiDifficultySlider;
-	public Text aiDifficultyText;
-
 	public Slider nbrOfMovesSlider;
 	public Text nbrOfMovesText;
 	
@@ -21,7 +18,10 @@ public class SettingMenu : MonoBehaviour {
     public ToggleGroup activateDoubleThree;
     public ToggleGroup activateSelfCapture;
 
+	public ToggleGroup aiDifficulty; 
 	public MainMenu mainMenu;
+
+	private bool customDifficulty = false;
 
 	// Use this for initialization
 	void Start () {
@@ -32,6 +32,7 @@ public class SettingMenu : MonoBehaviour {
 		else {
 			aiDepthSlider.value = 3;
 		}
+		
 
 		if (PlayerPrefs.HasKey(CommonDefines.AI_MOVES_NB_SETTING)) {
 			nbrOfMovesSlider.value = PlayerPrefs.GetInt(CommonDefines.AI_MOVES_NB_SETTING);
@@ -48,9 +49,8 @@ public class SettingMenu : MonoBehaviour {
 		}
 
 		aiDephText.text = aiDepthSlider.value.ToString();
-		aiDifficultyText.text = aiDifficultySlider.value.ToString();
 		nbrOfMovesText.text = nbrOfMovesSlider.value.ToString();
-		maxAIRepText.text = maxAIRepSlider.value.ToString();
+		maxAIRepText.text = maxAIRepSlider.value.ToString() + "s";
 
 		// Toggles
 		if (PlayerPrefs.HasKey(CommonDefines.DOUBLE_THREE_SETTING)) {
@@ -63,6 +63,17 @@ public class SettingMenu : MonoBehaviour {
             listOfToggle[0].isOn = (PlayerPrefs.GetInt(CommonDefines.SELF_CAPTURE_SETTING) == 1) ? true : false;
             listOfToggle[1].isOn = (PlayerPrefs.GetInt(CommonDefines.SELF_CAPTURE_SETTING) == 1) ? false : true;
         }
+		if (PlayerPrefs.HasKey(CommonDefines.DIFFICULTY_SETTING)) {
+			Toggle[] listOfToggle = aiDifficulty.GetComponentsInChildren<Toggle>();
+			foreach (Toggle toggle in listOfToggle) {
+				if (toggle.name == PlayerPrefs.GetString(CommonDefines.DIFFICULTY_SETTING)) {
+					toggle.isOn = true;
+				}
+				else {
+					toggle.isOn = false;
+				}
+			}
+		}
 	}
 	
 	// Update is called once per frame
@@ -74,15 +85,40 @@ public class SettingMenu : MonoBehaviour {
 		aiDephText.text = aiDepthSlider.value.ToString();
 	}
 
-	public void ChangeSliderDifficultyTextValue() {
-		aiDifficultyText.text = aiDifficultySlider.value.ToString();
+	public void changeDifficultySliders(float aiDepth, float nbrOfMoves) {
+		aiDepthSlider.interactable = false;
+		nbrOfMovesSlider.interactable = false;
+		aiDepthSlider.value = aiDepth;
+		nbrOfMovesSlider.value = nbrOfMoves;
+		aiDephText.text = aiDepthSlider.value.ToString();
+		nbrOfMovesText.text = nbrOfMovesSlider.value.ToString();
+	}
+	
+	public void ChangeDifficulty(Toggle toggle) {
+		if (toggle.isOn) {
+			if (toggle.name == "Easy") {
+				changeDifficultySliders(1.0f, 50f);
+			}
+			else if (toggle.name == "Medium") {
+				changeDifficultySliders(2.0f, 20f);
+			}
+			else if (toggle.name == "Hard") {
+				changeDifficultySliders(3.0f, 20f);
+			}
+			else if (toggle.name == "Custom") {
+				aiDepthSlider.interactable = true;
+				nbrOfMovesSlider.interactable = true;
+			}
+		}
 	}
 
 	public void ChangeNbrOfMovesTextValue() {
 		nbrOfMovesText.text = nbrOfMovesSlider.value.ToString();
 	}
 	public void ChangeMaxAIRepTextValue() {
-		maxAIRepText.text = maxAIRepSlider.value.ToString();
+		float nbr = Mathf.RoundToInt(maxAIRepSlider.value * 100) / 100f;
+		maxAIRepSlider.value = nbr;
+		maxAIRepText.text = maxAIRepSlider.value.ToString() + "s";
 	}
 
 	public void saveChanges() {
@@ -106,7 +142,8 @@ public class SettingMenu : MonoBehaviour {
 		else {
 			PlayerPrefs.SetInt(CommonDefines.SELF_CAPTURE_SETTING, 0);
 		}
-
+        toggleChoice = aiDifficulty.ActiveToggles().FirstOrDefault().name;
+		PlayerPrefs.SetString(CommonDefines.DIFFICULTY_SETTING, toggleChoice);
 		// Save and exit
         PlayerPrefs.Save();
 		mainMenu.closeSettings();
