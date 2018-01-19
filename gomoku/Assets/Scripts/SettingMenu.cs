@@ -21,8 +21,6 @@ public class SettingMenu : MonoBehaviour {
 	public ToggleGroup aiDifficulty; 
 	public MainMenu mainMenu;
 
-	private bool customDifficulty = false;
-
 	// Use this for initialization
 	void Start () {
 		// Sliders
