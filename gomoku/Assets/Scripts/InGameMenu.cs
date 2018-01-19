@@ -23,8 +23,6 @@ public class InGameMenu : MonoBehaviour {
 
     public void RedirectButton() {
         int numScenes = SceneManager.sceneCountInBuildSettings;
-        Debug.Log(numScenes - 1);
-        Debug.Log(SceneManager.GetActiveScene().buildIndex);
         int nextScene = (SceneManager.GetActiveScene().buildIndex + 1) % numScenes;
         SceneManager.LoadScene(nextScene);
     }

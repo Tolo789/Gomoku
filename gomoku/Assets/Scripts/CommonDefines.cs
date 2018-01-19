@@ -8,6 +8,6 @@ public class CommonDefines {
 	public const string AI_DEPTH_SETTING = "IaDepth";
 	public const string AI_TIME_SETTING = "IaTime";
 	public const string AI_MOVES_NB_SETTING = "IaMovesNbr";
-	public const string DOUBLE_THREE_SETTING = "IaMovesNbr";
-	public const string SELF_CAPTURE_SETTING = "IaMovesNbr";
+	public const string DOUBLE_THREE_SETTING = "DoubleTreeSetting";
+	public const string SELF_CAPTURE_SETTING = "SelfCaptureSetting";
 }

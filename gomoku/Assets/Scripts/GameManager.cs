@@ -234,7 +234,7 @@ public class GameManager : MonoBehaviour {
 		startSearchTime = Time.realtimeSinceStartup;
 
 		// Depth 0, make a copy of current game state
-		Debug.Log("StartMinMax");
+		Debug.Log("StartMinMax (Depth: " + AI_DEPTH + ", Moves studied per branch: " + AI_MAX_SEARCHES_PER_DEPTH + ", Max response time: " + AI_MAX_SEARCHES_PER_DEPTH + ")");
 		State state = new State();
 		state.map = CopyMap(boardMap);
 		state.myVal = currentPlayerVal;
