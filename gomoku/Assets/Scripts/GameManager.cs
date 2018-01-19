@@ -301,11 +301,9 @@ public class GameManager : MonoBehaviour {
 				score += 1;
 		}
 
-		if (CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true))
-			score += 10;
-
-		if (CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true))
-			score += 10;
+		// Increase move value for each capture that can be done
+		score += 10 * CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
+		score += 10 * CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
 
 		return score;
 	}
@@ -428,10 +426,13 @@ public class GameManager : MonoBehaviour {
 		button.GetComponent<PutStone>().isEmpty = false;
 		button.transform.GetChild(0).gameObject.SetActive(true);
 
-		// check captures
-		CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
-		if (isGameEnded)
+		// Do captures
+		playerScores[currentPlayerIndex] += CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
+		listPlayers[currentPlayerIndex].text = "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex];
+		if (playerScores[currentPlayerIndex] == 10) {
+			DisplayWinner(currentPlayerIndex);
 			return;
+		}
 
 		// If player needed to play a counter move and didnt do it, then he has lost
 		if (counterMoves.Count != 0) {
@@ -497,14 +498,13 @@ public class GameManager : MonoBehaviour {
 		// Actually put the stone
 		state.map[yCoord, xCoord] = state.myVal;
 
-		// check captures
-		if (CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture: true, isAiSimulation: true)) {
-			if (state.myVal == state.rootVal) {
-				state.rootPlayerScore += 2;
-			}
-			else {
-				state.otherPlayerScore += 2;
-			}
+		// Do captures
+		int capturedStone = CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture: true, isAiSimulation: true);
+		if (state.myVal == state.rootVal) {
+			state.rootPlayerScore += capturedStone;
+		}
+		else {
+			state.otherPlayerScore += capturedStone;
 		}
 
 		// If player needed to play a counter move and didnt do it, then he has lost
@@ -756,62 +756,55 @@ public class GameManager : MonoBehaviour {
 	#endregion
 
 #region Captures
-	private bool CheckCaptures(int[,] map, int yCoord, int xCoord, int myVal, int enemyVal, bool doCapture = true, bool isAiSimulation = false) {
-		bool canCapture = false;
+	private int CheckCaptures(int[,] map, int yCoord, int xCoord, int myVal, int enemyVal, bool doCapture = true, bool isAiSimulation = false) {
+		int canCapture = 0;
 
 		// Left
-		if (xCoord - 3 >= 0 && map[yCoord, xCoord - 3] == myVal) {
-			canCapture = CanCapture(map, yCoord, xCoord, 0, -1, enemyVal, doCapture, isAiSimulation) || canCapture;
+		if (xCoord - 3 >= 0 && map[yCoord, xCoord - 3] == myVal && CanCapture(map, yCoord, xCoord, 0, -1, enemyVal, doCapture, isAiSimulation)) {
+			canCapture += 2;
 		}
 		// Top
-		if (yCoord - 3 >= 0 && map[yCoord - 3, xCoord] == myVal) {
-			canCapture = CanCapture(map, yCoord, xCoord, -1, 0, enemyVal, doCapture, isAiSimulation) || canCapture;
+		if (yCoord - 3 >= 0 && map[yCoord - 3, xCoord] == myVal && CanCapture(map, yCoord, xCoord, -1, 0, enemyVal, doCapture, isAiSimulation)) {
+			canCapture += 2;
 		}
 		// Bot
-		if (yCoord + 3 < size && map[yCoord + 3, xCoord] == myVal) {
-			canCapture = CanCapture(map, yCoord, xCoord, 1, 0, enemyVal, doCapture, isAiSimulation) || canCapture;
+		if (yCoord + 3 < size && map[yCoord + 3, xCoord] == myVal && CanCapture(map, yCoord, xCoord, 1, 0, enemyVal, doCapture, isAiSimulation)) {
+			canCapture += 2;
 		}
 		// Right
-		if (xCoord + 3 < size && map[yCoord, xCoord + 3] == myVal) {
-			canCapture = CanCapture(map, yCoord, xCoord, 0, 1, enemyVal, doCapture, isAiSimulation) || canCapture;
+		if (xCoord + 3 < size && map[yCoord, xCoord + 3] == myVal && CanCapture(map, yCoord, xCoord, 0, 1, enemyVal, doCapture, isAiSimulation)) {
+			canCapture += 2;
 		}
 		// Bot right
-		if (xCoord + 3 < size && yCoord + 3 < size && map[yCoord + 3, xCoord + 3] == myVal) {
-			canCapture = CanCapture(map, yCoord, xCoord, 1, 1, enemyVal, doCapture, isAiSimulation) || canCapture;
+		if (xCoord + 3 < size && yCoord + 3 < size && map[yCoord + 3, xCoord + 3] == myVal && CanCapture(map, yCoord, xCoord, 1, 1, enemyVal, doCapture, isAiSimulation)) {
+			canCapture += 2;
 		}
 		// Bot left
-		if (xCoord - 3 >= 0 && yCoord + 3 < size && map[yCoord + 3, xCoord - 3] == myVal) {
-			canCapture = CanCapture(map, yCoord, xCoord, 1, -1, enemyVal, doCapture, isAiSimulation) || canCapture;
+		if (xCoord - 3 >= 0 && yCoord + 3 < size && map[yCoord + 3, xCoord - 3] == myVal && CanCapture(map, yCoord, xCoord, 1, -1, enemyVal, doCapture, isAiSimulation)) {
+			canCapture += 2;
 		}
 		// Top left
-		if (xCoord - 3 >= 0 && yCoord - 3 >= 0 && map[yCoord - 3, xCoord - 3] == myVal) {
-			canCapture = CanCapture(map, yCoord, xCoord, -1, -1, enemyVal, doCapture, isAiSimulation) || canCapture;
+		if (xCoord - 3 >= 0 && yCoord - 3 >= 0 && map[yCoord - 3, xCoord - 3] == myVal && CanCapture(map, yCoord, xCoord, -1, -1, enemyVal, doCapture, isAiSimulation)) {
+			canCapture += 2;
 		}
 		// Top right
-		if (xCoord + 3 < size && yCoord - 3 >= 0 && map[yCoord - 3, xCoord + 3] == myVal) {
-			canCapture = CanCapture(map, yCoord, xCoord, -1, 1, enemyVal, doCapture, isAiSimulation) || canCapture;
+		if (xCoord + 3 < size && yCoord - 3 >= 0 && map[yCoord - 3, xCoord + 3] == myVal && CanCapture(map, yCoord, xCoord, -1, 1, enemyVal, doCapture, isAiSimulation)) {
+			canCapture += 2;
 		}
 
 		return canCapture;
 	}
 
 	private bool CanCapture(int[,] map, int yCoord, int xCoord, int yCoeff, int xCoeff, int enemyVal, bool doCapture = false, bool isAiSimulation = false) {
-		int y1 = yCoord + yCoeff * 1;
+		int y1 = yCoord + yCoeff;
 		int y2 = yCoord + yCoeff * 2;
-		int x1 = xCoord + xCoeff * 1;
+		int x1 = xCoord + xCoeff;
 		int x2 = xCoord + xCoeff * 2;
 
 		if (map[y1, x1] == enemyVal && map[y2, x2] == enemyVal) {
 			if (doCapture) {
 				DeleteStone(map, y1, x1, isAiSimulation);
 				DeleteStone(map, y2, x2, isAiSimulation);
-				if (!isAiSimulation) {
-					playerScores[currentPlayerIndex] += 2;
-					listPlayers[currentPlayerIndex].text = "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex];
-					if (playerScores[currentPlayerIndex] == 10) {
-						DisplayWinner(currentPlayerIndex);
-					}
-				}
 			}
 			return true;
 		}
@@ -902,10 +895,10 @@ public class GameManager : MonoBehaviour {
 		}
 
 		// Is not double-three if there is a capture
-		if (currentPlayerFreeTree == 2 && CheckCaptures(map, yCoord, xCoord, myVal, enemyVal, doCapture: false)) {
+		if (currentPlayerFreeTree == 2 && CheckCaptures(map, yCoord, xCoord, myVal, enemyVal, doCapture: false) > 0) {
 			currentPlayerFreeTree = 0;
 		}
-		if (otherPlayerFreeTree == 2 && CheckCaptures(map, yCoord, xCoord, enemyVal, myVal, doCapture: false)) {
+		if (otherPlayerFreeTree == 2 && CheckCaptures(map, yCoord, xCoord, enemyVal, myVal, doCapture: false) > 0) {
 			otherPlayerFreeTree = 0;
 		}
 
@@ -1143,20 +1136,6 @@ public class GameManager : MonoBehaviour {
 		return false;
 	}
 
-	private bool LastAlignCheck(int[,] map, int myVal, int enemyVal) {
-		if (otherPlayerVal == 8) {
-			for (int y = 0; y < 19; y++) {
-				for (int x = 0; x < 19; x++) {
-					if (CheckCaptures(map, y, x, myVal, enemyVal, false, true)) {
-						Debug.Log("ENEMY CAN WIN BY CAPTURE!!");
-						return false;
-					}
-				}
-			}
-		}
-		return true;
-	}
-
 	private bool RadialCheckAlign(int myVal, int enemyVal, int[,] map, int yCoord, int xCoord, int xCoeff, int yCoeff) {
 		int x1 = xCoord + xCoeff;
 		int y1 = yCoord + yCoeff;
@@ -1177,6 +1156,20 @@ public class GameManager : MonoBehaviour {
 			return LastAlignCheck(map, myVal, enemyVal);
 		}
 		return false;
+	}
+
+	private bool LastAlignCheck(int[,] map, int myVal, int enemyVal) {
+		if (otherPlayerVal == 8) {
+			for (int y = 0; y < 19; y++) {
+				for (int x = 0; x < 19; x++) {
+					if (CheckCaptures(map, y, x, myVal, enemyVal, false, true) > 0) {
+						Debug.Log("ENEMY CAN WIN BY CAPTURE!!");
+						return false;
+					}
+				}
+			}
+		}
+		return true;
 	}
 
 	private void UpdateCounterMoves(List<int[,]> winningAlignements) {
