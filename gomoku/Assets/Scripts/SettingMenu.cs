@@ -119,6 +119,18 @@ public class SettingMenu : MonoBehaviour {
 		maxAIRepText.text = maxAIRepSlider.value.ToString() + "s";
 	}
 
+	public void DecreaseMaxAIRepValue() {
+		float nbr = Mathf.RoundToInt(maxAIRepSlider.value * 10) / 10f;
+		maxAIRepSlider.value = nbr - 0.1f;
+		maxAIRepText.text = maxAIRepSlider.value.ToString() + "s";
+	}
+
+	public void IncreaseMaxAIRepValue() {
+		float nbr = Mathf.RoundToInt(maxAIRepSlider.value * 10) / 10f;
+		maxAIRepSlider.value = nbr + 0.1f;
+		maxAIRepText.text = maxAIRepSlider.value.ToString() + "s";
+	}
+
 	public void saveChanges() {
 		// Sliders
 		PlayerPrefs.SetInt(CommonDefines.AI_DEPTH_SETTING, Mathf.RoundToInt(aiDepthSlider.value));
