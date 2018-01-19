@@ -57,8 +57,10 @@ public class GameManager : MonoBehaviour {
 	private int AI_DEPTH = 3;
 	private float AI_SEARCH_TIME = 100f;
 	private int AI_MAX_SEARCHES_PER_DEPTH = 20;
-	public bool DOUBLE_THREE_RULE = true;
-	public bool SELF_CAPTURE_RULE = true;
+	private bool DOUBLE_THREE_RULE = true;
+	private bool SELF_CAPTURE_RULE = true;
+	private int CAPTURES_NEEDED_TO_WIN = 10;
+
 
 	// Map values
 	private const int EMPTY_VALUE = 0;
@@ -364,11 +366,11 @@ public class GameManager : MonoBehaviour {
 		if (state.depth == AI_DEPTH || Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME) {
 			return true;
 		}
-		if (state.rootPlayerScore == 10 || CheckIfAlign(state.map, state.rootVal)) {
+		if (state.rootPlayerScore == CAPTURES_NEEDED_TO_WIN || CheckIfAlign(state.map, state.rootVal)) {
 			state.winner = state.rootVal;
 			return true;
 		}
-		else if (state.otherPlayerScore == 10 || CheckIfAlign(state.map, state.enemyVal)){
+		else if (state.otherPlayerScore == CAPTURES_NEEDED_TO_WIN || CheckIfAlign(state.map, state.enemyVal)){
 			state.winner = state.enemyVal;
 			return true;
 		}
@@ -377,20 +379,18 @@ public class GameManager : MonoBehaviour {
 
 	private int GetStateHeuristic(State state) {
 		// Exit instantly if we know that there is a winner
-		if (state.winner == state.rootVal) {
+		if (state.winner == state.rootVal || state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
 			return Int32.MaxValue;
 		}
-		else if (state.winner == state.enemyVal) {
+		else if (state.winner == state.enemyVal || state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
 			return Int32.MinValue;
 		}
 
 		int stateScore = 0;
 
-		// Consider scores individually because the more one is closer to 10 the more is close to win
-		stateScore += 100 * state.rootPlayerScore;
-		stateScore -= 100 * state.otherPlayerScore;
+		// Consider scores individually because the closer is to 10 the closer is to win
+		stateScore += 100 * (state.rootPlayerScore - state.otherPlayerScore);
 
-		// Consider scores relatively to know if is a good thing to trade
 
 		return stateScore;
 	}
@@ -430,7 +430,7 @@ public class GameManager : MonoBehaviour {
 		// Do captures
 		playerScores[currentPlayerIndex] += CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
 		listPlayers[currentPlayerIndex].text = "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex];
-		if (playerScores[currentPlayerIndex] == 10) {
+		if (playerScores[currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
 			DisplayWinner(currentPlayerIndex);
 			return;
 		}
@@ -1220,7 +1220,7 @@ public class GameManager : MonoBehaviour {
 		// Check if Enemy can counterMove by capture
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
-				if (myScore + CheckCaptures(map, y, x, myVal, enemyVal, doCapture: false, isAiSimulation: true) >= 10) {
+				if (myScore + CheckCaptures(map, y, x, myVal, enemyVal, doCapture: false, isAiSimulation: true) >= CAPTURES_NEEDED_TO_WIN) {
 					return true;
 				}
 			}
