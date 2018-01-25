@@ -436,28 +436,24 @@ public class GameManager : MonoBehaviour {
 
 		Debug.Log("Alignment has been done: " + alignmentHasBeenDone);
 		// If player needed to play a counter move and didnt do it, then he has lost
-		if (counterMoves.Count != 0 || alignmentHasBeenDone) {
+		if (alignmentHasBeenDone) {
 			bool hasCountered = false;
-			foreach (Vector2Int counterMove in counterMoves) {
-				if (counterMove.x == xCoord && counterMove.y == yCoord) {
-					hasCountered = true;
-					break;
+			if (counterMoves.Count != 0) {
+				foreach (Vector2Int counterMove in counterMoves) {
+					if (counterMove.x == xCoord && counterMove.y == yCoord) {
+						hasCountered = true;
+						break;
+					}
 				}
 			}
 			if (hasCountered) {
-				counterMoves.Clear();
+				if (counterMoves.Count != 0)
+					counterMoves.Clear();
 			}
 			else {
 				DisplayWinner(1 - currentPlayerIndex);
 				return;
 			}
-		}
-
-		// check if win by allignement
-		alignmentHasBeenDone = false;
-		if (IsWinByAlignment(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, playerScores[1 - currentPlayerIndex], ref alignmentHasBeenDone)) {
-			DisplayWinner(currentPlayerIndex);
-			return;
 		}
 
 		// check if win by allignement 2
@@ -484,6 +480,13 @@ public class GameManager : MonoBehaviour {
 						UpdateSelfCapture(boardMap, y, x, currentPlayerVal, otherPlayerVal);
 				}
 			}
+		}
+
+		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
+		alignmentHasBeenDone = false;
+		if (IsWinByAlignment(boardMap, yCoord, xCoord, otherPlayerVal, currentPlayerVal, playerScores[currentPlayerIndex], ref alignmentHasBeenDone)) {
+			DisplayWinner(1 - currentPlayerIndex);
+			return;
 		}
 
 		// Update last move tracker
@@ -534,9 +537,9 @@ public class GameManager : MonoBehaviour {
 		// }
 
 		// check if win by allignement 2
-		if (GetWinningAlignement2(state.myVal, state.enemyVal, state.map)) {
-			Debug.Log("ALIGNEMENT");
-		}
+		// if (GetWinningAlignement2(state.myVal, state.enemyVal, state.map)) {
+		// 	Debug.Log("ALIGNEMENT");
+		// }
 
 
 
@@ -1110,34 +1113,43 @@ public class GameManager : MonoBehaviour {
 
 		// Horizontal check
 		if (IsWinningAlignement(map, yCoord, xCoord, 0, 1, myVal)) {
-			Debug.Log("Saving win");
 			alignementDone = true;
-			if (!CanCounterMove(map, yCoord, xCoord, 0, 1, myVal) && !canWinWithCapture)
+			if (!CanCounterMove(map, yCoord, xCoord, 0, 1, myVal, enemyVal) && !canWinWithCapture)
 				return true;
 		}
 		// Vertical check
 		if (IsWinningAlignement(map, yCoord, xCoord, 1, 0, myVal)) {
-			Debug.Log("Saving win");
 			alignementDone = true;
-			if (!CanCounterMove(map, yCoord, xCoord, 1, 0, myVal) && !canWinWithCapture)
+			if (!CanCounterMove(map, yCoord, xCoord, 1, 0, myVal, enemyVal) && !canWinWithCapture)
 				return true;
 		}
 		// Down-Right check
 		if (IsWinningAlignement(map, yCoord, xCoord, 1, 1, myVal)) {
-			Debug.Log("Saving win");
 			alignementDone = true;
-			if (!CanCounterMove(map, yCoord, xCoord, 1, 1, myVal) && !canWinWithCapture)
+			if (!CanCounterMove(map, yCoord, xCoord, 1, 1, myVal, enemyVal) && !canWinWithCapture)
 				return true;
 		}
 		// Up-Right check
 		if (IsWinningAlignement(map, yCoord, xCoord, -1, 1, myVal)) {
-			Debug.Log("Saving win");
 			alignementDone = true;
-			if (!CanCounterMove(map, yCoord, xCoord, -1, 1, myVal) && !canWinWithCapture)
+			if (!CanCounterMove(map, yCoord, xCoord, -1, 1, myVal, enemyVal) && !canWinWithCapture)
 				return true;
 		}
 
 		// If we end up here it means that there is a way to counter alignement
+		return false;
+	}
+
+	private bool CanWinWithCapture(int[,] map, int myVal, int enemyVal, int myScore) {
+		// TODO: do calls this func instead of LastAlignCheck()
+		// Check if Enemy can counterMove by capture
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				if (myScore + CheckCaptures(map, y, x, myVal, enemyVal, doCapture: false, isAiSimulation: true) >= CAPTURES_NEEDED_TO_WIN) {
+					return true;
+				}
+			}
+		}
 		return false;
 	}
 
@@ -1165,6 +1177,60 @@ public class GameManager : MonoBehaviour {
 		return (neighbours >= 4);
 	}
 
+	private bool CanCounterMove(int[,] map, int yCoord, int xCoord, int yCoeff, int xCoeff, int myVal, int enemyVal) {
+		// TODO
+		// 1) Find all possible counterMoves for an alignement
+		// to counter a 5-alignement any capture is good, for a 6-align only middle 4 captures, for 7-align only middle 3, and so on
+
+		// Find borders to know align length
+		Vector2Int minStone = new Vector2Int(xCoord, yCoord);
+		Vector2Int maxStone = new Vector2Int(xCoord, yCoord);
+		int x = xCoord + xCoeff;
+		int y = yCoord + yCoeff;
+		while (x >= 0 && x < size && y >= 0 && y < size && map[y, x] == myVal) {
+			maxStone.x = x;
+			maxStone.y = y;
+			x += xCoeff;
+			y += yCoeff;
+		}
+		x = xCoord - xCoeff;
+		y = yCoord - yCoeff;
+		while (x >= 0 && x < size && y >= 0 && y < size && map[y, x] == myVal) {
+			minStone.x = x;
+			minStone.y = y;
+			x -= xCoeff;
+			y -= yCoeff;
+		}
+
+		int length = (xCoeff != 0) ? maxStone.x - minStone.x : maxStone.y - minStone.y;
+		length++;
+		length = Mathf.Abs(length); // security in case of negative coeff
+		maxStone.x = minStone.x + (4 * xCoeff);
+		maxStone.y = minStone.y + (4 * yCoeff);
+		minStone.x = minStone.x + ((length - 5) * xCoeff);
+		minStone.y = minStone.y + ((length - 5) * yCoeff);
+
+		// Only check if can capture central stones
+		List<Vector2Int> tmpCounterMoves = new List<Vector2Int>();
+		// TODO
+
+
+		// 2) If no prev counterMoves then add all found counter moves
+		if (counterMoves.Count == 0) {
+			foreach (Vector2Int counterMove in tmpCounterMoves) {
+				counterMoves.Add(counterMove);
+			}
+		}
+		// 2.5) Otherwise, keep only common countermoves
+		else {
+			// TODO
+		}
+
+		// 3) Return if counterMoves.Count == 0
+		return (counterMoves.Count != 0);
+	}
+
+/*
 	private bool GetWinningAlignement2(int myVal, int enemyVal, int[,] map) {
 		// TODO
 		for (int yCoord = 0; yCoord < size; yCoord++) {
@@ -1212,28 +1278,7 @@ public class GameManager : MonoBehaviour {
 		}
 		return true;
 	}
-
-	private bool CanWinWithCapture(int[,] map, int myVal, int enemyVal, int myScore) {
-		// TODO: do calls this func instead of LastAlignCheck()
-		// Check if Enemy can counterMove by capture
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
-				if (myScore + CheckCaptures(map, y, x, myVal, enemyVal, doCapture: false, isAiSimulation: true) >= CAPTURES_NEEDED_TO_WIN) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	private bool CanCounterMove(int[,] map, int yCoord, int xCoord, int yCoeff, int xCoeff, int myVal) {
-		// TODO
-		// 1) Find all possible counterMoves for an alignement
-		// 2) If no prev counterMoves then add all found counter move
-		// 2.5) Otherwise,keep only common countermoves
-		// 3) Return if counterMoves.Count == 0
-		return (counterMoves.Count != 0);
-	}
+*/
 	#endregion
 
 }
