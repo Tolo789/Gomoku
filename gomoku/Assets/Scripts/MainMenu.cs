@@ -7,19 +7,26 @@ using UnityEngine.SceneManagement;
 
 
 public class MainMenu : MonoBehaviour {
-    public ToggleGroup versus;
+
+    public ToggleGroup is_P1_IA;
+    public ToggleGroup is_P2_IA;
     public ToggleGroup firstPlayer;
 
     public GameObject settingsPanel;
 
     
     void Start() {
-		if (PlayerPrefs.HasKey(CommonDefines.VERSUS_IA)) {
-            Toggle[] listOfToggle = versus.GetComponentsInChildren<Toggle>(); 
-            listOfToggle[0].isOn = (PlayerPrefs.GetInt(CommonDefines.VERSUS_IA) == 1) ? true : false;
-            listOfToggle[1].isOn = (PlayerPrefs.GetInt(CommonDefines.VERSUS_IA) == 1) ? false : true;
+		if (PlayerPrefs.HasKey(CommonDefines.IS_P1_IA)) {
+            Toggle[] listOfToggle = is_P1_IA.GetComponentsInChildren<Toggle>(); 
+            listOfToggle[0].isOn = (PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) ? true : false;
+            listOfToggle[1].isOn = (PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) ? false : true;
         }
-        if (PlayerPrefs.HasKey(CommonDefines.VERSUS_IA)) {
+		if (PlayerPrefs.HasKey(CommonDefines.IS_P2_IA)) {
+            Toggle[] listOfToggle = is_P2_IA.GetComponentsInChildren<Toggle>(); 
+            listOfToggle[0].isOn = (PlayerPrefs.GetInt(CommonDefines.IS_P2_IA) == 1) ? true : false;
+            listOfToggle[1].isOn = (PlayerPrefs.GetInt(CommonDefines.IS_P2_IA) == 1) ? false : true;
+        }
+        if (PlayerPrefs.HasKey(CommonDefines.FIRST_PLAYER_PLAYING)) {
             Toggle[] listOfToggle = firstPlayer.GetComponentsInChildren<Toggle>(); 
             listOfToggle[0].isOn = (PlayerPrefs.GetInt(CommonDefines.FIRST_PLAYER_PLAYING) == 0) ? true : false;
             listOfToggle[1].isOn = (PlayerPrefs.GetInt(CommonDefines.FIRST_PLAYER_PLAYING) == 1) ? true : false;
@@ -48,16 +55,24 @@ public class MainMenu : MonoBehaviour {
     }
 
     public void GetSettingsGameInfo() {
-        string versusString = versus.ActiveToggles().FirstOrDefault().name;
+        string isP1IA_versus = is_P1_IA.ActiveToggles().FirstOrDefault().name;
+        string isP2IA_versus = is_P2_IA.ActiveToggles().FirstOrDefault().name;
         string firstPlayerString = firstPlayer.ActiveToggles().FirstOrDefault().name;
-        if (versusString == "ToggleIA") {
-            PlayerPrefs.SetInt(CommonDefines.VERSUS_IA, 1);
+        if (isP1IA_versus == "ToggleIA") {
+            PlayerPrefs.SetInt(CommonDefines.IS_P1_IA, 1);
         }
         else {
-            PlayerPrefs.SetInt(CommonDefines.VERSUS_IA, 0);
+            PlayerPrefs.SetInt(CommonDefines.IS_P1_IA, 0);
+        }
+        if (isP2IA_versus == "ToggleIA") {
+            PlayerPrefs.SetInt(CommonDefines.IS_P2_IA, 1);
+        }
+        else {
+            PlayerPrefs.SetInt(CommonDefines.IS_P2_IA, 0);
         }
         int playerStarting = (firstPlayerString == "TogglePlayer1") ? 0 : ((firstPlayerString == "TogglePlayer2") ? 1 : 2);
         PlayerPrefs.SetInt(CommonDefines.FIRST_PLAYER_PLAYING, playerStarting);
+
         PlayerPrefs.Save();
     }
 }

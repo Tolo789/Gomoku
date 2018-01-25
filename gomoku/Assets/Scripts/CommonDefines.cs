@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class CommonDefines {
-	public const string VERSUS_IA = "VersusIA";
+	public const string IS_P1_IA = "isP1IA";
+	public const string IS_P2_IA = "isP2IA";
 	public const string FIRST_PLAYER_PLAYING = "FirstPlayer";
 	public const string AI_DEPTH_SETTING = "IaDepth";
 	public const string AI_TIME_SETTING = "IaTime";

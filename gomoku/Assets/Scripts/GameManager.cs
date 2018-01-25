@@ -134,11 +134,18 @@ public class GameManager : MonoBehaviour {
 		alignmentHasBeenDone = false;
 
 		// Handle who starts first
-		if (PlayerPrefs.HasKey(CommonDefines.VERSUS_IA) && PlayerPrefs.GetInt(CommonDefines.VERSUS_IA) == 1) {
+		if (PlayerPrefs.HasKey(CommonDefines.IS_P1_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) {
 			isHumanPlayer[1] = false;
 		}
 		else {
 			isHumanPlayer[1] = true;
+		}
+
+		if (PlayerPrefs.HasKey(CommonDefines.IS_P2_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P2_IA) == 1) {
+			isHumanPlayer[0] = false;
+		}
+		else {
+			isHumanPlayer[0] = true;
 		}
 
 		if (PlayerPrefs.HasKey(CommonDefines.FIRST_PLAYER_PLAYING)) {
@@ -466,6 +473,7 @@ public class GameManager : MonoBehaviour {
 		listPlayers[1 - currentPlayerIndex].color = Color.white;
 
 		// update allowed movements in map
+		bool thereIsAvailableMoves = false;
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
 				if (boardMap[y, x] != P1_VALUE && boardMap[y, x] != P2_VALUE) {
@@ -475,7 +483,18 @@ public class GameManager : MonoBehaviour {
 					if (SELF_CAPTURE_RULE)
 						UpdateSelfCapture(boardMap, y, x, currentPlayerVal, otherPlayerVal);
 				}
+				if (currentPlayerIndex == 0 && (boardMap[y, x] == EMPTY_VALUE || boardMap[y, x] == DT_P2_VALUE || boardMap[y, x] == NA_P2_VALUE)) {
+					thereIsAvailableMoves = true;
+				}
+				if (currentPlayerIndex == 1 && (boardMap[y, x] == EMPTY_VALUE || boardMap[y, x] == DT_P2_VALUE || boardMap[y, x] == NA_P2_VALUE)) {
+					thereIsAvailableMoves = true;
+				}
 			}
+		}
+
+		if (!thereIsAvailableMoves) {
+			DisplayWinner(-1);
+			return;
 		}
 
 		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
@@ -639,7 +658,12 @@ public class GameManager : MonoBehaviour {
 		// TODO: display winner and stop playing
 		int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
 		playSettings.SetActive(true);
-		displayWinner.text = "Player " + winner + " won !";
+		if (winnerIndex == -1) {
+			displayWinner.text = "Draw !";
+		}
+		else {
+			displayWinner.text = "Player " + winner + " won !";
+		}
 		isGameEnded = true;
 	}
 	#endregion
