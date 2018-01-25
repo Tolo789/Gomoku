@@ -17,6 +17,8 @@ public struct State {
 	public int winner;
 
 	public int depth;
+	public bool alignementDone;
+	public List<Vector2Int> captureMoves;
 
 	public State(State state) {
 		this.map = new int[GameManager.size, GameManager.size];
@@ -27,6 +29,9 @@ public struct State {
 		this.rootVal = state.rootVal;
 		this.winner = state.winner;
 		this.depth = state.depth;
+		this.alignementDone = state.alignementDone;
+		this.captureMoves = new List<Vector2Int>();
+
 		for (int y = 0; y < GameManager.size; y++) {
 			for (int x = 0; x < GameManager.size; x++) {
 				this.map[y,x] = state.map[y,x];
@@ -246,7 +251,9 @@ public class GameManager : MonoBehaviour {
 		state.rootPlayerScore = playerScores[currentPlayerIndex];
 		state.otherPlayerScore = playerScores[1 - currentPlayerIndex];
 		state.depth = 0;
-		state.winner = -1;
+		state.winner = 0;
+		state.alignementDone = false;
+		state.captureMoves = new List<Vector2Int>();
 
 		// Save first move as default move
 		List<Vector3Int> allowedMoves = GetAllowedMoves(state);
@@ -362,15 +369,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private bool GameEnded(State state) {
-		if (state.depth == AI_DEPTH || Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME) {
-			return true;
-		}
-		if (state.rootPlayerScore == CAPTURES_NEEDED_TO_WIN || CheckIfAlign(state.map, state.rootVal)) {
-			state.winner = state.rootVal;
-			return true;
-		}
-		else if (state.otherPlayerScore == CAPTURES_NEEDED_TO_WIN || CheckIfAlign(state.map, state.enemyVal)){
-			state.winner = state.enemyVal;
+		if (state.depth == AI_DEPTH || state.winner != 0 || Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME) {
 			return true;
 		}
 		return false;
@@ -378,16 +377,19 @@ public class GameManager : MonoBehaviour {
 
 	private int GetStateHeuristic(State state) {
 		// Exit instantly if we know that there is a winner
-		if (state.winner == state.rootVal || state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+		if (state.winner == 1) {
 			return Int32.MaxValue;
 		}
-		else if (state.winner == state.enemyVal || state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+		else if (state.winner == 2) {
 			return Int32.MinValue;
+		}
+		else if (state.winner == -1) {
+			return 0;
 		}
 
 		int stateScore = 0;
 
-		// Consider scores individually because the closer is to 10 the closer is to win
+		// TODO: Consider scores individually because the closer is to 10 the closer is to win
 		stateScore += 100 * (state.rootPlayerScore - state.otherPlayerScore);
 
 
@@ -434,7 +436,7 @@ public class GameManager : MonoBehaviour {
 			return;
 		}
 
-		Debug.Log("Alignment has been done: " + alignmentHasBeenDone);
+		// Debug.Log("Alignment has been done: " + alignmentHasBeenDone);
 		// If player needed to play a counter move and didnt do it, then he has lost
 		if (alignmentHasBeenDone) {
 			bool hasCountered = false;
@@ -455,12 +457,6 @@ public class GameManager : MonoBehaviour {
 				return;
 			}
 		}
-
-		// check if win by allignement 2
-		// if (GetWinningAlignement2(currentPlayerVal, otherPlayerVal, boardMap)) {
-		// 	DisplayWinner(currentPlayerIndex);
-		// 	return;
-		// }
 
 		// End turn, next player to play
 		currentPlayerIndex = 1 - currentPlayerIndex;
@@ -506,42 +502,42 @@ public class GameManager : MonoBehaviour {
 		int capturedStone = CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture: true, isAiSimulation: true);
 		if (state.myVal == state.rootVal) {
 			state.rootPlayerScore += capturedStone;
+			if (state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+				state.winner = 1;
+			}
 		}
 		else {
 			state.otherPlayerScore += capturedStone;
+			if (state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+				state.winner = 2;
+			}
 		}
 
 		// If player needed to play a counter move and didnt do it, then he has lost
-		// TODO: adapt this to simulation
-		if (counterMoves.Count != 0) {
+		if (state.alignementDone) {
 			bool hasCountered = false;
-			foreach (Vector2Int counterMove in counterMoves) {
-				if (counterMove.x == xCoord && counterMove.y == yCoord) {
-					hasCountered = true;
-					break;
+			if (state.captureMoves.Count != 0) {
+				foreach (Vector2Int counterMove in state.captureMoves) {
+					if (counterMove.x == xCoord && counterMove.y == yCoord) {
+						hasCountered = true;
+						break;
+					}
 				}
 			}
 			if (hasCountered) {
-				counterMoves.Clear();
+				if (state.captureMoves.Count != 0)
+					state.captureMoves.Clear();
 			}
 			else {
-				DisplayWinner(1 - currentPlayerIndex);
+				if (state.myVal == state.rootVal) {
+					state.winner = 2;
+				}
+				else {
+					state.winner = 1;
+				}
 				return;
 			}
 		}
-
-		// Put this in heuristic of move (only for FakePutStone)
-		// check if win by allignement
-		// if (IsWinByAlignment(yCoord, xCoord)) {
-
-		// }
-
-		// check if win by allignement 2
-		// if (GetWinningAlignement2(state.myVal, state.enemyVal, state.map)) {
-		// 	Debug.Log("ALIGNEMENT");
-		// }
-
-
 
 		// End turn, next player to play
 		int tmp = state.myVal;
@@ -558,6 +554,21 @@ public class GameManager : MonoBehaviour {
 					if (SELF_CAPTURE_RULE)
 						UpdateSelfCapture(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
 				}
+			}
+		}
+
+		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
+		state.alignementDone = false;
+		if (state.myVal == state.rootVal) {
+			if (IsWinByAlignment(state.map, yCoord, xCoord, state.enemyVal, state.myVal, state.rootPlayerScore, ref state.alignementDone)) {
+				state.winner = 2;
+				return;
+			}
+		}
+		else {
+			if (IsWinByAlignment(state.map, yCoord, xCoord, state.enemyVal, state.myVal, state.otherPlayerScore, ref state.alignementDone)) {
+				state.winner = 1;
+				return;
 			}
 		}
 	}
@@ -1141,7 +1152,6 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private bool CanWinWithCapture(int[,] map, int myVal, int enemyVal, int myScore) {
-		// TODO: do calls this func instead of LastAlignCheck()
 		// Check if Enemy can counterMove by capture
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
@@ -1180,7 +1190,7 @@ public class GameManager : MonoBehaviour {
 	private bool CanCounterMove(int[,] map, int yCoord, int xCoord, int yCoeff, int xCoeff, int myVal, int enemyVal) {
 		// TODO
 		// 1) Find all possible counterMoves for an alignement
-		// to counter a 5-alignement any capture is good, for a 6-align only middle 4 captures, for 7-align only middle 3, and so on
+		// Only check if can capture central stones: to counter a 5-alignement any capture is good, for a 6-align only middle 4 captures, for 7-align only middle 3, and so on
 
 		// Find borders to know align length
 		Vector2Int minStone = new Vector2Int(xCoord, yCoord);
@@ -1212,73 +1222,97 @@ public class GameManager : MonoBehaviour {
 
 		// Only check if can capture central stones
 		List<Vector2Int> tmpCounterMoves = new List<Vector2Int>();
-		// TODO
-
-
-		// 2) If no prev counterMoves then add all found counter moves
-		if (counterMoves.Count == 0) {
-			foreach (Vector2Int counterMove in tmpCounterMoves) {
-				counterMoves.Add(counterMove);
+		if (xCoeff != 0) {
+			while (minStone.x <= maxStone.x) {
+				FindCaptureMoves(map, minStone.y, minStone.x, myVal, enemyVal, ref tmpCounterMoves);
+				minStone.x += xCoeff;
+				minStone.y += yCoeff;
 			}
 		}
-		// 2.5) Otherwise, keep only common countermoves
 		else {
-			// TODO
+			while (minStone.y <= maxStone.y) {
+				FindCaptureMoves(map, minStone.y, minStone.x, myVal, enemyVal, ref tmpCounterMoves);
+				minStone.y += yCoeff;
+			}
 		}
 
-		// 3) Return if counterMoves.Count == 0
+		// If no prev counterMoves then add all found counter moves
+		if (counterMoves.Count == 0) {
+			foreach (Vector2Int tmpMove in tmpCounterMoves) {
+				counterMoves.Add(tmpMove);
+			}
+		}
+		// Otherwise, keep only counterMoves in common
+		else {
+			counterMoves = counterMoves.Intersect(tmpCounterMoves).ToList();
+		}
+
+		// Return true if at least one counterMove exists
 		return (counterMoves.Count != 0);
 	}
 
-/*
-	private bool GetWinningAlignement2(int myVal, int enemyVal, int[,] map) {
-		// TODO
-		for (int yCoord = 0; yCoord < size; yCoord++) {
-			for (int xCoord = 0; xCoord < size; xCoord++) {
-				if (map[yCoord, xCoord] == myVal && (RadialCheckAlign(myVal, enemyVal, map, yCoord, xCoord, 1, 0) || RadialCheckAlign(myVal, enemyVal, map, yCoord, xCoord, 0, 1) || RadialCheckAlign(myVal, enemyVal, map, yCoord, xCoord, 1, 1)))
-					return true;
-			}
+	private void FindCaptureMoves(int[,] map, int yCoord, int xCoord, int myVal, int enemyVal, ref List<Vector2Int> captureMoves) {
+		bool checkLeft = xCoord - 2 >= 0 && xCoord + 1 < size;
+		bool checkRight = xCoord + 2 < size && xCoord - 1 >= 0;
+		bool checkTop = yCoord - 2 >= 0 && yCoord + 1 < size;
+		bool checkBot = yCoord + 2 < size && yCoord - 1 >= 0;
+
+		if (checkTop) {
+			RadialFindCaptureMoves(map, yCoord, xCoord, -1, 0, myVal, enemyVal, ref captureMoves);
 		}
-		return false;
+		if (checkBot) {
+			RadialFindCaptureMoves(map, yCoord, xCoord, 1, 0, myVal, enemyVal, ref captureMoves);
+		}
+		if (checkLeft) {
+			RadialFindCaptureMoves(map, yCoord, xCoord, 0, -1, myVal, enemyVal, ref captureMoves);
+		}
+		if (checkRight) {
+			RadialFindCaptureMoves(map, yCoord, xCoord, 0, 1, myVal, enemyVal, ref captureMoves);
+		}
+		if (checkLeft && checkTop) {
+			RadialFindCaptureMoves(map, yCoord, xCoord, -1, -1, myVal, enemyVal, ref captureMoves);
+		}
+		if (checkLeft && checkBot) {
+			RadialFindCaptureMoves(map, yCoord, xCoord, 1, -1, myVal, enemyVal, ref captureMoves);
+		}
+		if (checkRight && checkTop) {
+			RadialFindCaptureMoves(map, yCoord, xCoord, -1, 1, myVal, enemyVal, ref captureMoves);
+		}
+		if (checkRight && checkBot) {
+			RadialFindCaptureMoves(map, yCoord, xCoord, 1, 1, myVal, enemyVal, ref captureMoves);
+		}
+
 	}
 
-	private bool RadialCheckAlign(int myVal, int enemyVal, int[,] map, int yCoord, int xCoord, int xCoeff, int yCoeff) {
-		int x1 = xCoord + xCoeff;
-		int y1 = yCoord + yCoeff;
-		int x2 = xCoord + xCoeff + xCoeff + xCoeff + xCoeff;
-		int y2 = yCoord + yCoeff + yCoeff + yCoeff + yCoeff;
-		if (x2 < size && y2 < size && map[y2, x2] == myVal) {
-			while (y1 <= y2 && x1 <= x2) {
-				if (map[y1, x1] != myVal) {
-					return false;
-				}
-				y1+= yCoeff;
-				x1+= xCoeff;
+	private void RadialFindCaptureMoves(int[,] map, int yCoord, int xCoord, int yCoeff, int xCoeff, int myVal, int enemyVal, ref List<Vector2Int> captureMoves) {
+		// Do more checks only if has neighbour
+		if (map[yCoord + yCoeff, xCoord + xCoeff] == myVal) {
+			int x;
+			int y;
+			// Check if at one of the extremities there is an enemy stone and at the other one there is an available space
+			if (map[yCoord - yCoeff, xCoord - xCoeff] == enemyVal) {
+				x = xCoord + 2 * xCoeff;
+				y = yCoord + 2 * yCoeff;
 			}
-			if (xCoord - xCoeff >= 0 && yCoord - yCoeff >= 0) {
-				if (map[yCoord - yCoeff, xCoord - xCoeff] == myVal)
-					return false;
+			else if (map[yCoord + 2 * yCoeff, xCoord + 2 * xCoeff] == enemyVal) {
+				x = xCoord - xCoeff;
+				y = yCoord - yCoeff;
 			}
-			return LastAlignCheck(map, myVal, enemyVal);
-		}
-		return false;
-	}
+			else {
+				// exit if there isn't at least one enemy stone at the boundary
+				return;
+			}
 
-	private bool LastAlignCheck(int[,] map, int myVal, int enemyVal) {
-		// Check if Enemy can counterMove by capture
-		if (otherPlayerVal == 8) {
-			for (int y = 0; y < 19; y++) {
-				for (int x = 0; x < 19; x++) {
-					if (CheckCaptures(map, y, x, myVal, enemyVal, false, true) > 0) {
-						Debug.Log("ENEMY CAN WIN BY CAPTURE!!");
-						return false;
-					}
+			if (enemyVal == P1_VALUE) {
+				if (map[y, x] == EMPTY_VALUE || map[y, x] == DT_P2_VALUE || map[y, x] == NA_P2_VALUE) {
+					captureMoves.Add(new Vector2Int(x, y));
 				}
 			}
+			else if (map[y, x] == EMPTY_VALUE || map[y, x] == DT_P1_VALUE || map[y, x] == NA_P1_VALUE) {
+				captureMoves.Add(new Vector2Int(x, y));
+			}
 		}
-		return true;
 	}
-*/
 	#endregion
 
 }
