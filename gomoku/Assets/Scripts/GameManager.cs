@@ -43,11 +43,11 @@ public class GameManager : MonoBehaviour {
 	public Sprite doubleThreeSprite;
 	public GameObject emptyButton;
 	public GameObject startBoard;
-	public Text playerPlaying;
 	public GameObject playSettings;
 	public Canvas canvas;
 	public Text[] listPlayers;
 	public Text AiTimer;
+	public Text displayWinner;
 
 	public static int size = 19;
 	[HideInInspector]
@@ -146,7 +146,6 @@ public class GameManager : MonoBehaviour {
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
 		listPlayers[currentPlayerIndex].color = Color.cyan;
 		listPlayers[1 - currentPlayerIndex].color = Color.white;
-		playerPlaying.text = "Player actually playing: Player" + currentPlayerVal;
 
 		// init board with hidden buttons
 		float width = startBoard.GetComponent<RectTransform>().rect.width ;
@@ -473,7 +472,6 @@ public class GameManager : MonoBehaviour {
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
 		listPlayers[currentPlayerIndex].color = Color.cyan;
 		listPlayers[1 - currentPlayerIndex].color = Color.white;
-		playerPlaying.text = "Player actually playing: Player" + currentPlayerVal;
 
 		// update allowed movements in map
 		for (int y = 0; y < size; y++) {
@@ -627,7 +625,7 @@ public class GameManager : MonoBehaviour {
 		// TODO: display winner and stop playing
 		int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
 		playSettings.SetActive(true);
-		Debug.Log("Player " + winner + " won !");
+		displayWinner.text = "Player " + winner + " won !";
 		isGameEnded = true;
 	}
 	#endregion
