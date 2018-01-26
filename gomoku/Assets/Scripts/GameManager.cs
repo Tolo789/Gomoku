@@ -342,12 +342,34 @@ public class GameManager : MonoBehaviour {
 		int secondNeighbourVal = 0;
 		int neighbours_1 = 0;
 		int neighbours_2 = 0;
+		bool isFirstEmpty = false;
 
 		int x = xCoord + xCoeff;
 		int y = yCoord + yCoeff;
+
 		while (x >= 0 && x < size && y >= 0 && y < size) {
 			// Exit if is not a stone
 			if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
+
+				// Jump at one space align
+
+				// if (firstNeighbourVal == P1_VALUE) {
+				// 	if ((state.map[y, x] == EMPTY_VALUE || state.map[y, x] == NA_P2_VALUE || state.map[y, x] == DT_P2_VALUE) && !isFirstEmpty) {
+				// 		isFirstEmpty = true;
+				// 	}
+				// 	else {
+				// 		break;
+				// 	}
+				// }
+				// else if (firstNeighbourVal == P2_VALUE) {
+				// 	if ((state.map[y, x] == EMPTY_VALUE || state.map[y, x] == NA_P1_VALUE || state.map[y, x] == DT_P1_VALUE) && !isFirstEmpty) {
+				// 		isFirstEmpty = true;
+				// 	}
+				// 	else {
+				// 		break;
+				// 	}
+				// }
+
 				break;
 			}
 
@@ -365,6 +387,7 @@ public class GameManager : MonoBehaviour {
 
 		x = xCoord - xCoeff;
 		y = yCoord - yCoeff;
+		isFirstEmpty = false;
 		while (x >= 0 && x < size && y >= 0 && y < size) {
 			// Exit if is not a stone
 			if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
