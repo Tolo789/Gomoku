@@ -307,21 +307,17 @@ public class GameManager : MonoBehaviour {
 	private int GetMoveHeuristic(State state, int yCoord, int xCoord) {
 		int score = 0;
 
+		int middle = size / 2;
 		// Score based on board position
-		if (yCoord != 0 && xCoord != 0 && yCoord != size -1 && xCoord != size -1) {
-			if (yCoord == 9 && xCoord == 9)
-				score += 4;
-			else if (xCoord >= 6 && xCoord <= 12 && yCoord >= 6 && yCoord <= 12)
-				score += 3;
-			else if (xCoord >= 3 && xCoord <= 15 && yCoord >= 3 && yCoord <= 15)
-				score += 2;
-			else if (xCoord >= 1 && xCoord <= 17 && yCoord >= 1 && yCoord <= 17)
-				score += 1;
+		for (int i = 0; i < middle; i++) {
+			if (xCoord >= (middle - i) && xCoord <= (middle + i) && yCoord >= (middle - i) && yCoord <= (middle + i)) {
+				score += middle - i;
+				break;
+			}
 		}
-
 		// Increase move value for each capture that can be done
-		score += 10 * CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
-		score += 10 * CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
+		score += HEURISTIC_CAPTURE_COEFF * CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
+		score += HEURISTIC_CAPTURE_COEFF * CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
 
 		// Increase move value based on neighbours influence
 		score += GetStoneInfluence(state, yCoord, xCoord);
