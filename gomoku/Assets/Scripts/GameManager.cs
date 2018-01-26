@@ -250,7 +250,7 @@ public class GameManager : MonoBehaviour {
 		startSearchTime = Time.realtimeSinceStartup;
 
 		// Depth 0, make a copy of current game state
-		Debug.Log("StartMinMax (Depth: " + AI_DEPTH + ", Moves studied per branch: " + AI_MAX_SEARCHES_PER_DEPTH + ", Max response time: " + AI_MAX_SEARCHES_PER_DEPTH + ")");
+		Debug.Log("StartMinMax (Depth: " + AI_DEPTH + ", Moves studied per branch: " + AI_MAX_SEARCHES_PER_DEPTH + ", Max response time: " + AI_SEARCH_TIME + ")");
 		State state = new State();
 		state.map = CopyMap(boardMap);
 		state.myVal = currentPlayerVal;
@@ -319,6 +319,80 @@ public class GameManager : MonoBehaviour {
 		// Increase move value for each capture that can be done
 		score += 10 * CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
 		score += 10 * CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
+
+		// Increase move value based on neighbours influence
+		score += GetStoneInfluence(state, yCoord, xCoord);
+
+		return score;
+	}
+
+	private int GetStoneInfluence(State state, int yCoord, int xCoord) {
+		int influence = 0;
+
+		
+
+		return influence;
+	}
+
+	private int GetRadialStoneInfluence(State state, int yCoord, int xCoord, int yCoeff, int xCoeff) {
+		int score = 0;
+		int firstNeighbourVal = 0;
+		int secondNeighbourVal = 0;
+		int neighbours_1 = 0;
+		int neighbours_2 = 0;
+
+		int x = xCoord + xCoeff;
+		int y = yCoord + yCoeff;
+		while (x >= 0 && x < size && y >= 0 && y < size) {
+			// Exit if is not a stone
+			if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
+				break;
+			}
+
+			// Detect change color
+			if (firstNeighbourVal == 0) {
+				firstNeighbourVal = state.map[y, x];
+			}
+			else if (state.map[y, x] != firstNeighbourVal){
+				break;
+			}
+			neighbours_1++;
+			y += yCoeff;
+			x += xCoeff;
+		}
+
+		x = xCoord - xCoeff;
+		y = yCoord - yCoeff;
+		while (x >= 0 && x < size && y >= 0 && y < size) {
+			// Exit if is not a stone
+			if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
+				break;
+			}
+
+			// Detect change color
+			if (secondNeighbourVal == 0) {
+				secondNeighbourVal = state.map[y, x];
+			}
+			else if (state.map[y, x] != secondNeighbourVal) {
+				break;
+			}
+
+			// Increase right counter
+			if (state.map[y, x] == firstNeighbourVal){
+				neighbours_1++;
+			}
+			else {
+				neighbours_2++;
+			}
+			y -= yCoeff;
+			x -= xCoeff;
+		}
+
+		// Workout score
+		if (neighbours_1 > 0)
+			score = Mathf.RoundToInt((Mathf.Pow(3, neighbours_1)));
+		if (neighbours_2 > 0)
+			score += Mathf.RoundToInt((Mathf.Pow(3, neighbours_2)));
 
 		return score;
 	}
