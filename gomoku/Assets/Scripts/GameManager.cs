@@ -135,17 +135,17 @@ public class GameManager : MonoBehaviour {
 
 		// Handle who starts first
 		if (PlayerPrefs.HasKey(CommonDefines.IS_P1_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) {
-			isHumanPlayer[1] = false;
-		}
-		else {
-			isHumanPlayer[1] = true;
-		}
-
-		if (PlayerPrefs.HasKey(CommonDefines.IS_P2_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P2_IA) == 1) {
 			isHumanPlayer[0] = false;
 		}
 		else {
 			isHumanPlayer[0] = true;
+		}
+
+		if (PlayerPrefs.HasKey(CommonDefines.IS_P2_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P2_IA) == 1) {
+			isHumanPlayer[1] = false;
+		}
+		else {
+			isHumanPlayer[1] = true;
 		}
 
 		if (PlayerPrefs.HasKey(CommonDefines.FIRST_PLAYER_PLAYING)) {
@@ -246,6 +246,7 @@ public class GameManager : MonoBehaviour {
 
 #region AI
 	private void StartMinMax() {
+		// Start searchTime
 		startSearchTime = Time.realtimeSinceStartup;
 
 		// Depth 0, make a copy of current game state
@@ -397,7 +398,8 @@ public class GameManager : MonoBehaviour {
 		int stateScore = 0;
 
 		// TODO: Consider scores individually because the closer is to 10 the closer is to win
-		stateScore += 100 * (state.rootPlayerScore - state.otherPlayerScore);
+		stateScore += 100 * state.rootPlayerScore;
+		stateScore -= 101 * state.otherPlayerScore;
 
 
 		return stateScore;
