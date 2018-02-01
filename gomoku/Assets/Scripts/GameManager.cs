@@ -67,6 +67,7 @@ public class GameManager : MonoBehaviour {
 	public static int size = 19;
 	[HideInInspector]
 	public bool isGameEnded = false;
+	public bool isGamePaused = false;
 
 	// Game settings
 	private int AI_DEPTH = 3;
@@ -207,7 +208,7 @@ public class GameManager : MonoBehaviour {
 	}
 	
 	void Update () {
-		if (!isGameEnded && !isHumanPlayer[currentPlayerIndex]) {
+		if (!isGameEnded && !isHumanPlayer[currentPlayerIndex] && !isGamePaused) {
 			if (!isAIPlaying) {
 				isAIPlaying = true;
 
@@ -815,7 +816,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public bool PlayerCanPutStone() {
-		if (!IsHumanTurn() || isGameEnded || simulatingMove)
+		if (!IsHumanTurn() || isGameEnded || simulatingMove || isGamePaused)
 			return false;
 		return true;
 	}
@@ -870,20 +871,28 @@ public class GameManager : MonoBehaviour {
 		boardMap = CopyMap(oldState.map);
 		playerScores[0] = oldState.playerScores[0];
 		playerScores[1] = oldState.playerScores[1];
-		currentPlayerIndex = oldState.currentPlayerIndex;
 		alignmentHasBeenDone = oldState.alignmentHasBeenDone;
 		counterMoves = oldState.counterMoves;
 		lastMove = oldState.lastMove;
+		// Player playing logic
+		currentPlayerIndex = oldState.currentPlayerIndex;
+		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
+		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
+		listPlayers[currentPlayerIndex].color = Color.cyan;
+		listPlayers[1 - currentPlayerIndex].color = Color.white;
 
 		// first reset everything and put stones back
 		int playerIndex = -1;
+		int tmpVal = EMPTY_VALUE;
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
+				tmpVal = boardMap[y, x];
 				DeleteStone(boardMap, y, x);
+
 				playerIndex = -1;
-				if (boardMap[y, x] == P1_VALUE)
+				if (tmpVal == P1_VALUE)
 					playerIndex = 0;
-				else if (boardMap[y, x] == P2_VALUE)
+				else if (tmpVal == P2_VALUE)
 					playerIndex = 1;
 
 				if (playerIndex >= 0) {
@@ -901,6 +910,8 @@ public class GameManager : MonoBehaviour {
 					else {
 						button.transform.GetChild(0).gameObject.SetActive(false);
 					}
+
+					boardMap[y,x] = tmpVal;
 				}
 			}
 		}
@@ -916,6 +927,12 @@ public class GameManager : MonoBehaviour {
 				}
 			}
 		}
+
+		// Change UI
+		listPlayers[0].text = "Player1" + ": " + playerScores[0];
+		listPlayers[1].text = "Player2" + ": " + playerScores[1];
+		listPlayers[currentPlayerIndex].color = Color.cyan;
+		listPlayers[1 - currentPlayerIndex].color = Color.white;
 
 		backupStates.RemoveAt(0);
 	}
@@ -1604,5 +1621,17 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 	#endregion
+
+	//Handle UI
+	public void ButtonPlayClick(GameObject playSettings) {
+		isGamePaused = true;
+        playSettings.SetActive(true);
+    }
+
+	public void ButtonGoBack(GameObject playSettings) {
+		isGamePaused = false;
+		Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		playSettings.SetActive(false);
+    }
 
 }
