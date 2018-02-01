@@ -131,6 +131,30 @@ public class SettingMenu : MonoBehaviour {
 		maxAIRepText.text = maxAIRepSlider.value.ToString() + "s";
 	}
 
+	public void DecreaseAIDepth() {
+		float nbr = Mathf.RoundToInt(aiDepthSlider.value * 10) / 10f;
+		aiDepthSlider.value = nbr - 1f;
+		aiDephText.text = aiDepthSlider.value.ToString();
+	}
+
+	public void IncreaseAIDepth() {
+		float nbr = Mathf.RoundToInt(aiDepthSlider.value * 10) / 10f;
+		aiDepthSlider.value = nbr + 1f;
+		aiDephText.text = aiDepthSlider.value.ToString();
+	}
+
+	public void DecreaseNbrOfMove() {
+		float nbr = Mathf.RoundToInt(nbrOfMovesSlider.value * 10) / 10f;
+		nbrOfMovesSlider.value = nbr - 1f;
+		nbrOfMovesText.text = nbrOfMovesSlider.value.ToString();
+	}
+
+	public void IncreaseNbrOfMove() {
+		float nbr = Mathf.RoundToInt(nbrOfMovesSlider.value * 10) / 10f;
+		nbrOfMovesSlider.value = nbr + 1f;
+		nbrOfMovesText.text = nbrOfMovesSlider.value.ToString();
+	}
+
 	public void saveChanges() {
 		// Sliders
 		PlayerPrefs.SetInt(CommonDefines.AI_DEPTH_SETTING, Mathf.RoundToInt(aiDepthSlider.value));
