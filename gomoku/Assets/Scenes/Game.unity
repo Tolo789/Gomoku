@@ -550,8 +550,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1925162076}
-        m_MethodName: GoBack
+      - m_Target: {fileID: 1925162074}
+        m_MethodName: ButtonGoBack
         m_Mode: 2
         m_Arguments:
           m_ObjectArgument: {fileID: 60558673}
@@ -949,11 +949,11 @@ Prefab:
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1925162076}
+      objectReference: {fileID: 1925162074}
     - target: {fileID: 114363902251810722, guid: 748ea767172ea4a14a455158ca111daf,
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: PlayClick
+      value: ButtonPlayClick
       objectReference: {fileID: 0}
     - target: {fileID: 114363902251810722, guid: 748ea767172ea4a14a455158ca111daf,
         type: 2}
@@ -1428,7 +1428,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 866207876}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1925162074}
+        m_MethodName: GoBack
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_TypeName: UnityEngine.UI.Button+ButtonClickedEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
 --- !u!114 &866207876
@@ -2428,6 +2439,7 @@ MonoBehaviour:
   AiTimer: {fileID: 564232487}
   displayWinner: {fileID: 351874437}
   isGameEnded: 0
+  isGamePaused: 0
 --- !u!114 &1925162075
 MonoBehaviour:
   m_ObjectHideFlags: 0

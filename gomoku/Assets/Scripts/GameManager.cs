@@ -67,6 +67,7 @@ public class GameManager : MonoBehaviour {
 	public static int size = 19;
 	[HideInInspector]
 	public bool isGameEnded = false;
+	public bool isGamePaused = false;
 
 	// Game settings
 	private int AI_DEPTH = 3;
@@ -207,7 +208,7 @@ public class GameManager : MonoBehaviour {
 	}
 	
 	void Update () {
-		if (!isGameEnded && !isHumanPlayer[currentPlayerIndex]) {
+		if (!isGameEnded && !isHumanPlayer[currentPlayerIndex] && !isGamePaused) {
 			if (!isAIPlaying) {
 				isAIPlaying = true;
 
@@ -813,7 +814,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public bool PlayerCanPutStone() {
-		if (!IsHumanTurn() || isGameEnded || simulatingMove)
+		if (!IsHumanTurn() || isGameEnded || simulatingMove || isGamePaused)
 			return false;
 		return true;
 	}
@@ -1602,5 +1603,17 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 	#endregion
+
+	//Handle UI
+	public void ButtonPlayClick(GameObject playSettings) {
+		isGamePaused = true;
+        playSettings.SetActive(true);
+    }
+
+	public void ButtonGoBack(GameObject playSettings) {
+		isGamePaused = false;
+		Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		playSettings.SetActive(false);
+    }
 
 }
