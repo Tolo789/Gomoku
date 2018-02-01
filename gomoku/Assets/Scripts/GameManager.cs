@@ -865,7 +865,9 @@ public class GameManager : MonoBehaviour {
 	public void GoBack() {
 		if (backupStates.Count == 0 || !isHumanPlayer[currentPlayerIndex] || isAIPlaying)
 			return ;
-
+		if (isGameEnded) {
+			isGameEnded = false;
+		}
 		BackupState oldState = backupStates[0];
 
 		boardMap = CopyMap(oldState.map);
