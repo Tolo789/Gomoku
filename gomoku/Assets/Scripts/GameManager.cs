@@ -108,6 +108,7 @@ public class GameManager : MonoBehaviour {
 	private bool moveIsReady = false;
 	private bool simulatingMove = false;
 	private bool alignmentHasBeenDone = false;
+	private bool firstAlphaBetaResult = false;
 
 	private List<BackupState> backupStates;
 
@@ -280,12 +281,8 @@ public class GameManager : MonoBehaviour {
 
 		Debug.Log("Start state value: " + GetStateHeuristic(state));
 
-		// Save first move as default move
-		List<Vector3Int> allowedMoves = GetAllowedMoves(state);
-		bestMove = allowedMoves[0];
-		bestMove.z = -1;
-
 		// Actually do MinMax
+		firstAlphaBetaResult = true;
 		AlphaBeta(state, Int32.MinValue, Int32.MaxValue, true);
 
 		// Save searchTime
@@ -356,36 +353,38 @@ public class GameManager : MonoBehaviour {
 		int secondNeighbourVal = 0;
 		int neighbours_1 = 0;
 		int neighbours_2 = 0;
-		int divisor_1 = 1;
-		int divisor_2 = 1;
+		int neighbours_1_jumped = 0;
+		int neighbours_2_jumped = 0;
 		bool isFirstEmpty = false;
 
 		int x = xCoord + xCoeff;
 		int y = yCoord + yCoeff;
-
 		while (x >= 0 && x < size && y >= 0 && y < size) {
 			// Lower influence if is one-separated from other stones
 			if (state.map[y, x] == EMPTY_VALUE && !isFirstEmpty) {
 				isFirstEmpty = true;
-				divisor_1 = 2;
 			}
 			// Exit if is not a stone
 			else if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
-				if (neighbours_1 == 0)
-					divisor_1 = 1;
 				break;
 			}
 
 			// Detect change color
 			else if (firstNeighbourVal == 0) {
 				firstNeighbourVal = state.map[y, x];
-				neighbours_1++;
+				if (!isFirstEmpty)
+					neighbours_1++;
+				else
+					neighbours_1_jumped++;
 			}
 			else if (state.map[y, x] != firstNeighbourVal){
 				break;
 			}
 			else {
-				neighbours_1++;
+				if (!isFirstEmpty)
+					neighbours_1++;
+				else
+					neighbours_1_jumped++;
 			}
 			y += yCoeff;
 			x += xCoeff;
@@ -395,28 +394,31 @@ public class GameManager : MonoBehaviour {
 		y = yCoord - yCoeff;
 		isFirstEmpty = false;
 		while (x >= 0 && x < size && y >= 0 && y < size) {
-			// Exit if is not a stone
 			// Lower influence if is one-separated from other stones
 			if (state.map[y, x] == EMPTY_VALUE && !isFirstEmpty) {
 				isFirstEmpty = true;
-				divisor_2 = 2;
 			}
+			// Exit if is not a stone
 			else if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
-				if (neighbours_2 == 0)
-					divisor_2 = 1;
 				break;
 			}
 
 			// Detect change color
 			else if (secondNeighbourVal == 0) {
 				secondNeighbourVal = state.map[y, x];
-				neighbours_2++;
+				if (!isFirstEmpty)
+					neighbours_2++;
+				else
+					neighbours_2_jumped++;
 			}
 			else if (state.map[y, x] != secondNeighbourVal) {
 				break;
 			}
 			else {
-				neighbours_2++;
+				if (!isFirstEmpty)
+					neighbours_2++;
+				else
+					neighbours_2_jumped++;
 			}
 			y -= yCoeff;
 			x -= xCoeff;
@@ -424,7 +426,9 @@ public class GameManager : MonoBehaviour {
 
 		if (secondNeighbourVal == firstNeighbourVal) {
 			neighbours_1 += neighbours_2;
+			neighbours_1_jumped += neighbours_2_jumped;
 			neighbours_2 = 0;
+			neighbours_2_jumped = 0;
 		}
 
 		// Workout score
@@ -432,8 +436,10 @@ public class GameManager : MonoBehaviour {
 			score = Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_1)));
 		if (neighbours_2 > 0)
 			score += Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_2)));
-		score /= divisor_1;
-		score /= divisor_2;
+		if (neighbours_1_jumped > 0)
+			score += Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_1_jumped))) / 2;
+		if (neighbours_2_jumped > 0)
+			score += Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_2_jumped))) / 2;
 
 		return score;
 	}
@@ -456,9 +462,10 @@ public class GameManager : MonoBehaviour {
 					if (maxValue > v) {
 						v = maxValue;
 					}
-					if (v > alpha) {
+					if (v > alpha || firstAlphaBetaResult) {
 						alpha = v;
 						if (state.depth == 0) {
+							firstAlphaBetaResult = false;
 							bestMove = move;
 							bestMove.z = alpha;
 							Debug.Log("Update best move: " + bestMove);
