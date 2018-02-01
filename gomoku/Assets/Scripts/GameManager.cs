@@ -39,6 +39,16 @@ public struct State {
 		}
 	}
 }
+public struct BackupState {
+	public int[,] map;
+	public int[] playerScores;
+
+	public int currentPlayerIndex;
+
+	public bool alignmentHasBeenDone;
+	public List<Vector2Int> counterMoves;
+	public Vector2Int lastMove;
+}
 
 public class GameManager : MonoBehaviour {
 
@@ -98,6 +108,8 @@ public class GameManager : MonoBehaviour {
 	private bool simulatingMove = false;
 	private bool alignmentHasBeenDone = false;
 
+	private List<BackupState> backupStates;
+
 	void Start () {
 		// Retrieve game rules
 		if (PlayerPrefs.HasKey(CommonDefines.AI_DEPTH_SETTING)) {
@@ -133,6 +145,7 @@ public class GameManager : MonoBehaviour {
 		moveIsReady = false;
 		simulatingMove = false;
 		alignmentHasBeenDone = false;
+		backupStates = new List<BackupState>();
 
 		// Handle who starts first
 		if (PlayerPrefs.HasKey(CommonDefines.IS_P1_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) {
@@ -204,7 +217,7 @@ public class GameManager : MonoBehaviour {
 				// Play move
 				Debug.Log("Search time: " + searchTime);
 				AiTimer.text = "AI Timer: " + searchTime.ToString();
-				if (bestMove.z == -1)
+				if (searchTime >= AI_SEARCH_TIME)
 					Debug.LogWarning("Ai didnt find a move in time");
 				PutStone(bestMove.y, bestMove.x);
 				isAIPlaying = false;
@@ -598,6 +611,21 @@ public class GameManager : MonoBehaviour {
 
 #region MainFunctions
 	public void PutStone(int yCoord, int xCoord) {
+		// Backup moves only if it is a human move
+		if (isHumanPlayer[currentPlayerIndex]) {
+			BackupState newBackup = new BackupState();
+			newBackup.map = CopyMap(boardMap);
+			newBackup.playerScores = new int[2];
+			newBackup.playerScores[0] = playerScores[0];
+			newBackup.playerScores[1] = playerScores[1];
+			newBackup.currentPlayerIndex = currentPlayerIndex;
+			newBackup.alignmentHasBeenDone = alignmentHasBeenDone;
+			newBackup.counterMoves = counterMoves;
+			newBackup.lastMove = lastMove;
+
+			backupStates.Insert(0, newBackup);
+		}
+
 		// If any, clear highligted stone
 		ClearHighligtedStone();
 
@@ -610,7 +638,7 @@ public class GameManager : MonoBehaviour {
 		buttonColor.a = 1;
 		button.GetComponent<Image>().color = buttonColor;
 		button.GetComponent<PutStone>().isEmpty = false;
-		button.transform.GetChild(0).gameObject.SetActive(true);
+		button.transform.GetChild(0).gameObject.SetActive(true); // highlight it
 
 		// Do captures
 		playerScores[currentPlayerIndex] += CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
@@ -829,6 +857,65 @@ public class GameManager : MonoBehaviour {
 			highlightedMove.y = -1;
 			highlightedMove.x = -1;
 		}
+	}
+
+	public void GoBack() {
+		if (backupStates.Count == 0 || !isHumanPlayer[currentPlayerIndex] || isAIPlaying)
+			return ;
+
+		BackupState oldState = backupStates[0];
+
+		boardMap = CopyMap(oldState.map);
+		playerScores[0] = oldState.playerScores[0];
+		playerScores[1] = oldState.playerScores[1];
+		currentPlayerIndex = oldState.currentPlayerIndex;
+		alignmentHasBeenDone = oldState.alignmentHasBeenDone;
+		counterMoves = oldState.counterMoves;
+		lastMove = oldState.lastMove;
+
+		// first reset everything and put stones back
+		int playerIndex = -1;
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				DeleteStone(boardMap, y, x);
+				playerIndex = -1;
+				if (boardMap[y, x] == P1_VALUE)
+					playerIndex = 0;
+				else if (boardMap[y, x] == P2_VALUE)
+					playerIndex = 1;
+
+				if (playerIndex >= 0) {
+					GameObject button = buttonsMap[y, x].gameObject;
+					button.GetComponent<Image>().sprite = stoneSprites[playerIndex];
+					button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
+					Color buttonColor = button.GetComponent<Image>().color;
+					buttonColor.a = 1;
+					button.GetComponent<Image>().color = buttonColor;
+					button.GetComponent<PutStone>().isEmpty = false;
+
+					if (lastMove.y == y && lastMove.x == x) {
+						button.transform.GetChild(0).gameObject.SetActive(true); // highlight it
+					}
+					else {
+						button.transform.GetChild(0).gameObject.SetActive(false);
+					}
+				}
+			}
+		}
+
+		// second iteration to update allowed moves
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				if (boardMap[y, x] != P1_VALUE && boardMap[y, x] != P2_VALUE) {
+					if (DOUBLE_THREE_RULE)
+						UpdateDoubleThree(boardMap, y, x, currentPlayerVal, otherPlayerVal);
+					if (SELF_CAPTURE_RULE)
+						UpdateSelfCapture(boardMap, y, x, currentPlayerVal, otherPlayerVal);
+				}
+			}
+		}
+
+		backupStates.RemoveAt(0);
 	}
 
 	private void DisplayWinner(int winnerIndex) {
