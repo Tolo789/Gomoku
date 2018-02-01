@@ -355,45 +355,37 @@ public class GameManager : MonoBehaviour {
 		int secondNeighbourVal = 0;
 		int neighbours_1 = 0;
 		int neighbours_2 = 0;
+		int divisor_1 = 1;
+		int divisor_2 = 1;
 		bool isFirstEmpty = false;
 
 		int x = xCoord + xCoeff;
 		int y = yCoord + yCoeff;
 
 		while (x >= 0 && x < size && y >= 0 && y < size) {
+			// Lower influence if is one-separated from other stones
+			if (state.map[y, x] == EMPTY_VALUE && !isFirstEmpty) {
+				isFirstEmpty = true;
+				divisor_1 = 2;
+			}
 			// Exit if is not a stone
-			if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
-
-				// Jump at one space align
-
-				// if (firstNeighbourVal == P1_VALUE) {
-				// 	if ((state.map[y, x] == EMPTY_VALUE || state.map[y, x] == NA_P2_VALUE || state.map[y, x] == DT_P2_VALUE) && !isFirstEmpty) {
-				// 		isFirstEmpty = true;
-				// 	}
-				// 	else {
-				// 		break;
-				// 	}
-				// }
-				// else if (firstNeighbourVal == P2_VALUE) {
-				// 	if ((state.map[y, x] == EMPTY_VALUE || state.map[y, x] == NA_P1_VALUE || state.map[y, x] == DT_P1_VALUE) && !isFirstEmpty) {
-				// 		isFirstEmpty = true;
-				// 	}
-				// 	else {
-				// 		break;
-				// 	}
-				// }
-
+			else if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
+				if (neighbours_1 == 0)
+					divisor_1 = 1;
 				break;
 			}
 
 			// Detect change color
-			if (firstNeighbourVal == 0) {
+			else if (firstNeighbourVal == 0) {
 				firstNeighbourVal = state.map[y, x];
+				neighbours_1++;
 			}
 			else if (state.map[y, x] != firstNeighbourVal){
 				break;
 			}
-			neighbours_1++;
+			else {
+				neighbours_1++;
+			}
 			y += yCoeff;
 			x += xCoeff;
 		}
@@ -403,21 +395,24 @@ public class GameManager : MonoBehaviour {
 		isFirstEmpty = false;
 		while (x >= 0 && x < size && y >= 0 && y < size) {
 			// Exit if is not a stone
-			if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
+			// Lower influence if is one-separated from other stones
+			if (state.map[y, x] == EMPTY_VALUE && !isFirstEmpty) {
+				isFirstEmpty = true;
+				divisor_2 = 2;
+			}
+			else if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
+				if (neighbours_2 == 0)
+					divisor_2 = 1;
 				break;
 			}
 
 			// Detect change color
-			if (secondNeighbourVal == 0) {
+			else if (secondNeighbourVal == 0) {
 				secondNeighbourVal = state.map[y, x];
+				neighbours_2++;
 			}
 			else if (state.map[y, x] != secondNeighbourVal) {
 				break;
-			}
-
-			// Increase right counter
-			if (state.map[y, x] == firstNeighbourVal){
-				neighbours_1++;
 			}
 			else {
 				neighbours_2++;
@@ -426,11 +421,18 @@ public class GameManager : MonoBehaviour {
 			x -= xCoeff;
 		}
 
+		if (secondNeighbourVal == firstNeighbourVal) {
+			neighbours_1 += neighbours_2;
+			neighbours_2 = 0;
+		}
+
 		// Workout score
 		if (neighbours_1 > 0)
 			score = Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_1)));
 		if (neighbours_2 > 0)
 			score += Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_2)));
+		score /= divisor_1;
+		score /= divisor_2;
 
 		return score;
 	}
