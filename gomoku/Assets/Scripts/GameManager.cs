@@ -77,7 +77,7 @@ public class GameManager : MonoBehaviour {
 	private bool SELF_CAPTURE_RULE = true;
 	private int CAPTURES_NEEDED_TO_WIN = 10;
 	private int HEURISTIC_ALIGN_COEFF = 5;
-	private int HEURISTIC_CAPTURE_COEFF = 100;
+	private int HEURISTIC_CAPTURE_COEFF = 50;
 
 	// Map values
 	private const int EMPTY_VALUE = 0;
@@ -326,9 +326,18 @@ public class GameManager : MonoBehaviour {
 				break;
 			}
 		}
+
 		// Increase move value for each capture that can be done
-		score += HEURISTIC_CAPTURE_COEFF * CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
-		score += HEURISTIC_CAPTURE_COEFF * CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
+		middle = CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
+		if (middle + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN || middle + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+			return Int32.MaxValue;
+		}
+		score += HEURISTIC_CAPTURE_COEFF * middle;
+		middle = CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
+		if (middle + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN || middle + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+			return Int32.MaxValue;
+		}
+		score += HEURISTIC_CAPTURE_COEFF * middle;
 
 		// Increase move value based on neighbours influence
 		score += GetStoneInfluence(state, yCoord, xCoord);
@@ -554,7 +563,7 @@ public class GameManager : MonoBehaviour {
 		int y = yCoord - yCoeff;
 		int x = xCoord - xCoeff;
 		if (x >= 0 && x < size && y >= 0 && y < size) {
-			if (state.map[y, x] == otherStoneVal)
+			if (state.map[y, x] == otherStoneVal)  // TODO: should also detect if blocked by DT or NA values (need bynary mask for that)
 				sideBlocked = true;
 			if (state.map[y, x] == state.map[yCoord, xCoord])
 				return 0;
@@ -589,18 +598,18 @@ public class GameManager : MonoBehaviour {
 		}
 
 		// Get actual score
-		if (sideBlocked) {
-			// if (nbrStone == 1)
-			// 	score = 1;
-			nbrStone -= 1;
-		}
-		if (nbrStone > 1)
+		if (nbrStone > 1) {
 			score = Mathf.RoundToInt(Mathf.Pow(HEURISTIC_ALIGN_COEFF, nbrStone));
+			if (sideBlocked) {
+					score /= 2;
+			}
+		}
 
 		// Choose if is advantagious alignment
 		if (state.map[yCoord, xCoord] == state.rootVal)
 			return score;
-		return (score > 0) ? -score - 1: 0;
+		return (score > 0) ? -score - 1: 0; // stones alone will always give 0
+		// return (nbrStone > 1) ? -score - 1: -score; // TODO: need to test this
 	}
 
 	private State ResultOfMove(State state, Vector3Int move) {
