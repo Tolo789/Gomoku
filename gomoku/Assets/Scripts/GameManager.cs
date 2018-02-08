@@ -102,6 +102,7 @@ public class GameManager : MonoBehaviour {
 	private bool[] isHumanPlayer;
 	private bool isAIPlaying;
 	private List<Vector2Int> counterMoves; // Moves that can break a winning align
+	private List<Vector3Int> studiedMoves; // Used as debug to see AI studied moves
 	private Vector3Int bestMove;
 	private Vector2Int lastMove;
 	private Vector2Int highlightedMove;
@@ -141,6 +142,7 @@ public class GameManager : MonoBehaviour {
 		isHumanPlayer[0] = true;
 		isAIPlaying = false;
 		counterMoves = new List<Vector2Int>();
+		studiedMoves = new List<Vector3Int>();
 		bestMove = new Vector3Int();
 		lastMove = new Vector2Int(-1, -1);
 		highlightedMove = new Vector2Int(-1, -1);
@@ -280,6 +282,21 @@ public class GameManager : MonoBehaviour {
 		state.captureMoves = new List<Vector2Int>();
 
 		Debug.Log("Start state value: " + GetStateHeuristic(state));
+
+		// Debug to see moves studied at depth 0
+		// /*
+		if (studiedMoves.Count > 0) {
+			foreach (Vector3Int move in studiedMoves) {
+				GameObject button = buttonsMap[move.y, move.x].gameObject;
+				button.transform.GetChild(0).gameObject.SetActive(false);
+			}
+		}
+		studiedMoves = GetAllowedMoves(state);
+		foreach (Vector3Int move in studiedMoves) {
+			GameObject button = buttonsMap[move.y, move.x].gameObject;
+			button.transform.GetChild(0).gameObject.SetActive(true); // highlight it
+		}
+		// */
 
 		// Actually do MinMax
 		firstAlphaBetaResult = true;
@@ -464,8 +481,6 @@ public class GameManager : MonoBehaviour {
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
 					int maxValue = AlphaBeta(ResultOfMove(state, move), alpha, beta, false);
-					// if (state.depth == 0 && move.y == 17 && move.x == 4)
-					// 	Debug.Log("move = " + move.y + " - " + move.x + " " + move.z + " max value = " + maxValue);
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
 					if (maxValue > v) {
@@ -530,7 +545,7 @@ public class GameManager : MonoBehaviour {
 
 		int stateScore = 0;
 
-		// TODO: Consider scores individually because the closer is to 10 the closer is to win
+		// TODO: Consider scores with non linear func because the closer is to 10 the closer is to win
 		stateScore += HEURISTIC_CAPTURE_COEFF * state.rootPlayerScore;
 		stateScore -= (HEURISTIC_CAPTURE_COEFF + 1) * state.otherPlayerScore;
 
@@ -556,60 +571,94 @@ public class GameManager : MonoBehaviour {
 
 	private int RadialAlignScore(State state, int yCoord, int xCoord, int yCoeff, int xCoeff) {
 		int score = 0;
-		bool sideBlocked = false;
+		bool backBlocked = false;
+		bool frontBlocked = false;
+		bool jumpedSpace = false;
 		int otherStoneVal = (state.map[yCoord, xCoord] == state.myVal) ? state.enemyVal : state.myVal;
 		int nbrStone = 1;
+		int nbrSideStone = 0;
 
 		int y = yCoord - yCoeff;
 		int x = xCoord - xCoeff;
 		if (x >= 0 && x < size && y >= 0 && y < size) {
-			if (state.map[y, x] == otherStoneVal)  // TODO: should also detect if blocked by DT or NA values (need bynary mask for that)
-				sideBlocked = true;
-			if (state.map[y, x] == state.map[yCoord, xCoord])
+			if (state.map[y, x] == state.map[yCoord, xCoord]) // Exit if is part of an align we have already evaluated
 				return 0;
+			if (state.map[y, x] == otherStoneVal)  // TODO: should also detect if blocked by DT or NA values (need bynary mask for that)
+				backBlocked = true;
 		}
 		else {
-			sideBlocked = true;
+			backBlocked = true;
 		}
 
 		y = yCoord + yCoeff;
 		x = xCoord + xCoeff;
-		while (x >= 0 && x < size && y >= 0 && y < size) {
-			if (state.map[y, x] == state.map[yCoord, xCoord]) {
-				nbrStone++;
-				y += yCoeff;
-				x += xCoeff;
-			}
-			else {
-
-				if (state.map[y, x] == otherStoneVal) {
-					if (sideBlocked) {
-						return 0;
-					}
-					else {
-						sideBlocked = true;
-					}
-				}
-				if (nbrStone == 3) {
-
-				}
+		while (true) {
+			if (x < 0 || x >= size || y < 0 || y >= size) {
+				frontBlocked = true;
 				break;
 			}
+
+			if (state.map[y, x] == state.map[yCoord, xCoord]) {
+				if (jumpedSpace)
+					nbrSideStone++;
+				else
+					nbrStone++;
+			}
+			else {
+				// Do not break if it is first jumpSpace
+				if (state.map[y, x] == EMPTY_VALUE) { // TODO: should also accept if is DT/NA for other player but not this one
+					if (jumpedSpace)
+						break;
+					jumpedSpace = true;
+				}
+				else {
+					frontBlocked = true;
+					break;
+				}
+			}
+			y += yCoeff;
+			x += xCoeff;
+		}
+
+		// Get score for simple alignement
+		if (nbrStone > 1) {
+			// TODO
+			if (backBlocked && (frontBlocked && !jumpedSpace)) // align blocked by both sides
+				score = nbrStone;
+			else {
+				score = Mathf.RoundToInt(Mathf.Pow(HEURISTIC_ALIGN_COEFF, nbrStone));
+				if (backBlocked || (frontBlocked && !jumpedSpace)) {
+					score /= 2;
+				}
+			}
+		}
+
+		// Get score with jump
+		if (jumpedSpace && nbrSideStone > 0) {
+			// TODO
 		}
 
 		// Get actual score
+		/*
 		if (nbrStone > 1) {
-			score = Mathf.RoundToInt(Mathf.Pow(HEURISTIC_ALIGN_COEFF, nbrStone));
-			if (sideBlocked) {
+		// if (nbrStone > 1 || nbrSideStone > 0) {
+			// TODO: use sideStones to increase score
+			if (sidesBlocked == 2)
+				score = nbrStone;
+			else {
+				score = Mathf.RoundToInt(Mathf.Pow(HEURISTIC_ALIGN_COEFF, nbrStone));
+				if (sidesBlocked == 1) {
 					score /= 2;
+				}
 			}
-		}
+			// TODO: If depth is uneven number, then we may under-estimate enemy alignements
+			// TODO: If depth is even number, then we may under-estimate our alignements
+		} */
 
 		// Choose if is advantagious alignment
 		if (state.map[yCoord, xCoord] == state.rootVal)
 			return score;
 		return (score > 0) ? -score - 1: 0; // stones alone will always give 0
-		// return (nbrStone > 1) ? -score - 1: -score; // TODO: need to test this
 	}
 
 	private State ResultOfMove(State state, Vector3Int move) {
@@ -747,12 +796,14 @@ public class GameManager : MonoBehaviour {
 			state.rootPlayerScore += capturedStone;
 			if (state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
 				state.winner = 1;
+				return;
 			}
 		}
 		else {
 			state.otherPlayerScore += capturedStone;
 			if (state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
 				state.winner = 2;
+				return;
 			}
 		}
 
