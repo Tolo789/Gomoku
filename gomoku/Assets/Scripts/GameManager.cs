@@ -78,7 +78,7 @@ public class GameManager : MonoBehaviour {
 	private bool SELF_CAPTURE_RULE = true;
 	private int CAPTURES_NEEDED_TO_WIN = 10;
 	private int HEURISTIC_ALIGN_COEFF = 5;
-	private int HEURISTIC_CAPTURE_COEFF = 100;
+	private int HEURISTIC_CAPTURE_COEFF = 50;
 	private int HANDICAP = 1;
 
 	// Map values
@@ -105,16 +105,20 @@ public class GameManager : MonoBehaviour {
 	private bool[] isHumanPlayer;
 	private bool isAIPlaying;
 	private List<Vector2Int> counterMoves; // Moves that can break a winning align
+	private List<Vector3Int> studiedMoves; // Used as debug to see AI studied moves
 	private Vector3Int bestMove;
 	private Vector2Int lastMove;
 	private Vector2Int highlightedMove;
 	private bool moveIsReady = false;
 	private bool simulatingMove = false;
 	private bool alignmentHasBeenDone = false;
+	private bool firstAlphaBetaResult = false;
 
 	private int nbrOfMoves = 0;
 
 	private List<BackupState> backupStates;
+	private List<int> allowedSpacesP1;
+	private List<int> allowedSpacesP2;
 
 	void Start () {
 		// Retrieve game rules
@@ -147,6 +151,7 @@ public class GameManager : MonoBehaviour {
 		isHumanPlayer[0] = true;
 		isAIPlaying = false;
 		counterMoves = new List<Vector2Int>();
+		studiedMoves = new List<Vector3Int>();
 		bestMove = new Vector3Int();
 		lastMove = new Vector2Int(-1, -1);
 		highlightedMove = new Vector2Int(-1, -1);
@@ -154,6 +159,15 @@ public class GameManager : MonoBehaviour {
 		simulatingMove = false;
 		alignmentHasBeenDone = false;
 		backupStates = new List<BackupState>();
+		allowedSpacesP1 = new List<int>();
+		allowedSpacesP1.Add(EMPTY_VALUE);
+		allowedSpacesP1.Add(DT_P2_VALUE);
+		allowedSpacesP1.Add(NA_P2_VALUE);
+		allowedSpacesP2 = new List<int>();
+		allowedSpacesP2.Add(EMPTY_VALUE);
+		allowedSpacesP2.Add(DT_P1_VALUE);
+		allowedSpacesP2.Add(NA_P1_VALUE);
+
 
 		// Handle who starts first
 		if (PlayerPrefs.HasKey(CommonDefines.IS_P1_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) {
@@ -291,12 +305,23 @@ public class GameManager : MonoBehaviour {
 
 		Debug.Log("Start state value: " + GetStateHeuristic(state));
 
-		// Save first move as default move
-		List<Vector3Int> allowedMoves = GetAllowedMoves(state);
-		bestMove = allowedMoves[0];
-		bestMove.z = -1;
+		// Debug to see moves studied at depth 0
+		// /*
+		if (studiedMoves.Count > 0) {
+			foreach (Vector3Int move in studiedMoves) {
+				GameObject button = buttonsMap[move.y, move.x].gameObject;
+				button.transform.GetChild(0).gameObject.SetActive(false);
+			}
+		}
+		studiedMoves = GetAllowedMoves(state);
+		foreach (Vector3Int move in studiedMoves) {
+			GameObject button = buttonsMap[move.y, move.x].gameObject;
+			button.transform.GetChild(0).gameObject.SetActive(true); // highlight it
+		}
+		// */
 
 		// Actually do MinMax
+		firstAlphaBetaResult = true;
 		AlphaBeta(state, Int32.MinValue, Int32.MaxValue, true);
 
 		// Save searchTime
@@ -304,16 +329,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private List<Vector3Int> GetAllowedMoves(State state) {
-		List<int> allowedSpaces = new List<int>();
-		allowedSpaces.Add(EMPTY_VALUE);
-		if (state.myVal == P1_VALUE) {
-			allowedSpaces.Add(DT_P2_VALUE);
-			allowedSpaces.Add(NA_P2_VALUE);
-		}
-		else {
-			allowedSpaces.Add(DT_P1_VALUE);
-			allowedSpaces.Add(NA_P1_VALUE);
-		}
+		List<int> allowedSpaces = (state.myVal == P1_VALUE) ? allowedSpacesP1 : allowedSpacesP2;
 
 		List<Vector3Int> allowedMoves = new List<Vector3Int>();
 		int heuristicVal = 0;
@@ -342,9 +358,18 @@ public class GameManager : MonoBehaviour {
 				break;
 			}
 		}
+
 		// Increase move value for each capture that can be done
-		score += HEURISTIC_CAPTURE_COEFF * CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
-		score += HEURISTIC_CAPTURE_COEFF * CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
+		middle = CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
+		if (middle + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN || middle + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+			return Int32.MaxValue;
+		}
+		score += HEURISTIC_CAPTURE_COEFF * middle;
+		middle = CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
+		if (middle + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN || middle + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+			return Int32.MaxValue;
+		}
+		score += HEURISTIC_CAPTURE_COEFF * middle;
 
 		// Increase move value based on neighbours influence
 		score += GetStoneInfluence(state, yCoord, xCoord);
@@ -369,36 +394,38 @@ public class GameManager : MonoBehaviour {
 		int secondNeighbourVal = 0;
 		int neighbours_1 = 0;
 		int neighbours_2 = 0;
-		int divisor_1 = 1;
-		int divisor_2 = 1;
+		int neighbours_1_jumped = 0;
+		int neighbours_2_jumped = 0;
 		bool isFirstEmpty = false;
 
 		int x = xCoord + xCoeff;
 		int y = yCoord + yCoeff;
-
 		while (x >= 0 && x < size && y >= 0 && y < size) {
 			// Lower influence if is one-separated from other stones
 			if (state.map[y, x] == EMPTY_VALUE && !isFirstEmpty) {
 				isFirstEmpty = true;
-				divisor_1 = 2;
 			}
 			// Exit if is not a stone
 			else if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
-				if (neighbours_1 == 0)
-					divisor_1 = 1;
 				break;
 			}
 
 			// Detect change color
 			else if (firstNeighbourVal == 0) {
 				firstNeighbourVal = state.map[y, x];
-				neighbours_1++;
+				if (!isFirstEmpty)
+					neighbours_1++;
+				else
+					neighbours_1_jumped++;
 			}
 			else if (state.map[y, x] != firstNeighbourVal){
 				break;
 			}
 			else {
-				neighbours_1++;
+				if (!isFirstEmpty)
+					neighbours_1++;
+				else
+					neighbours_1_jumped++;
 			}
 			y += yCoeff;
 			x += xCoeff;
@@ -408,28 +435,31 @@ public class GameManager : MonoBehaviour {
 		y = yCoord - yCoeff;
 		isFirstEmpty = false;
 		while (x >= 0 && x < size && y >= 0 && y < size) {
-			// Exit if is not a stone
 			// Lower influence if is one-separated from other stones
 			if (state.map[y, x] == EMPTY_VALUE && !isFirstEmpty) {
 				isFirstEmpty = true;
-				divisor_2 = 2;
 			}
+			// Exit if is not a stone
 			else if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
-				if (neighbours_2 == 0)
-					divisor_2 = 1;
 				break;
 			}
 
 			// Detect change color
 			else if (secondNeighbourVal == 0) {
 				secondNeighbourVal = state.map[y, x];
-				neighbours_2++;
+				if (!isFirstEmpty)
+					neighbours_2++;
+				else
+					neighbours_2_jumped++;
 			}
 			else if (state.map[y, x] != secondNeighbourVal) {
 				break;
 			}
 			else {
-				neighbours_2++;
+				if (!isFirstEmpty)
+					neighbours_2++;
+				else
+					neighbours_2_jumped++;
 			}
 			y -= yCoeff;
 			x -= xCoeff;
@@ -437,7 +467,9 @@ public class GameManager : MonoBehaviour {
 
 		if (secondNeighbourVal == firstNeighbourVal) {
 			neighbours_1 += neighbours_2;
+			neighbours_1_jumped += neighbours_2_jumped;
 			neighbours_2 = 0;
+			neighbours_2_jumped = 0;
 		}
 
 		// Workout score
@@ -445,8 +477,10 @@ public class GameManager : MonoBehaviour {
 			score = Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_1)));
 		if (neighbours_2 > 0)
 			score += Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_2)));
-		score = score +  divisor_1;
-		score = score +  divisor_2;
+		if (neighbours_1_jumped > 0)
+			score += Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_1_jumped))) / 2;
+		if (neighbours_2_jumped > 0)
+			score += Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_2_jumped))) / 2;
 
 		return score;
 	}
@@ -462,16 +496,15 @@ public class GameManager : MonoBehaviour {
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
 					int maxValue = AlphaBeta(ResultOfMove(state, move), alpha, beta, false);
-					// if (state.depth == 0 && move.y == 17 && move.x == 4)
-					// 	Debug.Log("move = " + move.y + " - " + move.x + " " + move.z + " max value = " + maxValue);
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
 					if (maxValue > v) {
 						v = maxValue;
 					}
-					if (v > alpha) {
+					if (v > alpha || firstAlphaBetaResult) {
 						alpha = v;
 						if (state.depth == 0) {
+							firstAlphaBetaResult = false;
 							bestMove = move;
 							bestMove.z = alpha;
 							Debug.Log("Update best move: " + bestMove);
@@ -527,9 +560,11 @@ public class GameManager : MonoBehaviour {
 
 		int stateScore = 0;
 
-		// TODO: Consider scores individually because the closer is to 10 the closer is to win
-		stateScore += HEURISTIC_CAPTURE_COEFF * state.rootPlayerScore;
-		stateScore -= (HEURISTIC_CAPTURE_COEFF + 1) * state.otherPlayerScore;
+		// TODO: Consider scores with non linear func because the closer is to 10 the closer is to win
+		if (state.rootPlayerScore > 0)
+			stateScore += HEURISTIC_CAPTURE_COEFF * state.rootPlayerScore;
+		if (state.otherPlayerScore > 0)
+			stateScore -= (HEURISTIC_CAPTURE_COEFF * state.otherPlayerScore) + HEURISTIC_CAPTURE_COEFF;
 
 		stateScore += GetScoreOfAligns(state);
 
@@ -553,60 +588,97 @@ public class GameManager : MonoBehaviour {
 
 	private int RadialAlignScore(State state, int yCoord, int xCoord, int yCoeff, int xCoeff) {
 		int score = 0;
-		bool sideBlocked = false;
-		int otherStoneVal = (state.map[yCoord, xCoord] == state.myVal) ? state.enemyVal : state.myVal;
+		bool backBlocked = false;
+		bool frontBlocked = false;
+		bool jumpedSpace = false;
 		int nbrStone = 1;
+		int nbrSideStone = 0;
+		List<int> allowedSpaces = (state.map[yCoord, xCoord] == P1_VALUE) ? allowedSpacesP1 : allowedSpacesP2;
 
 		int y = yCoord - yCoeff;
 		int x = xCoord - xCoeff;
 		if (x >= 0 && x < size && y >= 0 && y < size) {
-			if (state.map[y, x] == otherStoneVal)
-				sideBlocked = true;
-			if (state.map[y, x] == state.map[yCoord, xCoord])
+			if (state.map[y, x] == state.map[yCoord, xCoord]) // Exit if is part of an align we have already evaluated
 				return 0;
+			if (!allowedSpaces.Contains(state.map[y, x]))
+				backBlocked = true;
 		}
 		else {
-			sideBlocked = true;
+			backBlocked = true;
 		}
 
 		y = yCoord + yCoeff;
 		x = xCoord + xCoeff;
-		while (x >= 0 && x < size && y >= 0 && y < size) {
-			if (state.map[y, x] == state.map[yCoord, xCoord]) {
-				nbrStone++;
-				y += yCoeff;
-				x += xCoeff;
-			}
-			else {
-
-				if (state.map[y, x] == otherStoneVal) {
-					if (sideBlocked) {
-						return 0;
-					}
-					else {
-						sideBlocked = true;
-					}
-				}
-				if (nbrStone == 3) {
-
-				}
+		while (true) {
+			if (x < 0 || x >= size || y < 0 || y >= size) {
+				frontBlocked = true;
 				break;
 			}
+
+			if (state.map[y, x] == state.map[yCoord, xCoord]) {
+				if (jumpedSpace)
+					nbrSideStone++;
+				else
+					nbrStone++;
+			}
+			else {
+				// Do not break if it is first jumpSpace
+				if (allowedSpaces.Contains(state.map[y, x])) {
+					if (jumpedSpace)
+						break;
+					jumpedSpace = true;
+				}
+				else {
+					frontBlocked = true;
+					break;
+				}
+			}
+			y += yCoeff;
+			x += xCoeff;
 		}
 
-		// Get actual score
-		if (sideBlocked) {
-			// if (nbrStone == 1)
-			// 	score = 1;
-			nbrStone -= 1;
+		// Get score with jump
+		if (nbrSideStone > 0) {
+			nbrStone += nbrSideStone;
+			if (backBlocked && frontBlocked) { // align blocked by both sides
+				if (nbrStone >= 5)
+					score = Mathf.RoundToInt(Mathf.Pow(HEURISTIC_ALIGN_COEFF, nbrStone)) / 2;
+				else
+					score = nbrStone + nbrSideStone;
+			}
+			else {
+				score = Mathf.RoundToInt(Mathf.Pow(HEURISTIC_ALIGN_COEFF, nbrStone)) / 2;
+				if (backBlocked || (frontBlocked && !jumpedSpace)) {
+					score /= 2;
+				}
+			}
 		}
-		if (nbrStone > 1)
-			score = Mathf.RoundToInt(Mathf.Pow(HEURISTIC_ALIGN_COEFF, nbrStone));
+		// Get score for simple alignement
+		else if (nbrStone > 1) {
+			// if (state.depth % 2 == 1 && state.map[yCoord, xCoord] != state.rootVal) {
+			// 	if (!backBlocked || jumpedSpace || (!jumpedSpace && !frontBlocked))
+			// 		nbrStone++;
+			// }
+			if (backBlocked && ((frontBlocked && !jumpedSpace) || (frontBlocked && jumpedSpace && nbrStone < 4))) // align blocked by both sides
+				score = nbrStone;
+			else {
+				score = Mathf.RoundToInt(Mathf.Pow(HEURISTIC_ALIGN_COEFF, nbrStone));
+				if (backBlocked || (frontBlocked && !jumpedSpace)) {
+					score /= 2;
+				}
+			}
+		}
+
+
+		// TODO: If depth is uneven number, then we may under-estimate enemy alignements
+		// TODO: If depth is even number, then we may under-estimate our alignements
+
 
 		// Choose if is advantagious alignment
 		if (state.map[yCoord, xCoord] == state.rootVal)
 			return score;
-		return (score > 0) ? -score - 1: 0;
+		// return -score; // stones alone will always give 0
+		return (score > 0) ? -score - 1: 0; // stones alone will always give 0
 	}
 
 	private State ResultOfMove(State state, Vector3Int move) {
@@ -752,12 +824,14 @@ public class GameManager : MonoBehaviour {
 			state.rootPlayerScore += capturedStone;
 			if (state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
 				state.winner = 1;
+				return;
 			}
 		}
 		else {
 			state.otherPlayerScore += capturedStone;
 			if (state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
 				state.winner = 2;
+				return;
 			}
 		}
 
