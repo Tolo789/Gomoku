@@ -59,6 +59,7 @@ public class GameManager : MonoBehaviour {
 	public GameObject emptyButton;
 	public GameObject startBoard;
 	public GameObject playSettings;
+	public GameObject swapPlayers;
 	public Canvas canvas;
 	public Text[] listPlayers;
 	public Text AiTimer;
@@ -78,6 +79,7 @@ public class GameManager : MonoBehaviour {
 	private int CAPTURES_NEEDED_TO_WIN = 10;
 	private int HEURISTIC_ALIGN_COEFF = 5;
 	private int HEURISTIC_CAPTURE_COEFF = 100;
+	private int HANDICAP = 1;
 
 	// Map values
 	private const int EMPTY_VALUE = 0;
@@ -89,6 +91,7 @@ public class GameManager : MonoBehaviour {
 	private const int NA_P1_VALUE = -4;
 	private const int NA_P2_VALUE = -5;
 	private const int NA_P_VALUE = -6;
+	private const int HANDICAP_CANT_PlAY = -7;
 
 	// Private var
 	private float startSearchTime;
@@ -109,6 +112,8 @@ public class GameManager : MonoBehaviour {
 	private bool simulatingMove = false;
 	private bool alignmentHasBeenDone = false;
 
+	private int nbrOfMoves = 0;
+
 	private List<BackupState> backupStates;
 
 	void Start () {
@@ -128,7 +133,9 @@ public class GameManager : MonoBehaviour {
 		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
 			SELF_CAPTURE_RULE = (PlayerPrefs.GetInt(CommonDefines.SELF_CAPTURE_SETTING) == 1) ? true : false;
 		}
-
+		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
+			HANDICAP = PlayerPrefs.GetInt(CommonDefines.OPENING_RULE);
+		}
 		// init game variables
 		boardMap = new int[size, size];
 		buttonsMap = new PutStone[size, size];
@@ -169,10 +176,13 @@ public class GameManager : MonoBehaviour {
 				 currentPlayerIndex = UnityEngine.Random.Range(0, 1);
 			}
 		}
+
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
 		listPlayers[currentPlayerIndex].color = Color.cyan;
 		listPlayers[1 - currentPlayerIndex].color = Color.white;
+
+
 
 		// init board with hidden buttons
 		float width = startBoard.GetComponent<RectTransform>().rect.width ;
@@ -205,6 +215,7 @@ public class GameManager : MonoBehaviour {
 			y++;
 			tmpPos.y -= step;
 		}
+		OpeningRules();
 	}
 	
 	void Update () {
@@ -315,6 +326,8 @@ public class GameManager : MonoBehaviour {
 			}
 		}
 		allowedMoves = allowedMoves.OrderByDescending(move => move.z).Take(AI_MAX_SEARCHES_PER_DEPTH).ToList();
+		if (state.depth == 0)
+			Debug.Log("premier: " + allowedMoves[0] + " deuxieme: " + allowedMoves[1]);
 		return allowedMoves;
 	}
 
@@ -432,8 +445,8 @@ public class GameManager : MonoBehaviour {
 			score = Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_1)));
 		if (neighbours_2 > 0)
 			score += Mathf.RoundToInt((Mathf.Pow(HEURISTIC_ALIGN_COEFF, neighbours_2)));
-		score /= divisor_1;
-		score /= divisor_2;
+		score = score +  divisor_1;
+		score = score +  divisor_2;
 
 		return score;
 	}
@@ -625,7 +638,6 @@ public class GameManager : MonoBehaviour {
 			newBackup.alignmentHasBeenDone = alignmentHasBeenDone;
 			newBackup.counterMoves = counterMoves;
 			newBackup.lastMove = lastMove;
-
 			backupStates.Insert(0, newBackup);
 		}
 
@@ -642,6 +654,7 @@ public class GameManager : MonoBehaviour {
 		button.GetComponent<Image>().color = buttonColor;
 		button.GetComponent<PutStone>().isEmpty = false;
 		button.transform.GetChild(0).gameObject.SetActive(true); // highlight it
+		nbrOfMoves+=1;
 
 		// Do captures
 		playerScores[currentPlayerIndex] += CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
@@ -677,9 +690,13 @@ public class GameManager : MonoBehaviour {
 		currentPlayerIndex = 1 - currentPlayerIndex;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
-		listPlayers[currentPlayerIndex].color = Color.cyan;
-		listPlayers[1 - currentPlayerIndex].color = Color.white;
-
+		if ((HANDICAP != 4 || HANDICAP != 5) && nbrOfMoves != 1) {
+			listPlayers[currentPlayerIndex].color = Color.cyan;
+			listPlayers[1 - currentPlayerIndex].color = Color.white;
+		}
+		if ((HANDICAP == 4 || HANDICAP == 5) && nbrOfMoves == 3) {
+			swapPlayers.SetActive(true);
+		}
 		// update allowed movements in map
 		bool thereIsAvailableMoves = false;
 		for (int y = 0; y < size; y++) {
@@ -691,6 +708,8 @@ public class GameManager : MonoBehaviour {
 					if (SELF_CAPTURE_RULE)
 						UpdateSelfCapture(boardMap, y, x, currentPlayerVal, otherPlayerVal);
 				}
+
+				//Chef if it's a draw
 				if (currentPlayerIndex == 0 && (boardMap[y, x] == EMPTY_VALUE || boardMap[y, x] == DT_P2_VALUE || boardMap[y, x] == NA_P2_VALUE)) {
 					thereIsAvailableMoves = true;
 				}
@@ -699,6 +718,8 @@ public class GameManager : MonoBehaviour {
 				}
 			}
 		}
+
+		OpeningRules();
 
 		if (!thereIsAvailableMoves) {
 			DisplayWinner(-1);
@@ -1636,4 +1657,43 @@ public class GameManager : MonoBehaviour {
 		playSettings.SetActive(false);
     }
 
+	private void SetForbiddenMove(int min, int max) {
+		for (int y = min; y < max; y++) {
+				for (int x = min; x < max; x++) {
+					if (boardMap[y, x] == EMPTY_VALUE) {
+					Debug.Log("y = " + y +" x = " +  x);
+					GameObject button = buttonsMap[y, x].gameObject;
+					button.GetComponent<Image>().sprite = notAllowedSprite;
+					button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
+					Color buttonColor = button.GetComponent<Image>().color;
+					buttonColor.a = 255;
+					button.GetComponent<Image>().color = buttonColor;
+					button.GetComponent<PutStone>().isEmpty = false;
+				}
+			}
+		}
+	}
+
+	//OPENING RULES
+	private void OpeningRules() {
+		if (nbrOfMoves == 2) {
+			if (HANDICAP == 3)
+				SetForbiddenMove(7, 12);
+			else if (HANDICAP == 2)
+				SetForbiddenMove(5, 14);
+		}
+	}
+
+	public void YesToggle() {
+		//SwapPlayers
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		swapPlayers.SetActive(false);
+	}
+
+
+	public void NoToggle() {
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		swapPlayers.SetActive(false);
+	}
 }
+
