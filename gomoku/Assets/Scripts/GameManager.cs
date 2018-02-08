@@ -77,7 +77,7 @@ public class GameManager : MonoBehaviour {
 	private bool SELF_CAPTURE_RULE = true;
 	private int CAPTURES_NEEDED_TO_WIN = 10;
 	private int HEURISTIC_ALIGN_COEFF = 5;
-	private int HEURISTIC_CAPTURE_COEFF = 60;
+	private int HEURISTIC_CAPTURE_COEFF = 50;
 
 	// Map values
 	private const int EMPTY_VALUE = 0;
@@ -578,10 +578,9 @@ public class GameManager : MonoBehaviour {
 		bool backBlocked = false;
 		bool frontBlocked = false;
 		bool jumpedSpace = false;
-		int otherStoneVal = (state.map[yCoord, xCoord] == state.myVal) ? state.enemyVal : state.myVal;
 		int nbrStone = 1;
 		int nbrSideStone = 0;
-		List<int> allowedSpaces = (state.myVal == P1_VALUE) ? allowedSpacesP1 : allowedSpacesP2;
+		List<int> allowedSpaces = (state.map[yCoord, xCoord] == P1_VALUE) ? allowedSpacesP1 : allowedSpacesP2;
 
 		int y = yCoord - yCoeff;
 		int x = xCoord - xCoeff;
@@ -625,18 +624,6 @@ public class GameManager : MonoBehaviour {
 			x += xCoeff;
 		}
 
-		// Get score for simple alignement
-		if (nbrStone > 1) {
-			if (backBlocked && (frontBlocked && !jumpedSpace)) // align blocked by both sides
-				score = nbrStone;
-			else {
-				score = Mathf.RoundToInt(Mathf.Pow(HEURISTIC_ALIGN_COEFF, nbrStone));
-				if (backBlocked || (frontBlocked && !jumpedSpace)) {
-					score /= 2;
-				}
-			}
-		}
-
 		// Get score with jump
 		if (nbrSideStone > 0) {
 			nbrStone += nbrSideStone;
@@ -653,6 +640,22 @@ public class GameManager : MonoBehaviour {
 				}
 			}
 		}
+		// Get score for simple alignement
+		else if (nbrStone > 1) {
+			// if (state.depth % 2 == 1 && state.map[yCoord, xCoord] != state.rootVal) {
+			// 	if (!backBlocked || jumpedSpace || (!jumpedSpace && !frontBlocked))
+			// 		nbrStone++;
+			// }
+			if (backBlocked && ((frontBlocked && !jumpedSpace) || (frontBlocked && jumpedSpace && nbrStone < 4))) // align blocked by both sides
+				score = nbrStone;
+			else {
+				score = Mathf.RoundToInt(Mathf.Pow(HEURISTIC_ALIGN_COEFF, nbrStone));
+				if (backBlocked || (frontBlocked && !jumpedSpace)) {
+					score /= 2;
+				}
+			}
+		}
+
 
 		// TODO: If depth is uneven number, then we may under-estimate enemy alignements
 		// TODO: If depth is even number, then we may under-estimate our alignements
