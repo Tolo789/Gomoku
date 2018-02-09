@@ -206,8 +206,6 @@ public class GameManager : MonoBehaviour {
 		listPlayers[currentPlayerIndex].color = Color.cyan;
 		listPlayers[1 - currentPlayerIndex].color = Color.white;
 
-
-
 		// init board with hidden buttons
 		float width = startBoard.GetComponent<RectTransform>().rect.width ;
 		float height = startBoard.GetComponent<RectTransform>().rect.height;
@@ -800,17 +798,9 @@ public class GameManager : MonoBehaviour {
 		currentPlayerIndex = 1 - currentPlayerIndex;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
-		if ((HANDICAP != 4 || HANDICAP != 5) && nbrOfMoves != 1) {
-			listPlayers[currentPlayerIndex].color = Color.cyan;
-			listPlayers[1 - currentPlayerIndex].color = Color.white;
-		}
-		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
-			playedTwoMoreStones = false;
-			swapPlayers.SetActive(true);
-		}
-		else if (HANDICAP == 5 && nbrOfMoves == 3) {
-			chooseSwapOptions.SetActive(true);
-		}
+
+
+
 		// update allowed movements in map
 		bool thereIsAvailableMoves = false;
 		for (int y = 0; y < size; y++) {
@@ -834,6 +824,7 @@ public class GameManager : MonoBehaviour {
 		}
 
 		OpeningRules();
+		// Opening rules
 
 		if (!thereIsAvailableMoves) {
 			DisplayWinner(-1);
@@ -1019,7 +1010,7 @@ public class GameManager : MonoBehaviour {
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
 		listPlayers[currentPlayerIndex].color = Color.cyan;
 		listPlayers[1 - currentPlayerIndex].color = Color.white;
-
+		
 		// first reset everything and put stones back
 		int playerIndex = -1;
 		int tmpVal = EMPTY_VALUE;
@@ -1074,6 +1065,29 @@ public class GameManager : MonoBehaviour {
 		listPlayers[1 - currentPlayerIndex].color = Color.white;
 
 		backupStates.RemoveAt(0);
+
+		//OpeningRules RULES UNDO
+		nbrOfMoves = nbrOfMoves - 1;
+		if  (HANDICAP == 4 && nbrOfMoves == 2 || HANDICAP == 5 && nbrOfMoves == 4) {
+			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+		}
+		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
+			if (HANDICAP == 3)
+				SetForbiddenMove(7, 12);
+			else if (HANDICAP == 2)
+				SetForbiddenMove(5, 14);
+		}
+		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
+			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+			playedTwoMoreStones = false;
+			swapPlayers.SetActive(true);
+		}
+		else if (HANDICAP == 5 && nbrOfMoves == 2) {
+			chooseSwapOptions.SetActive(true);
+		}
+
 	}
 
 	private void DisplayWinner(int winnerIndex) {
@@ -1792,17 +1806,25 @@ public class GameManager : MonoBehaviour {
 
 	//OPENING RULES
 	private void OpeningRules() {
-		if (nbrOfMoves == 2) {
+		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
 			if (HANDICAP == 3)
 				SetForbiddenMove(7, 12);
 			else if (HANDICAP == 2)
 				SetForbiddenMove(5, 14);
+		}
+		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
+			swapPlayers.SetActive(true);
+		}
+		else if (HANDICAP == 5 && nbrOfMoves == 3) {
+			chooseSwapOptions.SetActive(true);
 		}
 	}
 
 	public void YesToggle(GameObject panel) {
 		player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
 		player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+		listPlayers[1 - currentPlayerIndex].color = Color.cyan;
+		listPlayers[currentPlayerIndex].color = Color.white;
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 		panel.SetActive(false);
 	}
