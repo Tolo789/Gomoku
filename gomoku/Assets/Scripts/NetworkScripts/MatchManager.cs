@@ -146,7 +146,7 @@ public class MatchManager : NetworkBehaviour {
 		if (p1NetId == NetworkInstanceId.Invalid) {
 			p1NetId = playerNetId;
 			// TODO: should initialize board only after 2 players register
-			// CmdStart();
+			CmdStart();
 		}
 		else if (p2NetId == NetworkInstanceId.Invalid) {
 			p2NetId = playerNetId;
@@ -234,40 +234,42 @@ public class MatchManager : NetworkBehaviour {
 		listPlayers[1 - currentPlayerIndex].color = Color.white;
 
 		// init board with hidden buttons
-		float width = startBoard.GetComponent<RectTransform>().rect.width ;
-		float height = startBoard.GetComponent<RectTransform>().rect.height;
-		Vector3 startPos = startBoard.transform.position;
-		startPos.x -= width * canvas.transform.localScale.x / 2;
-		startPos.y += height * canvas.transform.localScale.x / 2;
-		float step = width * canvas.transform.localScale.x / (size - 1);
-		float buttonSize = width / (size - 1);
-		int x = 0;
-		int y = 0;
-		Vector3 tmpPos = startPos;
-		while (y < size) {
-			tmpPos.x = startPos.x;
-			x = 0;
-			while (x < size) {
-				// boardMap[y, x] = EMPTY_VALUE;
-				GameObject newButton = GameObject.Instantiate(emptyButton, tmpPos, Quaternion.identity);
-				newButton.transform.position = tmpPos;
-				newButton.name = y + "-" + x;
-				newButton.transform.SetParent(startBoard.transform);
-				newButton.transform.localScale = emptyButton.transform.localScale;
-				newButton.GetComponent<RectTransform>().sizeDelta = new Vector2(buttonSize, buttonSize);
-				buttonsMap[y,x] = newButton.GetComponent<BoardButton>();
-				buttonsMap[y,x].gameManager = this;
-				//DeleteStone(boardMap, y, x);
+		// float width = startBoard.GetComponent<RectTransform>().rect.width ;
+		// float height = startBoard.GetComponent<RectTransform>().rect.height;
+		// Vector3 startPos = startBoard.transform.position;
+		// startPos.x -= width * canvas.transform.localScale.x / 2;
+		// startPos.y += height * canvas.transform.localScale.x / 2;
+		// float step = width * canvas.transform.localScale.x / (size - 1);
+		// float buttonSize = width / (size - 1);
+		// int x = 0;
+		// int y = 0;
+		// Vector3 tmpPos = startPos;
+		// while (y < size) {
+		// 	tmpPos.x = startPos.x;
+		// 	x = 0;
+		// 	while (x < size) {
+		// 		boardMap[y, x] = EMPTY_VALUE;
+		// 		GameObject newButton = GameObject.Instantiate(emptyButton, tmpPos, Quaternion.identity);
+		// 		newButton.transform.position = tmpPos;
+		// 		newButton.name = y + "-" + x;
+		// 		newButton.transform.SetParent(startBoard.transform);
+		// 		newButton.transform.localScale = emptyButton.transform.localScale;
+		// 		newButton.GetComponent<RectTransform>().sizeDelta = new Vector2(buttonSize, buttonSize);
+		// 		buttonsMap[y,x] = newButton.GetComponent<BoardButton>();
+		// 		buttonsMap[y,x].gameManager = this;
+		// 		// if (y <= 6)
+		// 		// 	DeleteStone(boardMap, y, x);
 
-				x++;
-				tmpPos.x += step;
+		// 		x++;
+		// 		tmpPos.x += step;
 
-				// spawn the button on the clients
-				NetworkServer.Spawn(newButton);
-			}
-			y++;
-			tmpPos.y -= step;
-		}
+		// 		// spawn the button on the clients
+		// 		// NetworkServer.Spawn(newButton);
+		// 	}
+		// 	y++;
+		// 	tmpPos.y -= step;
+		// }
+		RpcSpawnButtons();
 
 		// Add rules if needed
 		OpeningRules();
@@ -1834,13 +1836,51 @@ public class MatchManager : NetworkBehaviour {
 	}
 
 	#region RpcFunctions
-	public void RpcSpawnButton(int yCoord, int xCoord) {
+	public void RpcSpawnButtons() {
+		float width = startBoard.GetComponent<RectTransform>().rect.width ;
+		float height = startBoard.GetComponent<RectTransform>().rect.height;
+		Vector3 startPos = startBoard.transform.position;
+		startPos.x -= width * canvas.transform.localScale.x / 2;
+		startPos.y += height * canvas.transform.localScale.x / 2;
+		float step = width * canvas.transform.localScale.x / (size - 1);
+		float buttonSize = width / (size - 1);
+		int x = 0;
+		int y = 0;
+		Vector3 tmpPos = startPos;
+		while (y < size) {
+			tmpPos.x = startPos.x;
+			x = 0;
+			while (x < size) {
+				boardMap[y, x] = EMPTY_VALUE;
+				GameObject newButton = GameObject.Instantiate(emptyButton, tmpPos, Quaternion.identity);
+				newButton.transform.position = tmpPos;
+				newButton.name = y + "-" + x;
+				newButton.transform.SetParent(startBoard.transform);
+				newButton.transform.localScale = emptyButton.transform.localScale;
+				newButton.GetComponent<RectTransform>().sizeDelta = new Vector2(buttonSize, buttonSize);
+				buttonsMap[y,x] = newButton.GetComponent<BoardButton>();
+				buttonsMap[y,x].gameManager = this;
+				// if (y <= 6)
+				// 	DeleteStone(boardMap, y, x);
+
+				x++;
+				tmpPos.x += step;
+
+				// spawn the button on the clients
+				// NetworkServer.Spawn(newButton);
+			}
+			y++;
+			tmpPos.y -= step;
+		}
 	}
 
 	[ClientRpc]
 	public void RpcClearButton(int yCoord, int xCoord) {		
 		// GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		GameObject button = GameObject.Find("/Canvas/StartBoard/" + yCoord + "-" + xCoord);
+		if (button == null) {
+			Debug.LogWarning("Button not found: " + yCoord + " " + xCoord);
+		}
 		button.transform.localScale = new Vector3(1, 1, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = buttonImage.color;
