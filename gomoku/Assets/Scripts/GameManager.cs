@@ -122,6 +122,7 @@ public class GameManager : MonoBehaviour {
 	private bool alignmentHasBeenDone = false;
 	private bool firstAlphaBetaResult = false;
 
+	private bool swappedColors = false;
 	private bool playedTwoMoreStones = false;
 
 	private int nbrOfMoves = 0;
@@ -822,17 +823,7 @@ public class GameManager : MonoBehaviour {
 			}
 		}
 
-		if (HANDICAP < 4) {
-				listPlayers[currentPlayerIndex].color = Color.cyan;
-				listPlayers[1 - currentPlayerIndex].color = Color.white;
-		}
-		else {
-			if (nbrOfMoves > 3) {
-				listPlayers[1 - currentPlayerIndex].color = Color.cyan;
-				listPlayers[currentPlayerIndex].color = Color.white;
-			}
-		}
-
+		SwapPlayerTextColor();
 		// Opening rules
 		OpeningRules();
 
@@ -1019,6 +1010,7 @@ public class GameManager : MonoBehaviour {
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
 		
+
 		// first reset everything and put stones back
 		int playerIndex = -1;
 		int tmpVal = EMPTY_VALUE;
@@ -1069,14 +1061,10 @@ public class GameManager : MonoBehaviour {
 		// Change UI
 		listPlayers[0].text = "Player1" + ": " + playerScores[0];
 		listPlayers[1].text = "Player2" + ": " + playerScores[1];
-		if (HANDICAP >= 4) {
-			listPlayers[1 - currentPlayerIndex].color = Color.cyan;
-			listPlayers[currentPlayerIndex].color = Color.white;
-		}
-		else {
-			listPlayers[currentPlayerIndex].color = Color.cyan;
-			listPlayers[1 - currentPlayerIndex].color = Color.white;
-		}
+		SwapPlayerTextColor();
+
+
+
 
 		backupStates.RemoveAt(0);
 
@@ -1097,11 +1085,30 @@ public class GameManager : MonoBehaviour {
 			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
 			playedTwoMoreStones = false;
 			swapPlayers.SetActive(true);
+			swappedColors = false;
 		}
 		else if (HANDICAP == 5 && nbrOfMoves == 2) {
 			chooseSwapOptions.SetActive(true);
+			swappedColors = false;
 		}
 
+	}
+
+	private void SwapPlayerTextColor() {
+		if (HANDICAP < 4) {
+				listPlayers[currentPlayerIndex].color = Color.cyan;
+				listPlayers[1 - currentPlayerIndex].color = Color.white;
+		}
+		else {
+			if (nbrOfMoves > 3 && swappedColors) {
+				listPlayers[1 - currentPlayerIndex].color = Color.cyan;
+				listPlayers[currentPlayerIndex].color = Color.white;
+			}
+			else {
+				listPlayers[currentPlayerIndex].color = Color.cyan;
+				listPlayers[1 - currentPlayerIndex].color = Color.white;
+			}
+		}
 	}
 
 	private void DisplayWinner(int winnerIndex) {
@@ -1827,9 +1834,11 @@ public class GameManager : MonoBehaviour {
 				SetForbiddenMove(5, 14);
 		}
 		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
+			isGamePaused = true;
 			swapPlayers.SetActive(true);
 		}
 		else if (HANDICAP == 5 && nbrOfMoves == 3) {
+			isGamePaused = true;
 			chooseSwapOptions.SetActive(true);
 		}
 	}
@@ -1840,16 +1849,20 @@ public class GameManager : MonoBehaviour {
 		listPlayers[1 - currentPlayerIndex].color = Color.cyan;
 		listPlayers[currentPlayerIndex].color = Color.white;
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		isGamePaused = false;
+		swappedColors = true;
 		panel.SetActive(false);
 	}
 
 	public void PlayTwoStones(GameObject panel) {
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 		playedTwoMoreStones = true;
+		isGamePaused = false;
 		panel.SetActive(false);
 	}
 	public void NoToggle(GameObject panel) {
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		isGamePaused = false;
 		panel.SetActive(false);
 	}
 }
