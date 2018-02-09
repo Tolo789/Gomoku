@@ -64,6 +64,10 @@ public class GameManager : MonoBehaviour {
 	public GameObject startBoard;
 	public GameObject playSettings;
 	public GameObject swapPlayers;
+
+	public GameObject chooseSwapOptions;
+	public GameObject player1;
+	public GameObject player2;
 	public Canvas canvas;
 	public Text[] listPlayers;
 	public Text AiTimer;
@@ -117,6 +121,8 @@ public class GameManager : MonoBehaviour {
 	private bool simulatingMove = false;
 	private bool alignmentHasBeenDone = false;
 	private bool firstAlphaBetaResult = false;
+
+	private bool playedTwoMoreStones = false;
 
 	private int nbrOfMoves = 0;
 
@@ -798,8 +804,12 @@ public class GameManager : MonoBehaviour {
 			listPlayers[currentPlayerIndex].color = Color.cyan;
 			listPlayers[1 - currentPlayerIndex].color = Color.white;
 		}
-		if ((HANDICAP == 4 || HANDICAP == 5) && nbrOfMoves == 3) {
+		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
+			playedTwoMoreStones = false;
 			swapPlayers.SetActive(true);
+		}
+		else if (HANDICAP == 5 && nbrOfMoves == 3) {
+			chooseSwapOptions.SetActive(true);
 		}
 		// update allowed movements in map
 		bool thereIsAvailableMoves = false;
@@ -1790,16 +1800,21 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-	public void YesToggle() {
-		//SwapPlayers
+	public void YesToggle(GameObject panel) {
+		player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+		player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		swapPlayers.SetActive(false);
+		panel.SetActive(false);
 	}
 
-
-	public void NoToggle() {
+	public void PlayTwoStones(GameObject panel) {
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		swapPlayers.SetActive(false);
+		playedTwoMoreStones = true;
+		panel.SetActive(false);
+	}
+	public void NoToggle(GameObject panel) {
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		panel.SetActive(false);
 	}
 }
 
