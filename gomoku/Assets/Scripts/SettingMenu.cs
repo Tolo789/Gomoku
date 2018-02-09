@@ -36,7 +36,7 @@ public class SettingMenu : MonoBehaviour {
 			nbrOfMovesSlider.value = PlayerPrefs.GetInt(CommonDefines.AI_MOVES_NB_SETTING);
 		}
 		else {
-			nbrOfMovesSlider.value = 20;
+			nbrOfMovesSlider.value = 30;
 		}
 
 		if (PlayerPrefs.HasKey(CommonDefines.AI_TIME_SETTING)) {
@@ -101,7 +101,7 @@ public class SettingMenu : MonoBehaviour {
 				changeDifficultySliders(2.0f, 20f);
 			}
 			else if (toggle.name == "Hard") {
-				changeDifficultySliders(3.0f, 20f);
+				changeDifficultySliders(3.0f, 30f);
 			}
 			else if (toggle.name == "Custom") {
 				aiDepthSlider.interactable = true;
@@ -132,27 +132,35 @@ public class SettingMenu : MonoBehaviour {
 	}
 
 	public void DecreaseAIDepth() {
-		float nbr = Mathf.RoundToInt(aiDepthSlider.value * 10) / 10f;
-		aiDepthSlider.value = nbr - 1f;
-		aiDephText.text = aiDepthSlider.value.ToString();
+		if (aiDepthSlider.interactable) {
+			float nbr = Mathf.RoundToInt(aiDepthSlider.value * 10) / 10f;
+			aiDepthSlider.value = nbr - 1f;
+			aiDephText.text = aiDepthSlider.value.ToString();
+		}
 	}
 
 	public void IncreaseAIDepth() {
-		float nbr = Mathf.RoundToInt(aiDepthSlider.value * 10) / 10f;
-		aiDepthSlider.value = nbr + 1f;
-		aiDephText.text = aiDepthSlider.value.ToString();
+		if (aiDepthSlider.interactable) {
+			float nbr = Mathf.RoundToInt(aiDepthSlider.value * 10) / 10f;
+			aiDepthSlider.value = nbr + 1f;
+			aiDephText.text = aiDepthSlider.value.ToString();
+		}
 	}
 
 	public void DecreaseNbrOfMove() {
-		float nbr = Mathf.RoundToInt(nbrOfMovesSlider.value * 10) / 10f;
-		nbrOfMovesSlider.value = nbr - 1f;
-		nbrOfMovesText.text = nbrOfMovesSlider.value.ToString();
+		if (nbrOfMovesSlider.interactable) {
+			float nbr = Mathf.RoundToInt(nbrOfMovesSlider.value * 10) / 10f;
+			nbrOfMovesSlider.value = nbr - 1f;
+			nbrOfMovesText.text = nbrOfMovesSlider.value.ToString();
+		}
 	}
 
 	public void IncreaseNbrOfMove() {
-		float nbr = Mathf.RoundToInt(nbrOfMovesSlider.value * 10) / 10f;
-		nbrOfMovesSlider.value = nbr + 1f;
-		nbrOfMovesText.text = nbrOfMovesSlider.value.ToString();
+		if (nbrOfMovesSlider.interactable) {
+			float nbr = Mathf.RoundToInt(nbrOfMovesSlider.value * 10) / 10f;
+			nbrOfMovesSlider.value = nbr + 1f;
+			nbrOfMovesText.text = nbrOfMovesSlider.value.ToString();
+		}
 	}
 
 	public void saveChanges() {
