@@ -237,7 +237,6 @@ public class GameManager : MonoBehaviour {
 			y++;
 			tmpPos.y -= step;
 		}
-		OpeningRules();
 	}
 	
 	void Update () {
@@ -823,8 +822,19 @@ public class GameManager : MonoBehaviour {
 			}
 		}
 
-		OpeningRules();
+		if (HANDICAP < 4) {
+				listPlayers[currentPlayerIndex].color = Color.cyan;
+				listPlayers[1 - currentPlayerIndex].color = Color.white;
+		}
+		else {
+			if (nbrOfMoves > 3) {
+				listPlayers[1 - currentPlayerIndex].color = Color.cyan;
+				listPlayers[currentPlayerIndex].color = Color.white;
+			}
+		}
+
 		// Opening rules
+		OpeningRules();
 
 		if (!thereIsAvailableMoves) {
 			DisplayWinner(-1);
@@ -1008,8 +1018,6 @@ public class GameManager : MonoBehaviour {
 		currentPlayerIndex = oldState.currentPlayerIndex;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
-		listPlayers[currentPlayerIndex].color = Color.cyan;
-		listPlayers[1 - currentPlayerIndex].color = Color.white;
 		
 		// first reset everything and put stones back
 		int playerIndex = -1;
@@ -1061,8 +1069,14 @@ public class GameManager : MonoBehaviour {
 		// Change UI
 		listPlayers[0].text = "Player1" + ": " + playerScores[0];
 		listPlayers[1].text = "Player2" + ": " + playerScores[1];
-		listPlayers[currentPlayerIndex].color = Color.cyan;
-		listPlayers[1 - currentPlayerIndex].color = Color.white;
+		if (HANDICAP >= 4) {
+			listPlayers[1 - currentPlayerIndex].color = Color.cyan;
+			listPlayers[currentPlayerIndex].color = Color.white;
+		}
+		else {
+			listPlayers[currentPlayerIndex].color = Color.cyan;
+			listPlayers[1 - currentPlayerIndex].color = Color.white;
+		}
 
 		backupStates.RemoveAt(0);
 
