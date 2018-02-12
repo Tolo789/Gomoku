@@ -270,6 +270,11 @@ public class MatchManager : NetworkBehaviour {
 		// 	tmpPos.y -= step;
 		// }
 		RpcSpawnButtons();
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				boardMap[y, x] = EMPTY_VALUE;
+			}
+		}
 
 		// Add rules if needed
 		OpeningRules();
@@ -1836,7 +1841,10 @@ public class MatchManager : NetworkBehaviour {
 	}
 
 	#region RpcFunctions
+
+	[ClientRpc]
 	public void RpcSpawnButtons() {
+		buttonsMap = new BoardButton[size, size];
 		float width = startBoard.GetComponent<RectTransform>().rect.width ;
 		float height = startBoard.GetComponent<RectTransform>().rect.height;
 		Vector3 startPos = startBoard.transform.position;
@@ -1851,7 +1859,6 @@ public class MatchManager : NetworkBehaviour {
 			tmpPos.x = startPos.x;
 			x = 0;
 			while (x < size) {
-				boardMap[y, x] = EMPTY_VALUE;
 				GameObject newButton = GameObject.Instantiate(emptyButton, tmpPos, Quaternion.identity);
 				newButton.transform.position = tmpPos;
 				newButton.name = y + "-" + x;
@@ -1860,8 +1867,20 @@ public class MatchManager : NetworkBehaviour {
 				newButton.GetComponent<RectTransform>().sizeDelta = new Vector2(buttonSize, buttonSize);
 				buttonsMap[y,x] = newButton.GetComponent<BoardButton>();
 				buttonsMap[y,x].gameManager = this;
+				buttonsMap[y, x].isEmpty = true;
 				// if (y <= 6)
 				// 	DeleteStone(boardMap, y, x);
+
+
+				// Equivalent of deleteStone
+
+				newButton.transform.localScale = new Vector3(1, 1, 1);
+				Image buttonImage = newButton.GetComponent<Image>();
+				Color newColor = buttonImage.color;
+				newColor.a = 0;
+				buttonImage.color = newColor;
+				buttonImage.sprite = null;
+				newButton.transform.GetChild(0).gameObject.SetActive(false);
 
 				x++;
 				tmpPos.x += step;
