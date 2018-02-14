@@ -690,7 +690,7 @@ public class MatchManager : NetworkBehaviour {
 		currentPlayerIndex = 1 - currentPlayerIndex;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
-		if ((HANDICAP != 4 || HANDICAP != 5) && nbrOfMoves != 1) {
+		if ((HANDICAP != 4 && HANDICAP != 5) || nbrOfMoves != 1) {
 			RpcChangePlayerHiglight(currentPlayerIndex);
 		}
 		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
@@ -742,6 +742,7 @@ public class MatchManager : NetworkBehaviour {
 
 		// Update last move tracker
 		if (lastMove.x != -1) {
+			RpcClearMoveTracker(lastMove.y, lastMove.x);
 			buttonsMap[lastMove.y, lastMove.x].transform.GetChild(0).gameObject.SetActive(false);
 		}
 		lastMove.y = yCoord;
@@ -1926,6 +1927,12 @@ public class MatchManager : NetworkBehaviour {
 		buttonImage.color = newColor;
 		buttonImage.sprite = notAllowedSprite;
 		buttonsMap[yCoord, xCoord].isEmpty = false;
+		button.transform.GetChild(0).gameObject.SetActive(false);
+	}
+
+	[ClientRpc]
+	private void RpcClearMoveTracker(int yCoord, int xCoord) {
+		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.GetChild(0).gameObject.SetActive(false);
 	}
 

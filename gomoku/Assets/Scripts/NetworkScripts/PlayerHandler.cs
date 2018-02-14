@@ -26,8 +26,14 @@ public class PlayerHandler : NetworkBehaviour {
 
 
 	public void TryPutStone(int y, int x) {
+		CmdTryPutStone(netId, y, x);
+	}
+
+
+	[Command]
+	public void CmdTryPutStone(NetworkInstanceId playerNetId, int y, int x) {
 		if (gameManager == null)
 			return ;
-		gameManager.CmdTrySavePlayerMove(netId, y, x);
+		gameManager.CmdTrySavePlayerMove(playerNetId, y, x);
 	}
 }
