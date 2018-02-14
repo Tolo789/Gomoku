@@ -7,20 +7,19 @@ using UnityEngine.Networking;
 public class BoardButton : NetworkBehaviour {
 
 	[HideInInspector]
-	public MatchManager gameManager;
+	public PlayerHandler player;
 
 	[HideInInspector]
 	public bool isEmpty = true;
 
 	public void TryToPutStone() {
-		if (gameManager == null || !isEmpty || !gameManager.PlayerCanPutStone())
+		if (player == null || !isEmpty)
 			return ;
 		string[] coords = gameObject.name.Split('-');
 		int yCoord = int.Parse(coords[0]);
 		int xCoord = int.Parse(coords[1]);
 
-		// gameManager.PutStone(yCoord, xCoord);
-		gameManager.SavePlayerMove(yCoord, xCoord);
+		player.TryPutStone(yCoord, xCoord);
 	}
 
 }

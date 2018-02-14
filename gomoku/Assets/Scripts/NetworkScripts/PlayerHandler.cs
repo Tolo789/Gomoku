@@ -6,14 +6,10 @@ using UnityEngine.Networking;
 
 public class PlayerHandler : NetworkBehaviour {
 
-	public const string Started = "PlayerController.Start";
-	public const string StartedLocal = "PlayerController.StartedLocal";
-	public const string Destroyed = "PlayerController.Destroyed";
-	public const string RequestMove = "PlayerController.RequestMove";
+	public int wins = 0;
 
 
 	private MatchManager gameManager = null;
-	public int wins = 0;
 
 	public override void OnStartLocalPlayer()
     {
@@ -28,13 +24,10 @@ public class PlayerHandler : NetworkBehaviour {
 		gameManager.CmdRegisterPlayer(playerNetId);
 	}
 
-	void Start () {
-		if (isLocalPlayer)
-			Debug.Log("Player: " + netId);	
-	}
 
-	void Update() {
-        if (!isLocalPlayer)
-            return;
+	public void TryPutStone(int y, int x) {
+		if (gameManager == null)
+			return ;
+		gameManager.CmdTrySavePlayerMove(netId, y, x);
 	}
 }

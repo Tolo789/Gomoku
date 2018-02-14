@@ -56,10 +56,7 @@ public struct NetworkBackupState {
 }
 
 public class MatchManager : NetworkBehaviour {
-
-	// Netwrok vars
-	private NetworkInstanceId p1NetId = NetworkInstanceId.Invalid;
-	private NetworkInstanceId p2NetId = NetworkInstanceId.Invalid;
+	public static int size = 19;
 
 	// Prefabs and UI
 	public GameObject emptyButton;
@@ -78,7 +75,7 @@ public class MatchManager : NetworkBehaviour {
 	public Sprite notAllowedSprite;
 	public Sprite doubleThreeSprite;
 
-	public static int size = 19;
+	// TODO: vars should only be set by Server
 	[HideInInspector] public bool isGameLoaded = false;
 	[HideInInspector] public bool isGameEnded = false;
 	[HideInInspector] public bool isGamePaused = false;
@@ -106,14 +103,16 @@ public class MatchManager : NetworkBehaviour {
 	private const int NA_P_VALUE = -6;
 	private const int HANDICAP_CANT_PlAY = -7;
 
-	// Private var
+
+	// Vars that are only used by Server
+	private NetworkInstanceId p1NetId = NetworkInstanceId.Invalid;
+	private NetworkInstanceId p2NetId = NetworkInstanceId.Invalid;
+	private int currentPlayerIndex = 0;
 	private float startSearchTime;
 	private float searchTime;
-	private int currentPlayerIndex = 0;
 	private int currentPlayerVal = P1_VALUE;
 	private int otherPlayerVal = P2_VALUE;
 	private int[,] boardMap;
-	private BoardButton[,] buttonsMap;
 	private int[] playerScores;
 	private bool[] isHumanPlayer;
 	private bool isAIPlaying;
@@ -136,153 +135,9 @@ public class MatchManager : NetworkBehaviour {
 	private List<int> allowedSpacesP2;
 
 
-	// public void RegisterPlayer(NetworkInstanceId playerNetId) {
-	// 	CmdRegisterPlayer(playerNetId);
-	// }
+	// Vars used also by Client
+	private BoardButton[,] buttonsMap;
 
-	[Command]
-	public void CmdRegisterPlayer(NetworkInstanceId playerNetId) {
-		Debug.Log("Registering playerId: " + playerNetId);
-		if (p1NetId == NetworkInstanceId.Invalid) {
-			p1NetId = playerNetId;
-			// TODO: should initialize board only after 2 players register
-			CmdStart();
-		}
-		else if (p2NetId == NetworkInstanceId.Invalid) {
-			p2NetId = playerNetId;
-			// TODO: should initialize board only once we get here
-			CmdStart();
-		}
-		// return null;
-	}
-
-	[Command]
-	void CmdStart () {
-		// Retrieve game rules
-		if (PlayerPrefs.HasKey(CommonDefines.AI_DEPTH_SETTING)) {
-			AI_DEPTH = PlayerPrefs.GetInt(CommonDefines.AI_DEPTH_SETTING);
-		}
-		if (PlayerPrefs.HasKey(CommonDefines.AI_MOVES_NB_SETTING)) {
-			AI_MAX_SEARCHES_PER_DEPTH = PlayerPrefs.GetInt(CommonDefines.AI_MOVES_NB_SETTING);
-		}
-		if (PlayerPrefs.HasKey(CommonDefines.AI_TIME_SETTING)) {
-			AI_SEARCH_TIME = PlayerPrefs.GetFloat(CommonDefines.AI_TIME_SETTING);
-		}
-		if (PlayerPrefs.HasKey(CommonDefines.DOUBLE_THREE_SETTING)) {
-			DOUBLE_THREE_RULE = (PlayerPrefs.GetInt(CommonDefines.DOUBLE_THREE_SETTING) == 1) ? true : false;
-		}
-		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
-			SELF_CAPTURE_RULE = (PlayerPrefs.GetInt(CommonDefines.SELF_CAPTURE_SETTING) == 1) ? true : false;
-		}
-		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
-			HANDICAP = PlayerPrefs.GetInt(CommonDefines.OPENING_RULE);
-		}
-		// init game variables
-		boardMap = new int[size, size];
-		buttonsMap = new BoardButton[size, size];
-		playerScores = new int[2];
-		for (int i = 0; i < playerScores.Length; i++) {
-			playerScores[i] = 0;
-		}
-		isHumanPlayer = new bool[2];
-		isHumanPlayer[0] = true;
-		isAIPlaying = false;
-		counterMoves = new List<Vector2Int>();
-		studiedMoves = new List<Vector3Int>();
-		bestMove = new Vector3Int();
-		lastMove = new Vector2Int(-1, -1);
-		highlightedMove = new Vector2Int(-1, -1);
-		moveIsReady = false;
-		simulatingMove = false;
-		alignmentHasBeenDone = false;
-		backupStates = new List<BackupState>();
-		allowedSpacesP1 = new List<int>();
-		allowedSpacesP1.Add(EMPTY_VALUE);
-		allowedSpacesP1.Add(DT_P2_VALUE);
-		allowedSpacesP1.Add(NA_P2_VALUE);
-		allowedSpacesP2 = new List<int>();
-		allowedSpacesP2.Add(EMPTY_VALUE);
-		allowedSpacesP2.Add(DT_P1_VALUE);
-		allowedSpacesP2.Add(NA_P1_VALUE);
-
-
-		// Handle who starts first
-		if (PlayerPrefs.HasKey(CommonDefines.IS_P1_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) {
-			isHumanPlayer[0] = false;
-		}
-		else {
-			isHumanPlayer[0] = true;
-		}
-
-		if (PlayerPrefs.HasKey(CommonDefines.IS_P2_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P2_IA) == 1) {
-			isHumanPlayer[1] = false;
-		}
-		else {
-			isHumanPlayer[1] = true;
-		}
-
-		if (PlayerPrefs.HasKey(CommonDefines.FIRST_PLAYER_PLAYING)) {
-			currentPlayerIndex = PlayerPrefs.GetInt(CommonDefines.FIRST_PLAYER_PLAYING);
-			if (currentPlayerIndex == 2) {
-				 currentPlayerIndex = UnityEngine.Random.Range(0, 1);
-			}
-		}
-
-		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
-		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
-		listPlayers[currentPlayerIndex].color = Color.cyan;
-		listPlayers[1 - currentPlayerIndex].color = Color.white;
-
-		// init board with hidden buttons
-		// float width = startBoard.GetComponent<RectTransform>().rect.width ;
-		// float height = startBoard.GetComponent<RectTransform>().rect.height;
-		// Vector3 startPos = startBoard.transform.position;
-		// startPos.x -= width * canvas.transform.localScale.x / 2;
-		// startPos.y += height * canvas.transform.localScale.x / 2;
-		// float step = width * canvas.transform.localScale.x / (size - 1);
-		// float buttonSize = width / (size - 1);
-		// int x = 0;
-		// int y = 0;
-		// Vector3 tmpPos = startPos;
-		// while (y < size) {
-		// 	tmpPos.x = startPos.x;
-		// 	x = 0;
-		// 	while (x < size) {
-		// 		boardMap[y, x] = EMPTY_VALUE;
-		// 		GameObject newButton = GameObject.Instantiate(emptyButton, tmpPos, Quaternion.identity);
-		// 		newButton.transform.position = tmpPos;
-		// 		newButton.name = y + "-" + x;
-		// 		newButton.transform.SetParent(startBoard.transform);
-		// 		newButton.transform.localScale = emptyButton.transform.localScale;
-		// 		newButton.GetComponent<RectTransform>().sizeDelta = new Vector2(buttonSize, buttonSize);
-		// 		buttonsMap[y,x] = newButton.GetComponent<BoardButton>();
-		// 		buttonsMap[y,x].gameManager = this;
-		// 		// if (y <= 6)
-		// 		// 	DeleteStone(boardMap, y, x);
-
-		// 		x++;
-		// 		tmpPos.x += step;
-
-		// 		// spawn the button on the clients
-		// 		// NetworkServer.Spawn(newButton);
-		// 	}
-		// 	y++;
-		// 	tmpPos.y -= step;
-		// }
-		RpcSpawnButtons();
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
-				boardMap[y, x] = EMPTY_VALUE;
-			}
-		}
-
-		// Add rules if needed
-		OpeningRules();
-
-		// Start accepting inputs
-		isGameLoaded = true;
-		Debug.Log("Game Loaded !");
-	}
 	
 	void Update () {
 		if (isGameLoaded && !isGameEnded && !isHumanPlayer[currentPlayerIndex] && !isGamePaused) {
@@ -778,7 +633,7 @@ public class MatchManager : NetworkBehaviour {
 #endregion
 
 #region MainFunctions
-	public void PutStone(int yCoord, int xCoord) {
+	private void PutStone(int yCoord, int xCoord) {
 		// Backup moves only if it is a human move
 		if (isHumanPlayer[currentPlayerIndex]) {
 			BackupState newBackup = new BackupState();
@@ -798,14 +653,14 @@ public class MatchManager : NetworkBehaviour {
 
 		// Actually put the stone
 		boardMap[yCoord, xCoord] = currentPlayerVal;
-		RpcPutStone(yCoord, xCoord);
-		nbrOfMoves+=1;
+		RpcPutStone(currentPlayerIndex, yCoord, xCoord);
+		nbrOfMoves += 1;
 
 		// Do captures
 		playerScores[currentPlayerIndex] += CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
-		listPlayers[currentPlayerIndex].text = "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex];
+		RpcChangePlayerScore(currentPlayerIndex, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
 		if (playerScores[currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
-			DisplayWinner(currentPlayerIndex);
+			RpcDisplayWinner(currentPlayerIndex);
 			return;
 		}
 
@@ -826,7 +681,7 @@ public class MatchManager : NetworkBehaviour {
 					counterMoves.Clear();
 			}
 			else {
-				DisplayWinner(1 - currentPlayerIndex);
+				RpcDisplayWinner(1 - currentPlayerIndex);
 				return;
 			}
 		}
@@ -836,8 +691,7 @@ public class MatchManager : NetworkBehaviour {
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
 		if ((HANDICAP != 4 || HANDICAP != 5) && nbrOfMoves != 1) {
-			listPlayers[currentPlayerIndex].color = Color.cyan;
-			listPlayers[1 - currentPlayerIndex].color = Color.white;
+			RpcChangePlayerHiglight(currentPlayerIndex);
 		}
 		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
 			playedTwoMoreStones = false;
@@ -846,6 +700,7 @@ public class MatchManager : NetworkBehaviour {
 		else if (HANDICAP == 5 && nbrOfMoves == 3) {
 			chooseSwapOptions.SetActive(true);
 		}
+
 		// update allowed movements in map
 		bool thereIsAvailableMoves = false;
 		for (int y = 0; y < size; y++) {
@@ -859,26 +714,29 @@ public class MatchManager : NetworkBehaviour {
 				}
 
 				//Chef if it's a draw
-				if (currentPlayerIndex == 0 && (boardMap[y, x] == EMPTY_VALUE || boardMap[y, x] == DT_P2_VALUE || boardMap[y, x] == NA_P2_VALUE)) {
-					thereIsAvailableMoves = true;
-				}
-				if (currentPlayerIndex == 1 && (boardMap[y, x] == EMPTY_VALUE || boardMap[y, x] == DT_P2_VALUE || boardMap[y, x] == NA_P2_VALUE)) {
-					thereIsAvailableMoves = true;
+				if (!thereIsAvailableMoves) {
+					if (currentPlayerIndex == 0 && (boardMap[y, x] == EMPTY_VALUE || boardMap[y, x] == DT_P2_VALUE || boardMap[y, x] == NA_P2_VALUE)) {
+						thereIsAvailableMoves = true;
+					}
+					if (currentPlayerIndex == 1 && (boardMap[y, x] == EMPTY_VALUE || boardMap[y, x] == DT_P2_VALUE || boardMap[y, x] == NA_P2_VALUE)) {
+						thereIsAvailableMoves = true;
+					}
 				}
 			}
 		}
-
-		OpeningRules();
-
+		// If no move available, display draw
 		if (!thereIsAvailableMoves) {
-			DisplayWinner(-1);
+			RpcDisplayWinner(-1);
 			return;
 		}
+
+
+		OpeningRules();
 
 		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
 		alignmentHasBeenDone = false;
 		if (IsWinByAlignment(boardMap, yCoord, xCoord, otherPlayerVal, currentPlayerVal, playerScores[currentPlayerIndex], ref alignmentHasBeenDone)) {
-			DisplayWinner(1 - currentPlayerIndex);
+			RpcDisplayWinner(1 - currentPlayerIndex);
 			return;
 		}
 
@@ -891,7 +749,8 @@ public class MatchManager : NetworkBehaviour {
 		
 		// DispalyBoard(boardMap);
 	}
-	public void FakePutStone(ref State state, int yCoord, int xCoord) {
+
+	private void FakePutStone(ref State state, int yCoord, int xCoord) {
 		// Actually put the stone
 		state.map[yCoord, xCoord] = state.myVal;
 
@@ -979,43 +838,15 @@ public class MatchManager : NetworkBehaviour {
 		RpcClearButton(yCoord, xCoord);
 	}
 
-	public bool PlayerCanPutStone() {
+
+	public bool PlayerCanPutStone(NetworkInstanceId playerNetId) {
 		if (!IsHumanTurn() || isGameEnded || simulatingMove || isGamePaused)
 			return false;
+		if (currentPlayerIndex == 0 && p1NetId != playerNetId)
+			return false;
+		if (currentPlayerIndex == 1 && p2NetId != playerNetId)
+			return false;
 		return true;
-	}
-	public void SavePlayerMove(int yCoord, int xCoord) {
-		bestMove = new Vector3Int(xCoord, yCoord, -1);
-		moveIsReady = true;
-	}
-
-	public void SimulateAiMove() {
-		if (PlayerCanPutStone()) {
-			simulatingMove = true;
-			StartMinMax();
-
-			// Timing stuff
-			Debug.Log("Search time: " + searchTime);
-			AiTimer.text = "AI Timer: " + searchTime.ToString();
-			if (searchTime > AI_SEARCH_TIME)
-				Debug.LogWarning("Ai didnt find a move in time");
-
-			// Save highlighted stone position
-			ClearHighligtedStone();
-			highlightedMove.y = bestMove.y;
-			highlightedMove.x = bestMove.x;
-
-			// Put highlighted sprite
-			GameObject button = buttonsMap[highlightedMove.y, highlightedMove.x].gameObject;
-			button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
-			Image buttonImage = button.GetComponent<Image>();
-			Color newColor = buttonImage.color;
-			newColor.a = 0.7f;
-			buttonImage.color = newColor;
-			buttonImage.sprite = stoneSprites[currentPlayerIndex];
-
-			simulatingMove = false;
-		}
 	}
 
 	private void ClearHighligtedStone() {
@@ -1027,6 +858,7 @@ public class MatchManager : NetworkBehaviour {
 	}
 
 	public void GoBack() {
+		// TODO: interaction with multi ??
 		if (backupStates.Count == 0 || !isHumanPlayer[currentPlayerIndex] || isAIPlaying)
 			return ;
 		if (isGameEnded) {
@@ -1044,8 +876,6 @@ public class MatchManager : NetworkBehaviour {
 		currentPlayerIndex = oldState.currentPlayerIndex;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
-		listPlayers[currentPlayerIndex].color = Color.cyan;
-		listPlayers[1 - currentPlayerIndex].color = Color.white;
 
 		// first reset everything and put stones back
 		int playerIndex = -1;
@@ -1095,25 +925,17 @@ public class MatchManager : NetworkBehaviour {
 		}
 
 		// Change UI
-		listPlayers[0].text = "Player1" + ": " + playerScores[0];
-		listPlayers[1].text = "Player2" + ": " + playerScores[1];
-		listPlayers[currentPlayerIndex].color = Color.cyan;
-		listPlayers[1 - currentPlayerIndex].color = Color.white;
-
-		backupStates.RemoveAt(0);
-	}
-
-	private void DisplayWinner(int winnerIndex) {
-		// TODO: display winner and stop playing
-		int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
-		playSettings.SetActive(true);
-		if (winnerIndex == -1) {
-			displayWinner.text = "Draw !";
+		if (currentPlayerIndex == 0) {
+			RpcChangePlayerScore(0, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
+			RpcChangePlayerScore(1, "Player" + otherPlayerVal + ": " + playerScores[1 - currentPlayerIndex]);
 		}
 		else {
-			displayWinner.text = "Player " + winner + " won !";
+			RpcChangePlayerScore(1, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
+			RpcChangePlayerScore(0, "Player" + otherPlayerVal + ": " + playerScores[1 - currentPlayerIndex]);
 		}
-		isGameEnded = true;
+		RpcChangePlayerHiglight(currentPlayerIndex);
+
+		backupStates.RemoveAt(0);
 	}
 	#endregion
 
@@ -1394,13 +1216,7 @@ public class MatchManager : NetworkBehaviour {
 		// Change map values and buttons where needed
 		if (currentPlayerFreeTree == 2) {
 			if (!isAiSimulation) {
-				GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-				button.GetComponent<Image>().sprite = doubleThreeSprite;
-				button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
-				Color buttonColor = button.GetComponent<Image>().color;
-				buttonColor.a = 255;
-				button.GetComponent<Image>().color = buttonColor;
-				button.GetComponent<PutStone>().isEmpty = false;
+				RpcPutDT(yCoord, xCoord);
 			}
 
 			if (otherPlayerFreeTree == 2) {
@@ -1545,27 +1361,27 @@ public class MatchManager : NetworkBehaviour {
 		}
 
 		if (currentProhibited) {
+			if (!isAiSimulation)
+				RpcPutNA(yCoord, xCoord);
+
 			if (otherProhibited) {
 				map[yCoord, xCoord] = NA_P_VALUE;
 				if (!isAiSimulation) {
 					Debug.Log("Both players can't play in " + yCoord + " " + xCoord);
-					RpcPutNA(yCoord, xCoord, map[yCoord, xCoord]);
 				}
 			}
 			else {
 				map[yCoord, xCoord] = (myVal == P1_VALUE) ? NA_P1_VALUE : NA_P2_VALUE;
 				if (!isAiSimulation) {
 					Debug.Log("Current player can't play in " + yCoord + " " + xCoord);
-					RpcPutNA(yCoord, xCoord, map[yCoord, xCoord]);
 				}
 			}
 		}
-		else if (otherProhibited) {
+		else if (otherProhibited && map[yCoord, xCoord] == EMPTY_VALUE) {
 			// TODO: what if this is double-tree for current player ??
 			map[yCoord, xCoord] = (myVal == P1_VALUE) ? NA_P2_VALUE : NA_P1_VALUE;
 			if (!isAiSimulation) {
 				Debug.Log("Other player can't play in " + yCoord + " " + xCoord);
-				RpcPutNA(yCoord, xCoord, map[yCoord, xCoord]);
 			}
 		}
 	}
@@ -1840,10 +1656,160 @@ public class MatchManager : NetworkBehaviour {
 		panel.SetActive(false);
 	}
 
-	#region RpcFunctions
+	#region Commands functions
+	[Command]
+	public void CmdRegisterPlayer(NetworkInstanceId playerNetId) {
+		Debug.Log("Registering playerId: " + playerNetId);
+		if (p1NetId == NetworkInstanceId.Invalid) {
+			p1NetId = playerNetId;
+			// TODO: should initialize board only after 2 players register
+			// CmdStart();
+		}
+		else if (p2NetId == NetworkInstanceId.Invalid) {
+			p2NetId = playerNetId;
+			// TODO: should initialize board only once we get here
+			CmdStart();
+		}
 
+		// TODO: handle spectators ??
+	}
+
+	[Command]
+	private void CmdStart () {
+		// Retrieve game rules
+		if (PlayerPrefs.HasKey(CommonDefines.AI_DEPTH_SETTING)) {
+			AI_DEPTH = PlayerPrefs.GetInt(CommonDefines.AI_DEPTH_SETTING);
+		}
+		if (PlayerPrefs.HasKey(CommonDefines.AI_MOVES_NB_SETTING)) {
+			AI_MAX_SEARCHES_PER_DEPTH = PlayerPrefs.GetInt(CommonDefines.AI_MOVES_NB_SETTING);
+		}
+		if (PlayerPrefs.HasKey(CommonDefines.AI_TIME_SETTING)) {
+			AI_SEARCH_TIME = PlayerPrefs.GetFloat(CommonDefines.AI_TIME_SETTING);
+		}
+		if (PlayerPrefs.HasKey(CommonDefines.DOUBLE_THREE_SETTING)) {
+			DOUBLE_THREE_RULE = (PlayerPrefs.GetInt(CommonDefines.DOUBLE_THREE_SETTING) == 1) ? true : false;
+		}
+		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
+			SELF_CAPTURE_RULE = (PlayerPrefs.GetInt(CommonDefines.SELF_CAPTURE_SETTING) == 1) ? true : false;
+		}
+		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
+			HANDICAP = PlayerPrefs.GetInt(CommonDefines.OPENING_RULE);
+		}
+		// init game variables
+		boardMap = new int[size, size];
+		playerScores = new int[2];
+		for (int i = 0; i < playerScores.Length; i++) {
+			playerScores[i] = 0;
+		}
+		isHumanPlayer = new bool[2];
+		isHumanPlayer[0] = true;
+		isAIPlaying = false;
+		counterMoves = new List<Vector2Int>();
+		studiedMoves = new List<Vector3Int>();
+		bestMove = new Vector3Int();
+		lastMove = new Vector2Int(-1, -1);
+		highlightedMove = new Vector2Int(-1, -1);
+		moveIsReady = false;
+		simulatingMove = false;
+		alignmentHasBeenDone = false;
+		backupStates = new List<BackupState>();
+		allowedSpacesP1 = new List<int>();
+		allowedSpacesP1.Add(EMPTY_VALUE);
+		allowedSpacesP1.Add(DT_P2_VALUE);
+		allowedSpacesP1.Add(NA_P2_VALUE);
+		allowedSpacesP2 = new List<int>();
+		allowedSpacesP2.Add(EMPTY_VALUE);
+		allowedSpacesP2.Add(DT_P1_VALUE);
+		allowedSpacesP2.Add(NA_P1_VALUE);
+
+
+		// Handle who starts first
+		if (PlayerPrefs.HasKey(CommonDefines.IS_P1_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) {
+			isHumanPlayer[0] = false;
+		}
+		else {
+			isHumanPlayer[0] = true;
+		}
+
+		if (PlayerPrefs.HasKey(CommonDefines.IS_P2_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P2_IA) == 1) {
+			isHumanPlayer[1] = false;
+		}
+		else {
+			isHumanPlayer[1] = true;
+		}
+
+		if (PlayerPrefs.HasKey(CommonDefines.FIRST_PLAYER_PLAYING)) {
+			currentPlayerIndex = PlayerPrefs.GetInt(CommonDefines.FIRST_PLAYER_PLAYING);
+			if (currentPlayerIndex == 2) {
+				 currentPlayerIndex = UnityEngine.Random.Range(0, 1);
+			}
+		}
+
+		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
+		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
+		RpcChangePlayerHiglight(currentPlayerIndex);
+
+		// Enable buttons for every player
+		RpcLoadBoard();
+		// Be sure to have all int set to EMPTY_VALUE
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				boardMap[y, x] = EMPTY_VALUE;
+			}
+		}
+
+		// Add rules if needed
+		OpeningRules();
+
+		// Start accepting inputs
+		isGameLoaded = true;
+		Debug.Log("Game Loaded !");
+	}
+
+	[Command]
+	public void CmdTrySavePlayerMove(NetworkInstanceId playerNetId, int yCoord, int xCoord) {
+		if (!PlayerCanPutStone(playerNetId))
+			return ;
+		bestMove = new Vector3Int(xCoord, yCoord, -1);
+		moveIsReady = true;
+	}
+
+	[Command]
+	public void CmdSimulateAiMove(NetworkInstanceId playerNetId) {
+		if (PlayerCanPutStone(playerNetId)) {
+			simulatingMove = true;
+			StartMinMax();
+
+			// Timing stuff
+			Debug.Log("Search time: " + searchTime);
+			AiTimer.text = "AI Timer: " + searchTime.ToString();
+			if (searchTime > AI_SEARCH_TIME)
+				Debug.LogWarning("Ai didnt find a move in time");
+
+			// Save highlighted stone position
+			ClearHighligtedStone();
+			highlightedMove.y = bestMove.y;
+			highlightedMove.x = bestMove.x;
+
+			// Put highlighted sprite
+			RpcHighlightStone(currentPlayerIndex, highlightedMove.y, highlightedMove.x);
+
+			simulatingMove = false;
+		}
+	}
+	#endregion
+
+	#region RpcFunctions
 	[ClientRpc]
-	public void RpcSpawnButtons() {
+	public void RpcLoadBoard() {
+		PlayerHandler[] players = GameObject.FindObjectsOfType(typeof(PlayerHandler)) as PlayerHandler[];
+		PlayerHandler playerHandler = null;
+		foreach (PlayerHandler player in players) {
+			if (player.isLocalPlayer) {
+				playerHandler = player;
+				break;
+			}
+		}
 		buttonsMap = new BoardButton[size, size];
 		float width = startBoard.GetComponent<RectTransform>().rect.width ;
 		float height = startBoard.GetComponent<RectTransform>().rect.height;
@@ -1866,14 +1832,11 @@ public class MatchManager : NetworkBehaviour {
 				newButton.transform.localScale = emptyButton.transform.localScale;
 				newButton.GetComponent<RectTransform>().sizeDelta = new Vector2(buttonSize, buttonSize);
 				buttonsMap[y,x] = newButton.GetComponent<BoardButton>();
-				buttonsMap[y,x].gameManager = this;
 				buttonsMap[y, x].isEmpty = true;
-				// if (y <= 6)
-				// 	DeleteStone(boardMap, y, x);
+				buttonsMap[y, x].player = playerHandler;
 
 
-				// Equivalent of deleteStone
-
+				// Equivalent of RpcClearButton, since its already a Rpc no need to call it
 				newButton.transform.localScale = new Vector3(1, 1, 1);
 				Image buttonImage = newButton.GetComponent<Image>();
 				Color newColor = buttonImage.color;
@@ -1895,8 +1858,8 @@ public class MatchManager : NetworkBehaviour {
 
 	[ClientRpc]
 	public void RpcClearButton(int yCoord, int xCoord) {		
-		// GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		GameObject button = GameObject.Find("/Canvas/StartBoard/" + yCoord + "-" + xCoord);
+		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		// GameObject button = GameObject.Find("/Canvas/StartBoard/" + yCoord + "-" + xCoord);
 		if (button == null) {
 			Debug.LogWarning("Button not found: " + yCoord + " " + xCoord);
 		}
@@ -1911,32 +1874,37 @@ public class MatchManager : NetworkBehaviour {
 	}
 
 	[ClientRpc]
-	public void RpcPutStone(int yCoord, int xCoord) {
-		GameObject button = GameObject.Find("/Canvas/StartBoard/" + yCoord + "-" + xCoord);
+	public void RpcPutStone(int playerIndex, int yCoord, int xCoord) {
+		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		// GameObject button = GameObject.Find("/Canvas/StartBoard/" + yCoord + "-" + xCoord);
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = buttonImage.color;
 		newColor.a = 1;
 		buttonImage.color = newColor;
-		buttonImage.sprite = stoneSprites[currentPlayerIndex];
+		buttonImage.sprite = stoneSprites[playerIndex];
 		buttonsMap[yCoord, xCoord].isEmpty = false;
 		button.transform.GetChild(0).gameObject.SetActive(true);
 	}
 
-	// [ClientRpc]
-	// public void RpcHighlightStone(int playerIndex) {
-	// 		transform.localScale = new Vector3(0.9f, 0.9f, 1);
-	// 		Image buttonImage = gameObject.GetComponent<Image>();
-	// 		Color newColor = buttonImage.color;
-	// 		newColor.a = 0.7f;
-	// 		buttonImage.color = newColor;
-	// 		buttonImage.sprite = stoneSprites[playerIndex];
-	// }
+	[ClientRpc]
+	public void RpcHighlightStone(int playerIndex, int yCoord, int xCoord) {
+		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		// GameObject button = GameObject.Find("/Canvas/StartBoard/" + yCoord + "-" + xCoord);
+		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
+		Image buttonImage = button.GetComponent<Image>();
+		Color newColor = buttonImage.color;
+		newColor.a = 0.7f;
+		buttonImage.color = newColor;
+		buttonImage.sprite = stoneSprites[playerIndex];
+		buttonsMap[yCoord, xCoord].isEmpty = false;
+		button.transform.GetChild(0).gameObject.SetActive(true);
+	}
 
 	[ClientRpc]
-	public void RpcPutDT(int yCoord, int xCoord, int value) {
-		boardMap[yCoord, xCoord] = value;			
+	public void RpcPutDT(int yCoord, int xCoord) {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		// GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = buttonImage.color;
@@ -1948,9 +1916,9 @@ public class MatchManager : NetworkBehaviour {
 	}
 
 	[ClientRpc]
-	public void RpcPutNA(int yCoord, int xCoord, int value) {
-		boardMap[yCoord, xCoord] = value;		
+	public void RpcPutNA(int yCoord, int xCoord) {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		// GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = buttonImage.color;
@@ -1959,6 +1927,31 @@ public class MatchManager : NetworkBehaviour {
 		buttonImage.sprite = notAllowedSprite;
 		buttonsMap[yCoord, xCoord].isEmpty = false;
 		button.transform.GetChild(0).gameObject.SetActive(false);
+	}
+
+	[ClientRpc]
+	private void RpcDisplayWinner(int winnerIndex) {
+		int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
+		playSettings.SetActive(true);
+		if (winnerIndex == -1) {
+			displayWinner.text = "Draw !";
+		}
+		else {
+			displayWinner.text = "Player " + winner + " won !";
+		}
+		if(isServer)
+			isGameEnded = true;
+	}
+
+	[ClientRpc]
+	private void RpcChangePlayerHiglight(int playerIndex) {
+		listPlayers[playerIndex].color = Color.cyan;
+		listPlayers[1 - playerIndex].color = Color.white;
+	}
+
+	[ClientRpc]
+	private void RpcChangePlayerScore(int playerIndex, string newText) {
+		listPlayers[playerIndex].text = newText;
 	}
 	#endregion
 }
