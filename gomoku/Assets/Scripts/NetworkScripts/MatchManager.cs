@@ -104,9 +104,14 @@ public class MatchManager : NetworkBehaviour {
 	private const int HANDICAP_CANT_PlAY = -7;
 
 
-	// Vars that are only used by Server
+	// [Server] Netwoking vars
 	private NetworkInstanceId p1NetId = NetworkInstanceId.Invalid;
 	private NetworkInstanceId p2NetId = NetworkInstanceId.Invalid;
+	private bool askedRestart = false;
+	private NetworkInstanceId restartAsker = NetworkInstanceId.Invalid;
+
+
+	// [Server] Game logic vars
 	private int currentPlayerIndex = 0;
 	private int currentPlayerVal = P1_VALUE;
 	private int otherPlayerVal = P2_VALUE;
@@ -136,7 +141,7 @@ public class MatchManager : NetworkBehaviour {
 	private List<int> allowedSpacesP2;
 
 
-	// Vars used also by Client
+	// [Client] Vars
 	private BoardButton[,] buttonsMap;
 
 	
@@ -863,104 +868,6 @@ public class MatchManager : NetworkBehaviour {
 			highlightedMove.y = -1;
 			highlightedMove.x = -1;
 		}
-	}
-
-	public void GoBack() {
-		// TODO: interaction with multi ??
-		if (backupStates.Count == 0 || !isHumanPlayer[currentPlayerIndex] || isAIPlaying)
-			return ;
-		if (isGameEnded) {
-			isGameEnded = false;
-		}
-		BackupState oldState = backupStates[0];
-
-		boardMap = CopyMap(oldState.map);
-		playerScores[0] = oldState.playerScores[0];
-		playerScores[1] = oldState.playerScores[1];
-		alignmentHasBeenDone = oldState.alignmentHasBeenDone;
-		counterMoves = oldState.counterMoves;
-		lastMove = oldState.lastMove;
-		// Player playing logic
-		currentPlayerIndex = oldState.currentPlayerIndex;
-		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
-		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
-
-		// first reset everything and put stones back
-		int playerIndex = -1;
-		int tmpVal = EMPTY_VALUE;
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
-				tmpVal = boardMap[y, x];
-				DeleteStone(boardMap, y, x);
-
-				playerIndex = -1;
-				if (tmpVal == P1_VALUE)
-					playerIndex = 0;
-				else if (tmpVal == P2_VALUE)
-					playerIndex = 1;
-
-				if (playerIndex >= 0) {
-					RpcPutStone(playerIndex, y, x);
-
-					// Deselect last move indicator if is not last move
-					if (lastMove.y != y || lastMove.x != x) {
-						RpcClearMoveTracker(y, x);
-					}
-
-					boardMap[y,x] = tmpVal;
-				}
-			}
-		}
-
-		// second iteration to update allowed moves
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
-				if (boardMap[y, x] != P1_VALUE && boardMap[y, x] != P2_VALUE) {
-					if (DOUBLE_THREE_RULE)
-						UpdateDoubleThree(boardMap, y, x, currentPlayerVal, otherPlayerVal);
-					if (SELF_CAPTURE_RULE)
-						UpdateSelfCapture(boardMap, y, x, currentPlayerVal, otherPlayerVal);
-				}
-			}
-		}
-
-		// Change UI
-		if (currentPlayerIndex == 0) {
-			RpcChangePlayerScore(0, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
-			RpcChangePlayerScore(1, "Player" + otherPlayerVal + ": " + playerScores[1 - currentPlayerIndex]);
-		}
-		else {
-			RpcChangePlayerScore(1, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
-			RpcChangePlayerScore(0, "Player" + otherPlayerVal + ": " + playerScores[1 - currentPlayerIndex]);
-		}
-		RpcChangePlayerHiglight(currentPlayerIndex);
-		SwapPlayerTextColor();
-
-		//OpeningRules RULES UNDO
-		nbrOfMoves = nbrOfMoves - 1;
-		if  (HANDICAP == 4 && nbrOfMoves == 2 || HANDICAP == 5 && nbrOfMoves == 4) {
-			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
-		}
-		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
-			if (HANDICAP == 3)
-				SetForbiddenMove(7, 12);
-			else if (HANDICAP == 2)
-				SetForbiddenMove(5, 14);
-		}
-		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
-			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
-			playedTwoMoreStones = false;
-			swapPlayers.SetActive(true);
-			swappedColors = false;
-		}
-		else if (HANDICAP == 5 && nbrOfMoves == 2) {
-			chooseSwapOptions.SetActive(true);
-			swappedColors = false;
-		}
-
-		backupStates.RemoveAt(0);
 	}
 
 	private void SwapPlayerTextColor() {
@@ -1824,6 +1731,7 @@ public class MatchManager : NetworkBehaviour {
 
 	[Command]
 	public void CmdSimulateAiMove(NetworkInstanceId playerNetId) {
+		// TODO: interaction with multi
 		if (PlayerCanPutStone(playerNetId)) {
 			simulatingMove = true;
 			StartMinMax();
@@ -1844,6 +1752,105 @@ public class MatchManager : NetworkBehaviour {
 
 			simulatingMove = false;
 		}
+	}
+
+	[Command]
+	public void CmdGoBack() {
+		// TODO: interaction with multi
+		if (backupStates.Count == 0 || !isHumanPlayer[currentPlayerIndex] || isAIPlaying)
+			return ;
+		if (isGameEnded) {
+			isGameEnded = false;
+		}
+		BackupState oldState = backupStates[0];
+
+		boardMap = CopyMap(oldState.map);
+		playerScores[0] = oldState.playerScores[0];
+		playerScores[1] = oldState.playerScores[1];
+		alignmentHasBeenDone = oldState.alignmentHasBeenDone;
+		counterMoves = oldState.counterMoves;
+		lastMove = oldState.lastMove;
+		// Player playing logic
+		currentPlayerIndex = oldState.currentPlayerIndex;
+		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
+		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
+
+		// first reset everything and put stones back
+		int playerIndex = -1;
+		int tmpVal = EMPTY_VALUE;
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				tmpVal = boardMap[y, x];
+				DeleteStone(boardMap, y, x);
+
+				playerIndex = -1;
+				if (tmpVal == P1_VALUE)
+					playerIndex = 0;
+				else if (tmpVal == P2_VALUE)
+					playerIndex = 1;
+
+				if (playerIndex >= 0) {
+					RpcPutStone(playerIndex, y, x);
+
+					// Deselect last move indicator if is not last move
+					if (lastMove.y != y || lastMove.x != x) {
+						RpcClearMoveTracker(y, x);
+					}
+
+					boardMap[y,x] = tmpVal;
+				}
+			}
+		}
+
+		// second iteration to update allowed moves
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				if (boardMap[y, x] != P1_VALUE && boardMap[y, x] != P2_VALUE) {
+					if (DOUBLE_THREE_RULE)
+						UpdateDoubleThree(boardMap, y, x, currentPlayerVal, otherPlayerVal);
+					if (SELF_CAPTURE_RULE)
+						UpdateSelfCapture(boardMap, y, x, currentPlayerVal, otherPlayerVal);
+				}
+			}
+		}
+
+		// Change UI
+		if (currentPlayerIndex == 0) {
+			RpcChangePlayerScore(0, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
+			RpcChangePlayerScore(1, "Player" + otherPlayerVal + ": " + playerScores[1 - currentPlayerIndex]);
+		}
+		else {
+			RpcChangePlayerScore(1, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
+			RpcChangePlayerScore(0, "Player" + otherPlayerVal + ": " + playerScores[1 - currentPlayerIndex]);
+		}
+		RpcChangePlayerHiglight(currentPlayerIndex);
+		SwapPlayerTextColor();
+
+		//OpeningRules RULES UNDO
+		nbrOfMoves = nbrOfMoves - 1;
+		if  (HANDICAP == 4 && nbrOfMoves == 2 || HANDICAP == 5 && nbrOfMoves == 4) {
+			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+		}
+		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
+			if (HANDICAP == 3)
+				SetForbiddenMove(7, 12);
+			else if (HANDICAP == 2)
+				SetForbiddenMove(5, 14);
+		}
+		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
+			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+			playedTwoMoreStones = false;
+			swapPlayers.SetActive(true);
+			swappedColors = false;
+		}
+		else if (HANDICAP == 5 && nbrOfMoves == 2) {
+			chooseSwapOptions.SetActive(true);
+			swappedColors = false;
+		}
+
+		backupStates.RemoveAt(0);
 	}
 	#endregion
 
@@ -2007,6 +2014,49 @@ public class MatchManager : NetworkBehaviour {
 	private void RpcChangePlayerScore(int playerIndex, string newText) {
 		listPlayers[playerIndex].text = newText;
 	}
+	#endregion
+
+	#region Client-to-Client dialogues
+	// TODO: Restart logic
+    [TargetRpc]
+    public void TargetAskAgreeRestart(NetworkConnection target, string playerName)
+    {
+        Debug.Log("Magic = " + playerName);
+    }
+
+    [Command]
+    public void CmdAskRestart(NetworkInstanceId playerNetId)
+    {
+		if (askedRestart)
+			return;
+		// if (currentPlayerIndex == 0 && playerNetId != p2NetId)
+		// 	return;
+		// if (currentPlayerIndex == 1 && playerNetId != p1NetId)
+		// 	return;
+		// Be sure that only active players can ask to restart
+		if (playerNetId == p1NetId) {
+			askedRestart = true;
+			restartAsker = playerNetId;
+			TargetAskAgreeRestart(NetworkServer.objects[p2NetId].connectionToClient, "Player" + P2_VALUE);
+		}
+		else if (playerNetId == p2NetId) {
+			askedRestart = true;
+			restartAsker = playerNetId;
+			TargetAskAgreeRestart(NetworkServer.objects[p1NetId].connectionToClient, "Player" + P1_VALUE);
+		}
+    }
+
+    [Command]
+	public void CmdRestartResponse(NetworkInstanceId playerNetId, bool response) {
+		if (!askedRestart || playerNetId != p1NetId || playerNetId != p2NetId || playerNetId == restartAsker)
+			return;
+		// TODO: process restart
+
+	}
+
+	// TODO: GoBack logic
+
+	// TODO: SimulateAI logic
 	#endregion
 }
 
