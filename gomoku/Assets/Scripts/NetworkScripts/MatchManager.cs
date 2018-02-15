@@ -75,15 +75,15 @@ public class MatchManager : NetworkBehaviour {
 	public Sprite notAllowedSprite;
 	public Sprite doubleThreeSprite;
 
-	// TODO: vars should only be set by Server
-	[HideInInspector] public bool isGameLoaded = false;
-	[HideInInspector] public bool isGameEnded = false;
-	[HideInInspector] public bool isGamePaused = false;
+	// Main game states
+	private bool isGameLoaded = false;
+	private bool isGameEnded = false;
+	private bool isGamePaused = false;
 
 	// Game settings
 	private int AI_DEPTH = 3;
 	private float AI_SEARCH_TIME = 100f;
-	private int AI_MAX_SEARCHES_PER_DEPTH = 20;
+	private int AI_MAX_SEARCHES_PER_DEPTH = 30;
 	private bool DOUBLE_THREE_RULE = true;
 	private bool SELF_CAPTURE_RULE = true;
 	private int CAPTURES_NEEDED_TO_WIN = 10;
@@ -108,14 +108,14 @@ public class MatchManager : NetworkBehaviour {
 	private NetworkInstanceId p1NetId = NetworkInstanceId.Invalid;
 	private NetworkInstanceId p2NetId = NetworkInstanceId.Invalid;
 	private int currentPlayerIndex = 0;
-	private float startSearchTime;
-	private float searchTime;
 	private int currentPlayerVal = P1_VALUE;
 	private int otherPlayerVal = P2_VALUE;
 	private int[,] boardMap;
 	private int[] playerScores;
 	private bool[] isHumanPlayer;
 	private bool isAIPlaying;
+	private float startSearchTime;
+	private float searchTime;
 	private List<Vector2Int> counterMoves; // Moves that can break a winning align
 	private List<Vector3Int> studiedMoves; // Used as debug to see AI studied moves
 	private Vector3Int bestMove;
@@ -126,6 +126,7 @@ public class MatchManager : NetworkBehaviour {
 	private bool alignmentHasBeenDone = false;
 	private bool firstAlphaBetaResult = false;
 
+	private bool swappedColors = false;
 	private bool playedTwoMoreStones = false;
 
 	private int nbrOfMoves = 0;
@@ -413,13 +414,19 @@ public class MatchManager : NetworkBehaviour {
 				foreach (Vector3Int move in GetAllowedMoves(state)) {
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
+					if (firstAlphaBetaResult) {
+						firstAlphaBetaResult = false;
+						bestMove = move;
+						bestMove.z = alpha;
+						Debug.Log("Saving first move as best move: " + bestMove);
+					}
 					int maxValue = AlphaBeta(ResultOfMove(state, move), alpha, beta, false);
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
 					if (maxValue > v) {
 						v = maxValue;
 					}
-					if (v > alpha || firstAlphaBetaResult) {
+					if (v > alpha) {
 						alpha = v;
 						if (state.depth == 0) {
 							firstAlphaBetaResult = false;
@@ -730,7 +737,7 @@ public class MatchManager : NetworkBehaviour {
 			return;
 		}
 
-
+		SwapPlayerTextColor();
 		OpeningRules();
 
 		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
@@ -893,19 +900,11 @@ public class MatchManager : NetworkBehaviour {
 					playerIndex = 1;
 
 				if (playerIndex >= 0) {
-					GameObject button = buttonsMap[y, x].gameObject;
-					button.GetComponent<Image>().sprite = stoneSprites[playerIndex];
-					button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
-					Color buttonColor = button.GetComponent<Image>().color;
-					buttonColor.a = 1;
-					button.GetComponent<Image>().color = buttonColor;
-					button.GetComponent<PutStone>().isEmpty = false;
+					RpcPutStone(playerIndex, y, x);
 
-					if (lastMove.y == y && lastMove.x == x) {
-						button.transform.GetChild(0).gameObject.SetActive(true); // highlight it
-					}
-					else {
-						button.transform.GetChild(0).gameObject.SetActive(false);
+					// Deselect last move indicator if is not last move
+					if (lastMove.y != y || lastMove.x != x) {
+						RpcClearMoveTracker(y, x);
 					}
 
 					boardMap[y,x] = tmpVal;
@@ -935,8 +934,50 @@ public class MatchManager : NetworkBehaviour {
 			RpcChangePlayerScore(0, "Player" + otherPlayerVal + ": " + playerScores[1 - currentPlayerIndex]);
 		}
 		RpcChangePlayerHiglight(currentPlayerIndex);
+		SwapPlayerTextColor();
+
+		//OpeningRules RULES UNDO
+		nbrOfMoves = nbrOfMoves - 1;
+		if  (HANDICAP == 4 && nbrOfMoves == 2 || HANDICAP == 5 && nbrOfMoves == 4) {
+			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+		}
+		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
+			if (HANDICAP == 3)
+				SetForbiddenMove(7, 12);
+			else if (HANDICAP == 2)
+				SetForbiddenMove(5, 14);
+		}
+		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
+			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+			playedTwoMoreStones = false;
+			swapPlayers.SetActive(true);
+			swappedColors = false;
+		}
+		else if (HANDICAP == 5 && nbrOfMoves == 2) {
+			chooseSwapOptions.SetActive(true);
+			swappedColors = false;
+		}
 
 		backupStates.RemoveAt(0);
+	}
+
+	private void SwapPlayerTextColor() {
+		if (HANDICAP < 4) {
+				listPlayers[currentPlayerIndex].color = Color.cyan;
+				listPlayers[1 - currentPlayerIndex].color = Color.white;
+		}
+		else {
+			if (nbrOfMoves > 3 && swappedColors) {
+				listPlayers[1 - currentPlayerIndex].color = Color.cyan;
+				listPlayers[currentPlayerIndex].color = Color.white;
+			}
+			else {
+				listPlayers[currentPlayerIndex].color = Color.cyan;
+				listPlayers[1 - currentPlayerIndex].color = Color.white;
+			}
+		}
 	}
 	#endregion
 
@@ -1618,13 +1659,7 @@ public class MatchManager : NetworkBehaviour {
 				for (int x = min; x < max; x++) {
 					if (boardMap[y, x] == EMPTY_VALUE) {
 					Debug.Log("y = " + y +" x = " +  x);
-					GameObject button = buttonsMap[y, x].gameObject;
-					button.GetComponent<Image>().sprite = notAllowedSprite;
-					button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
-					Color buttonColor = button.GetComponent<Image>().color;
-					buttonColor.a = 255;
-					button.GetComponent<Image>().color = buttonColor;
-					button.GetComponent<PutStone>().isEmpty = false;
+					RpcPutNA(y, x);
 				}
 			}
 		}
@@ -1632,28 +1667,43 @@ public class MatchManager : NetworkBehaviour {
 
 	//OPENING RULES
 	private void OpeningRules() {
-		if (nbrOfMoves == 2) {
+		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
 			if (HANDICAP == 3)
 				SetForbiddenMove(7, 12);
 			else if (HANDICAP == 2)
 				SetForbiddenMove(5, 14);
+		}
+		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
+			isGamePaused = true;
+			swapPlayers.SetActive(true);
+		}
+		else if (HANDICAP == 5 && nbrOfMoves == 3) {
+			isGamePaused = true;
+			chooseSwapOptions.SetActive(true);
 		}
 	}
 
 	public void YesToggle(GameObject panel) {
 		player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
 		player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+		listPlayers[1 - currentPlayerIndex].color = Color.cyan;
+		listPlayers[currentPlayerIndex].color = Color.white;
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		isGamePaused = false;
+		swappedColors = true;
 		panel.SetActive(false);
 	}
 
 	public void PlayTwoStones(GameObject panel) {
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 		playedTwoMoreStones = true;
+		isGamePaused = false;
 		panel.SetActive(false);
 	}
+
 	public void NoToggle(GameObject panel) {
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		isGamePaused = false;
 		panel.SetActive(false);
 	}
 
@@ -1758,9 +1808,6 @@ public class MatchManager : NetworkBehaviour {
 				boardMap[y, x] = EMPTY_VALUE;
 			}
 		}
-
-		// Add rules if needed
-		OpeningRules();
 
 		// Start accepting inputs
 		isGameLoaded = true;

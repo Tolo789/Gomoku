@@ -81,7 +81,7 @@ public class GameManager : MonoBehaviour {
 	// Game settings
 	private int AI_DEPTH = 3;
 	private float AI_SEARCH_TIME = 100f;
-	private int AI_MAX_SEARCHES_PER_DEPTH = 20;
+	private int AI_MAX_SEARCHES_PER_DEPTH = 30;
 	private bool DOUBLE_THREE_RULE = true;
 	private bool SELF_CAPTURE_RULE = true;
 	private int CAPTURES_NEEDED_TO_WIN = 10;
@@ -514,13 +514,19 @@ public class GameManager : MonoBehaviour {
 				foreach (Vector3Int move in GetAllowedMoves(state)) {
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
+					if (firstAlphaBetaResult) {
+						firstAlphaBetaResult = false;
+						bestMove = move;
+						bestMove.z = alpha;
+						Debug.Log("Saving first move as best move: " + bestMove);
+					}
 					int maxValue = AlphaBeta(ResultOfMove(state, move), alpha, beta, false);
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
 					if (maxValue > v) {
 						v = maxValue;
 					}
-					if (v > alpha || firstAlphaBetaResult) {
+					if (v > alpha) {
 						alpha = v;
 						if (state.depth == 0) {
 							firstAlphaBetaResult = false;
