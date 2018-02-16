@@ -6,11 +6,13 @@ using UnityEngine.Networking;
 
 [RequireComponent(typeof(NetworkIdentity))]
 public abstract class AbstractPlayerInteractable : NetworkBehaviour {
-	public bool activeAfterInit = true;
-
 	protected PlayerHandler player;
 
 	void Start() {
+		Init();
+	}
+
+	protected virtual void Init() {
 		PlayerHandler[] players = GameObject.FindObjectsOfType(typeof(PlayerHandler)) as PlayerHandler[];
 		foreach (PlayerHandler p in players) {
 			if (p.isLocalPlayer) {

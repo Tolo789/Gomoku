@@ -7,20 +7,14 @@ using UnityEngine.Networking;
 public class PlayerHandler : NetworkBehaviour {
 
 	[HideInInspector] public int wins = 0;
+	[HideInInspector] public GameObject menuPanel;
 
-
-
-	private GameObject menuPanel;
 	private MatchManager gameManager = null; // Only used by Server
 
 	// Register to server
 	public override void OnStartLocalPlayer()
     {
 		base.OnStartLocalPlayer();
-
-		// Retrieve Client-handled UI
-		menuPanel = GameObject.Find("/Canvas/MenuPanel");
-		menuPanel.SetActive(false);
 
 		// Tell server that Client player is ready
 		CmdRegisterSelf(netId);

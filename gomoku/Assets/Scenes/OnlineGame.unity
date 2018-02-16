@@ -1560,7 +1560,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c98a4c2cb39da4138ba3a2060c4a9fd0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  activeAfterInit: 1
 --- !u!114 &50936570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1883,7 +1882,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9240e0d4c4f54417da5704254a056ef7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  activeAfterInit: 1
   messageText: {fileID: 187828244}
   affirmativeButton: {fileID: 1104512946}
   negativeButton: {fileID: 1544194945}
@@ -12841,7 +12839,8 @@ MonoBehaviour:
   emptyButton: {fileID: 1762701836386610, guid: 104324ee6de6c464c977b58db84a40df,
     type: 2}
   startBoard: {fileID: 1586330387}
-  playSettings: {fileID: 297544483}
+  menuPanel: {fileID: 1317837757}
+  gameEndedPanel: {fileID: 297544483}
   swapPlayers: {fileID: 1583576943}
   chooseSwapOptions: {fileID: 15460115}
   player1: {fileID: 1960544238}
@@ -21634,7 +21633,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8770ec01e0301456b8daab133596cc56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  activeAfterInit: 1
   subject: 3
 --- !u!114 &866207879
 MonoBehaviour:
@@ -29809,7 +29807,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c98a4c2cb39da4138ba3a2060c4a9fd0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  activeAfterInit: 1
 --- !u!114 &1174452764
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -33738,7 +33735,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 1471725344569852, guid: 31e9e4f2b28424d80843c08cf17da0ca, type: 2}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 224285908852277710, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
@@ -33835,7 +33832,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8770ec01e0301456b8daab133596cc56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  activeAfterInit: 1
   subject: 1
 --- !u!114 &1317837756
 MonoBehaviour:
@@ -33869,6 +33865,11 @@ MonoBehaviour:
     i15: 202
   m_ServerOnly: 0
   m_LocalPlayerAuthority: 1
+--- !u!1 &1317837757 stripped
+GameObject:
+  m_PrefabParentObject: {fileID: 1471725344569852, guid: 31e9e4f2b28424d80843c08cf17da0ca,
+    type: 2}
+  m_PrefabInternal: {fileID: 1317837753}
 --- !u!1001 &1341527774
 Prefab:
   m_ObjectHideFlags: 0
@@ -47905,7 +47906,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8770ec01e0301456b8daab133596cc56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  activeAfterInit: 1
   subject: 2
 --- !u!114 &1848129243
 MonoBehaviour:
@@ -51068,7 +51068,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8770ec01e0301456b8daab133596cc56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  activeAfterInit: 1
   subject: 1
 --- !u!114 &1972667945
 MonoBehaviour:

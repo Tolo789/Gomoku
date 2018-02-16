@@ -62,7 +62,8 @@ public class MatchManager : AbstractPlayerInteractable {
 	// Prefabs and UI
 	public GameObject emptyButton;
 	public GameObject startBoard;
-	public GameObject playSettings;
+	public GameObject menuPanel;
+	public GameObject gameEndedPanel;
 	public GameObject swapPlayers;
 
 	public GameObject chooseSwapOptions;
@@ -145,6 +146,10 @@ public class MatchManager : AbstractPlayerInteractable {
 	// [Client] Vars
 	private BoardButton[,] buttonsMap;
 
+	protected override void Init() {
+		base.Init();
+		player.menuPanel = menuPanel;
+	}
 	
 	void Update () {
 		if (isGameLoaded && !isGameEnded && !isHumanPlayer[currentPlayerIndex] && !isGamePaused) {
@@ -1982,7 +1987,7 @@ public class MatchManager : AbstractPlayerInteractable {
 	[ClientRpc]
 	private void RpcDisplayWinner(int winnerIndex) {
 		int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
-		playSettings.SetActive(true);
+		gameEndedPanel.SetActive(true);
 		if (winnerIndex == -1) {
 			displayWinner.text = "Draw !";
 		}
@@ -2011,29 +2016,30 @@ public class MatchManager : AbstractPlayerInteractable {
 #endregion
 
 #region Client-to-Client dialogues
-    [ClientRpc]
-	public void RpcHideDialoguePanel() {
+	private void HideAllPanels() {
+		gameEndedPanel.SetActive(false);
+		menuPanel.SetActive(false);
+	}
+
+
+    [TargetRpc]
+	private void TargetHideDialoguePanel(NetworkConnection target) {
 		dialoguePanel.SetActive(false);
 	}
 
     [TargetRpc]
-	public void TargetHideDialoguePanel(NetworkConnection target) {
-		dialoguePanel.SetActive(false);
-	}
-
-    [TargetRpc]
-    public void TargetWaitForResponse(NetworkConnection target)
+    private void TargetWaitForResponse(NetworkConnection target)
     {
-		// TODO: close all other open panels (if any)
+		HideAllPanels();
 		dialoguePanel.SetActive(true);
 		DialoguePanel panelScript = dialoguePanel.GetComponent<DialoguePanel>();
 		panelScript.StartWaitForResponse(ongoingSubject);
     }
 
     [TargetRpc]
-    public void TargetShowDialogue(NetworkConnection target, DialogueSubject subject, string playerName)
+    private void TargetShowDialogue(NetworkConnection target, DialogueSubject subject, string playerName)
     {
-		// TODO: close all other open panels (if any)
+		HideAllPanels();
 		dialoguePanel.SetActive(true);
 		DialoguePanel panelScript = dialoguePanel.GetComponent<DialoguePanel>();
 		panelScript.ShowOtherPlayerRequest(subject, playerName);
@@ -2080,16 +2086,13 @@ public class MatchManager : AbstractPlayerInteractable {
 				CmdStart(firstStart: false);
 			}
 			else if (ongoingSubject == DialogueSubject.UndoMove) {
-			// TODO: GoBack logic
 				CmdGoBack();
 			}
 			else if (ongoingSubject == DialogueSubject.AiHelp) {
-			// TODO: SimulateAI logic
 				CmdSimulateAiMove();
 			}
 
 		}
-		// RpcHideDialoguePanel();
 		TargetHideDialoguePanel(NetworkServer.objects[p1NetId].connectionToClient);
 		TargetHideDialoguePanel(NetworkServer.objects[p2NetId].connectionToClient);
 		dialogueStarter = NetworkInstanceId.Invalid;
