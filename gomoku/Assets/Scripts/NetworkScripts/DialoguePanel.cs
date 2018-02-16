@@ -15,11 +15,11 @@ public class DialoguePanel : AbstractDialogue {
 
 		// Adapt message to subject
 		if (subject == DialogueSubject.Restart)
-			messageText.text = askerName + " would like to restart the game..";
+			messageText.text = askerName + " asks to restart the game..";
 		else if (subject == DialogueSubject.AiHelp)
-			messageText.text = askerName + " would like to ask help to AI..";
+			messageText.text = askerName + " asks for AI help..";
 		else if (subject == DialogueSubject.UndoMove)
-			messageText.text = askerName + " would like to undo his move..";
+			messageText.text = askerName + " asks to undo his last move..";
 
 
 		affirmativeButton.interactable = true;
@@ -38,12 +38,13 @@ public class DialoguePanel : AbstractDialogue {
 
 	public void StartWaitForResponse(DialogueSubject subject) {
 		// adapt message to subject
+		messageText.text = "";
 		if (subject == DialogueSubject.Restart)
 			messageText.text = "Asking to restart game..";
 		else if (subject == DialogueSubject.AiHelp)
-			messageText.text = "Asking to use AI help..";
+			messageText.text = "Asking for AI help..";
 		else if (subject == DialogueSubject.UndoMove)
-			messageText.text = "Asking to undo last move..";
+			messageText.text = "Asking to undo your last move..";
 
 		affirmativeButton.interactable = false;
 		affirmativeButton.GetComponentInChildren<Text>().text = "";

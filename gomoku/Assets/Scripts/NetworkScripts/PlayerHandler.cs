@@ -18,13 +18,6 @@ public class PlayerHandler : NetworkBehaviour {
     {
 		base.OnStartLocalPlayer();
 
-		// Notify itself to objs
-		AbstractPlayerInteractable[] objects = GameObject.FindObjectsOfType(typeof(AbstractPlayerInteractable)) as AbstractPlayerInteractable[];
-		foreach (AbstractPlayerInteractable o in objects) {
-			Debug.Log("Init: " + o.name);
-			o.Init(this);
-		}
-
 		// Retrieve Client-handled UI
 		menuPanel = GameObject.Find("/Canvas/MenuPanel");
 		menuPanel.SetActive(false);

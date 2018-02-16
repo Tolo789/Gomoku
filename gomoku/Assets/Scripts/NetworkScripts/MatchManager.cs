@@ -56,7 +56,7 @@ public struct NetworkBackupState {
 	public Vector2Int lastMove;
 }
 
-public class MatchManager : NetworkBehaviour {
+public class MatchManager : AbstractPlayerInteractable {
 	public static int size = 19;
 
 	// Prefabs and UI
@@ -1855,14 +1855,6 @@ public class MatchManager : NetworkBehaviour {
 #region RpcFunctions
 	[ClientRpc]
 	public void RpcLoadBoard() {
-		PlayerHandler[] players = GameObject.FindObjectsOfType(typeof(PlayerHandler)) as PlayerHandler[];
-		PlayerHandler playerHandler = null;
-		foreach (PlayerHandler player in players) {
-			if (player.isLocalPlayer) {
-				playerHandler = player;
-				break;
-			}
-		}
 		buttonsMap = new BoardButton[size, size];
 		float width = startBoard.GetComponent<RectTransform>().rect.width ;
 		float height = startBoard.GetComponent<RectTransform>().rect.height;
@@ -1886,7 +1878,7 @@ public class MatchManager : NetworkBehaviour {
 				newButton.GetComponent<RectTransform>().sizeDelta = new Vector2(buttonSize, buttonSize);
 				buttonsMap[y,x] = newButton.GetComponent<BoardButton>();
 				buttonsMap[y, x].isEmpty = true;
-				buttonsMap[y, x].player = playerHandler;
+				buttonsMap[y, x].player = player;
 
 
 				// Equivalent of RpcClearButton, since its already a Rpc no need to call it

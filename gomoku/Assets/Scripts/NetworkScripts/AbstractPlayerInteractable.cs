@@ -1,14 +1,22 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
-public abstract class AbstractPlayerInteractable : MonoBehaviour {
+
+[RequireComponent(typeof(NetworkIdentity))]
+public abstract class AbstractPlayerInteractable : NetworkBehaviour {
 	public bool activeAfterInit = true;
 
 	protected PlayerHandler player;
 
-	public void Init(PlayerHandler playerScript) {
-		player = playerScript;
-		gameObject.SetActive(activeAfterInit);
+	void Start() {
+		PlayerHandler[] players = GameObject.FindObjectsOfType(typeof(PlayerHandler)) as PlayerHandler[];
+		foreach (PlayerHandler p in players) {
+			if (p.isLocalPlayer) {
+				player = p;
+				break;
+			}
+		}
 	}
 }

@@ -1367,6 +1367,7 @@ GameObject:
   - component: {fileID: 50936566}
   - component: {fileID: 50936565}
   - component: {fileID: 50936564}
+  - component: {fileID: 50936570}
   - component: {fileID: 50936569}
   m_Layer: 5
   m_Name: resume game
@@ -1560,6 +1561,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   activeAfterInit: 1
+--- !u!114 &50936570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 50936562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 372142912, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SceneId:
+    m_Value: 0
+  m_AssetId:
+    i0: 49
+    i1: 233
+    i2: 228
+    i3: 242
+    i4: 178
+    i5: 132
+    i6: 36
+    i7: 216
+    i8: 8
+    i9: 67
+    i10: 192
+    i11: 140
+    i12: 241
+    i13: 125
+    i14: 160
+    i15: 202
+  m_ServerOnly: 0
+  m_LocalPlayerAuthority: 0
 --- !u!1 &51913654
 GameObject:
   m_ObjectHideFlags: 0
@@ -1774,13 +1807,14 @@ GameObject:
   - component: {fileID: 57359213}
   - component: {fileID: 57359212}
   - component: {fileID: 57359215}
+  - component: {fileID: 57359214}
   m_Layer: 5
   m_Name: DialoguePanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &57359211
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1838,7 +1872,7 @@ CanvasRenderer:
     type: 2}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 57359210}
---- !u!114 &57359215
+--- !u!114 &57359214
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
@@ -1849,10 +1883,42 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9240e0d4c4f54417da5704254a056ef7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  activeAfterInit: 0
+  activeAfterInit: 1
   messageText: {fileID: 187828244}
   affirmativeButton: {fileID: 1104512946}
   negativeButton: {fileID: 1544194945}
+--- !u!114 &57359215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 57359210}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 372142912, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SceneId:
+    m_Value: 0
+  m_AssetId:
+    i0: 49
+    i1: 233
+    i2: 228
+    i3: 242
+    i4: 178
+    i5: 132
+    i6: 36
+    i7: 216
+    i8: 8
+    i9: 67
+    i10: 192
+    i11: 140
+    i12: 241
+    i13: 125
+    i14: 160
+    i15: 202
+  m_ServerOnly: 0
+  m_LocalPlayerAuthority: 1
 --- !u!1 &60269889
 GameObject:
   m_ObjectHideFlags: 0
@@ -21444,6 +21510,7 @@ GameObject:
   - component: {fileID: 866207877}
   - component: {fileID: 866207876}
   - component: {fileID: 866207875}
+  - component: {fileID: 866207879}
   - component: {fileID: 866207878}
   m_Layer: 5
   m_Name: UndoMove
@@ -21569,6 +21636,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   activeAfterInit: 1
   subject: 3
+--- !u!114 &866207879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 866207873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 372142912, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SceneId:
+    m_Value: 0
+  m_AssetId:
+    i0: 0
+    i1: 0
+    i2: 0
+    i3: 0
+    i4: 0
+    i5: 0
+    i6: 0
+    i7: 0
+    i8: 0
+    i9: 0
+    i10: 0
+    i11: 0
+    i12: 0
+    i13: 0
+    i14: 0
+    i15: 0
+  m_ServerOnly: 0
+  m_LocalPlayerAuthority: 0
 --- !u!1001 &876662025
 Prefab:
   m_ObjectHideFlags: 0
@@ -27694,7 +27793,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 57359215}
+      - m_Target: {fileID: 57359214}
         m_MethodName: ConfirmChoice
         m_Mode: 6
         m_Arguments:
@@ -29758,6 +29857,38 @@ MonoBehaviour:
       m_TypeName: UnityEngine.EventSystems.EventTrigger+TriggerEvent, UnityEngine.UI,
         Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   delegates: []
+--- !u!114 &1174452765
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1174452762}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 372142912, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SceneId:
+    m_Value: 0
+  m_AssetId:
+    i0: 116
+    i1: 142
+    i2: 167
+    i3: 103
+    i4: 23
+    i5: 46
+    i6: 164
+    i7: 161
+    i8: 74
+    i9: 69
+    i10: 81
+    i11: 88
+    i12: 202
+    i13: 17
+    i14: 29
+    i15: 175
+  m_ServerOnly: 0
+  m_LocalPlayerAuthority: 1
 --- !u!1001 &1178857142
 Prefab:
   m_ObjectHideFlags: 0
@@ -40185,7 +40316,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 57359215}
+      - m_Target: {fileID: 57359214}
         m_MethodName: ConfirmChoice
         m_Mode: 6
         m_Arguments:
@@ -47650,6 +47781,7 @@ GameObject:
   - component: {fileID: 1848129241}
   - component: {fileID: 1848129240}
   - component: {fileID: 1848129239}
+  - component: {fileID: 1848129243}
   - component: {fileID: 1848129242}
   m_Layer: 5
   m_Name: AiHelper
@@ -47775,6 +47907,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   activeAfterInit: 1
   subject: 2
+--- !u!114 &1848129243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1848129237}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 372142912, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SceneId:
+    m_Value: 0
+  m_AssetId:
+    i0: 0
+    i1: 0
+    i2: 0
+    i3: 0
+    i4: 0
+    i5: 0
+    i6: 0
+    i7: 0
+    i8: 0
+    i9: 0
+    i10: 0
+    i11: 0
+    i12: 0
+    i13: 0
+    i14: 0
+    i15: 0
+  m_ServerOnly: 0
+  m_LocalPlayerAuthority: 1
 --- !u!1001 &1849642619
 Prefab:
   m_ObjectHideFlags: 0
@@ -50796,7 +50960,7 @@ Prefab:
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1925162075}
+      objectReference: {fileID: 1972667944}
     - target: {fileID: 1471725344569852, guid: 31e9e4f2b28424d80843c08cf17da0ca, type: 2}
       propertyPath: m_IsActive
       value: 0
@@ -50865,9 +51029,79 @@ Prefab:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: ExitClick
       objectReference: {fileID: 0}
+    - target: {fileID: 114504263790945024, guid: 31e9e4f2b28424d80843c08cf17da0ca,
+        type: 2}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: StartDialogue
+      objectReference: {fileID: 0}
+    - target: {fileID: 114504263790945024, guid: 31e9e4f2b28424d80843c08cf17da0ca,
+        type: 2}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114504263790945024, guid: 31e9e4f2b28424d80843c08cf17da0ca,
+        type: 2}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgument
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 114504263790945024, guid: 31e9e4f2b28424d80843c08cf17da0ca,
+        type: 2}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 31e9e4f2b28424d80843c08cf17da0ca, type: 2}
   m_IsPrefabParent: 0
+--- !u!1 &1972667943 stripped
+GameObject:
+  m_PrefabParentObject: {fileID: 1480931285868602, guid: 31e9e4f2b28424d80843c08cf17da0ca,
+    type: 2}
+  m_PrefabInternal: {fileID: 1972667942}
+--- !u!114 &1972667944
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1972667943}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8770ec01e0301456b8daab133596cc56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  activeAfterInit: 1
+  subject: 1
+--- !u!114 &1972667945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1972667943}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 372142912, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SceneId:
+    m_Value: 0
+  m_AssetId:
+    i0: 49
+    i1: 233
+    i2: 228
+    i3: 242
+    i4: 178
+    i5: 132
+    i6: 36
+    i7: 216
+    i8: 8
+    i9: 67
+    i10: 192
+    i11: 140
+    i12: 241
+    i13: 125
+    i14: 160
+    i15: 202
+  m_ServerOnly: 0
+  m_LocalPlayerAuthority: 1
 --- !u!1001 &1980054026
 Prefab:
   m_ObjectHideFlags: 0
