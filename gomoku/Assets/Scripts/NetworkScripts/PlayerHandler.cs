@@ -11,6 +11,7 @@ public class PlayerHandler : NetworkBehaviour {
 
 	private MatchManager gameManager = null;
 
+	// Register to server
 	public override void OnStartLocalPlayer()
     {
 		base.OnStartLocalPlayer();
@@ -25,15 +26,41 @@ public class PlayerHandler : NetworkBehaviour {
 	}
 
 
+	// Try put stone
 	public void TryPutStone(int y, int x) {
 		CmdTryPutStone(netId, y, x);
 	}
 
-
 	[Command]
-	public void CmdTryPutStone(NetworkInstanceId playerNetId, int y, int x) {
+	private void CmdTryPutStone(NetworkInstanceId playerNetId, int y, int x) {
 		if (gameManager == null)
 			return ;
 		gameManager.CmdTrySavePlayerMove(playerNetId, y, x);
+	}
+
+
+	// Start Dialogue
+	public void StartDialogue(DialogueSubject subject) {
+		CmdStartDialogue(netId, subject);
+	}
+
+	[Command]
+	private void CmdStartDialogue(NetworkInstanceId playerNetId, DialogueSubject subject) {
+		if (gameManager == null)
+			return ;
+		gameManager.CmdStartDialogue(playerNetId, subject);
+	}
+
+
+	// Response to dialogue
+	public void ConfirmDialogueChoice(bool choice) {
+		CmdConfirmDialogueChoice(netId, choice);
+	}
+
+	[Command]
+	private void CmdConfirmDialogueChoice(NetworkInstanceId playerNetId, bool choice) {
+		if (gameManager == null)
+			return ;
+		gameManager.CmdExecuteResponse(playerNetId, choice);
 	}
 }
