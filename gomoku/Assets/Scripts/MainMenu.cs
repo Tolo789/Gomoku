@@ -95,7 +95,6 @@ public class MainMenu : MonoBehaviour {
         }
         int playerStarting = (firstPlayerString == "TogglePlayer1") ? 0 : ((firstPlayerString == "TogglePlayer2") ? 1 : 2);
         PlayerPrefs.SetInt(CommonDefines.FIRST_PLAYER_PLAYING, playerStarting);
-        Debug.Log(GetOpeningRules(handicap));
         PlayerPrefs.SetInt(CommonDefines.OPENING_RULE, GetOpeningRules(handicap));
         PlayerPrefs.Save();
     }

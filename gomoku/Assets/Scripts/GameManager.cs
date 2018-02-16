@@ -148,7 +148,7 @@ public class GameManager : MonoBehaviour {
 		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
 			SELF_CAPTURE_RULE = (PlayerPrefs.GetInt(CommonDefines.SELF_CAPTURE_SETTING) == 1) ? true : false;
 		}
-		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
+		if (PlayerPrefs.HasKey(CommonDefines.OPENING_RULE)) {
 			HANDICAP = PlayerPrefs.GetInt(CommonDefines.OPENING_RULE);
 		}
 		// init game variables
@@ -200,6 +200,10 @@ public class GameManager : MonoBehaviour {
 			if (currentPlayerIndex == 2) {
 				 currentPlayerIndex = UnityEngine.Random.Range(0, 1);
 			}
+		}
+
+		if (HANDICAP == 5 || HANDICAP == 4) {
+			currentPlayerIndex = 0;
 		}
 
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
@@ -771,8 +775,14 @@ public class GameManager : MonoBehaviour {
 		nbrOfMoves+=1;
 
 		// Do captures
-		playerScores[currentPlayerIndex] += CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
-		listPlayers[currentPlayerIndex].text = "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex];
+		if (swappedColors) {
+			playerScores[1 - currentPlayerIndex] += CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
+			listPlayers[1 - currentPlayerIndex].text = "Player " + otherPlayerVal + ": " + playerScores[1 - currentPlayerIndex];
+		}
+		else {
+			playerScores[currentPlayerIndex] += CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
+			listPlayers[currentPlayerIndex].text = "Player " + currentPlayerVal + ": " + playerScores[currentPlayerIndex];
+		}
 		if (playerScores[currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
 			DisplayWinner(currentPlayerIndex);
 			return;
@@ -1065,9 +1075,8 @@ public class GameManager : MonoBehaviour {
 		}
 
 		// Change UI
-		listPlayers[0].text = "Player1" + ": " + playerScores[0];
-		listPlayers[1].text = "Player2" + ": " + playerScores[1];
-		SwapPlayerTextColor();
+		listPlayers[0].text = "Player 1" + ": " + playerScores[0];
+		listPlayers[1].text = "Player 2" + ": " + playerScores[1];
 
 
 
@@ -1101,25 +1110,33 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private void SwapPlayerTextColor() {
-		if (HANDICAP < 4) {
-				listPlayers[currentPlayerIndex].color = Color.cyan;
-				listPlayers[1 - currentPlayerIndex].color = Color.white;
+		if ((HANDICAP == 4 || HANDICAP == 5) && nbrOfMoves < 3) {
+			return ;
 		}
 		else {
-			if (nbrOfMoves > 3 && swappedColors) {
-				listPlayers[1 - currentPlayerIndex].color = Color.cyan;
-				listPlayers[currentPlayerIndex].color = Color.white;
+			if (HANDICAP < 4) {
+					listPlayers[currentPlayerIndex].color = Color.cyan;
+					listPlayers[1 - currentPlayerIndex].color = Color.white;
 			}
 			else {
-				listPlayers[currentPlayerIndex].color = Color.cyan;
-				listPlayers[1 - currentPlayerIndex].color = Color.white;
-			}
+				if (nbrOfMoves > 3 && swappedColors) {
+					listPlayers[1 - currentPlayerIndex].color = Color.cyan;
+					listPlayers[currentPlayerIndex].color = Color.white;
+				}
+				else {
+					listPlayers[currentPlayerIndex].color = Color.cyan;
+					listPlayers[1 - currentPlayerIndex].color = Color.white;
+				}
+		}
 		}
 	}
 
 	private void DisplayWinner(int winnerIndex) {
 		// TODO: display winner and stop playing
 		int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
+		if (swappedColors) {
+			winner = (winnerIndex == 0) ? P2_VALUE : P1_VALUE;
+		}
 		playSettings.SetActive(true);
 		if (winnerIndex == -1) {
 			displayWinner.text = "Draw !";
