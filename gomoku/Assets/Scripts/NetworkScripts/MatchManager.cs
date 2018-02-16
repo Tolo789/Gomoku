@@ -44,6 +44,7 @@ public struct NetworkState {
 		}
 	}
 }
+
 public struct NetworkBackupState {
 	public int[,] map;
 	public int[] playerScores;
@@ -130,7 +131,6 @@ public class MatchManager : NetworkBehaviour {
 	private bool moveIsReady = false;
 	private bool simulatingMove = false;
 	private bool alignmentHasBeenDone = false;
-	private bool firstAlphaBetaResult = false;
 
 	private bool swappedColors = false;
 	private bool playedTwoMoreStones = false;
@@ -156,7 +156,7 @@ public class MatchManager : NetworkBehaviour {
 
 				// Play move
 				Debug.Log("Search time: " + searchTime);
-				AiTimer.text = "AI Timer: " + searchTime.ToString();
+				RpcChangeAiTimer(searchTime);
 				if (searchTime >= AI_SEARCH_TIME)
 					Debug.LogWarning("Ai didnt find a move in time");
 				PutStone(bestMove.y, bestMove.x);
@@ -226,16 +226,21 @@ public class MatchManager : NetworkBehaviour {
 				GameObject button = buttonsMap[move.y, move.x].gameObject;
 				button.transform.GetChild(0).gameObject.SetActive(false);
 			}
-		}
+		}*/
+
 		studiedMoves = GetAllowedMoves(state);
+		/*
 		foreach (Vector3Int move in studiedMoves) {
 			GameObject button = buttonsMap[move.y, move.x].gameObject;
 			button.transform.GetChild(0).gameObject.SetActive(true); // highlight it
 		}
 		// */
 
+		// Saving first move as best move
+		bestMove = studiedMoves[0];
+		bestMove.z = Int32.MinValue;
+
 		// Actually do MinMax
-		firstAlphaBetaResult = true;
 		AlphaBeta(state, Int32.MinValue, Int32.MaxValue, true);
 
 		// Save searchTime
@@ -420,12 +425,6 @@ public class MatchManager : NetworkBehaviour {
 				foreach (Vector3Int move in GetAllowedMoves(state)) {
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
-					if (firstAlphaBetaResult) {
-						firstAlphaBetaResult = false;
-						bestMove = move;
-						bestMove.z = alpha;
-						Debug.Log("Saving first move as best move: " + bestMove);
-					}
 					int maxValue = AlphaBeta(ResultOfMove(state, move), alpha, beta, false);
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
@@ -435,7 +434,6 @@ public class MatchManager : NetworkBehaviour {
 					if (v > alpha) {
 						alpha = v;
 						if (state.depth == 0) {
-							firstAlphaBetaResult = false;
 							bestMove = move;
 							bestMove.z = alpha;
 							Debug.Log("Update best move: " + bestMove);
@@ -1739,15 +1737,15 @@ public class MatchManager : NetworkBehaviour {
 	}
 
 	[Command]
-	public void CmdSimulateAiMove(NetworkInstanceId playerNetId) {
+	public void CmdSimulateAiMove() {
 		// TODO: interaction with multi
-		if (PlayerCanPutStone(playerNetId)) {
+		if (!simulatingMove) {
 			simulatingMove = true;
 			StartMinMax();
 
 			// Timing stuff
 			Debug.Log("Search time: " + searchTime);
-			AiTimer.text = "AI Timer: " + searchTime.ToString();
+			RpcChangeAiTimer(searchTime);
 			if (searchTime > AI_SEARCH_TIME)
 				Debug.LogWarning("Ai didnt find a move in time");
 
@@ -1766,7 +1764,7 @@ public class MatchManager : NetworkBehaviour {
 	[Command]
 	public void CmdGoBack() {
 		// TODO: interaction with multi
-		if (backupStates.Count == 0 || !isHumanPlayer[currentPlayerIndex] || isAIPlaying)
+		if (backupStates.Count == 0 || isAIPlaying || (!isHumanPlayer[currentPlayerIndex] && !isGameEnded))
 			return ;
 		if (isGameEnded) {
 			isGameEnded = false;
@@ -1955,7 +1953,6 @@ public class MatchManager : NetworkBehaviour {
 		newColor.a = 0.7f;
 		buttonImage.color = newColor;
 		buttonImage.sprite = stoneSprites[playerIndex];
-		buttonsMap[yCoord, xCoord].isEmpty = false;
 		button.transform.GetChild(0).gameObject.SetActive(true);
 	}
 
@@ -2017,6 +2014,11 @@ public class MatchManager : NetworkBehaviour {
 	private void RpcChangePlayerScore(int playerIndex, string newText) {
 		listPlayers[playerIndex].text = newText;
 	}
+
+	[ClientRpc]
+	private void RpcChangeAiTimer(float searchingTime) {
+		AiTimer.text = "AI Timer: " + searchingTime.ToString();
+	}
 	#endregion
 
 	#region Client-to-Client dialogues
@@ -2040,7 +2042,7 @@ public class MatchManager : NetworkBehaviour {
 		// TODO: close all other open panels (if any)
 		dialoguePanel.SetActive(true);
 		DialoguePanel panelScript = dialoguePanel.GetComponent<DialoguePanel>();
-		panelScript.ShowOtherPlayerRequest(DialogueSubject.Restart, playerName);
+		panelScript.ShowOtherPlayerRequest(subject, playerName);
     }
 
 	[Command]
@@ -2051,19 +2053,20 @@ public class MatchManager : NetworkBehaviour {
 		string playerName = "";
 		NetworkConnection target = null;
 		// Only current player can ask AiHelp + only other player can ask UndoMove
+		if (subject == DialogueSubject.UndoMove) {
+			if ((currentPlayerIndex == 0 && playerNetId == p1NetId) || (currentPlayerIndex == 1 && playerNetId == p2NetId))
+				return;
+		}
+		else if (subject == DialogueSubject.AiHelp && !isGameEnded) {
+			if ((currentPlayerIndex == 0 && playerNetId == p2NetId) || (currentPlayerIndex == 1 && playerNetId == p1NetId))
+				return;
+		}
+
 		if (playerNetId == p1NetId) {
-			if (currentPlayerIndex == 0 && subject == DialogueSubject.UndoMove)
-				return;
-			else if (subject == DialogueSubject.AiHelp && PlayerCanPutStone(playerNetId))
-				return;
 			playerName = "Player" + P1_VALUE;
 			target = NetworkServer.objects[p2NetId].connectionToClient;
 		}
 		else if (playerNetId == p2NetId) {
-			if (currentPlayerIndex == 1 && subject == DialogueSubject.UndoMove)
-				return;
-			else if (subject == DialogueSubject.AiHelp && PlayerCanPutStone(playerNetId))
-				return;
 			playerName = "Player" + P2_VALUE;
 			target = NetworkServer.objects[p1NetId].connectionToClient;
 		}
@@ -2081,11 +2084,16 @@ public class MatchManager : NetworkBehaviour {
 		if (response) {
 			if (ongoingSubject == DialogueSubject.Restart) {
 				CmdStart(firstStart: false);
-				Debug.Log("Game restarted");
 			}
+			else if (ongoingSubject == DialogueSubject.UndoMove) {
 			// TODO: GoBack logic
-
+				CmdGoBack();
+			}
+			else if (ongoingSubject == DialogueSubject.AiHelp) {
 			// TODO: SimulateAI logic
+				CmdSimulateAiMove();
+			}
+
 		}
 		RpcHideDialoguePanel();
 		dialogueStarter = NetworkInstanceId.Invalid;

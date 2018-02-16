@@ -120,7 +120,6 @@ public class GameManager : MonoBehaviour {
 	private bool moveIsReady = false;
 	private bool simulatingMove = false;
 	private bool alignmentHasBeenDone = false;
-	private bool firstAlphaBetaResult = false;
 
 	private bool swappedColors = false;
 	private bool playedTwoMoreStones = false;
@@ -332,8 +331,11 @@ public class GameManager : MonoBehaviour {
 		}
 		// */
 
+		// Saving first move as best move
+		bestMove = studiedMoves[0];
+		bestMove.z = Int32.MinValue;
+
 		// Actually do MinMax
-		firstAlphaBetaResult = true;
 		AlphaBeta(state, Int32.MinValue, Int32.MaxValue, true);
 
 		// Save searchTime
@@ -518,12 +520,6 @@ public class GameManager : MonoBehaviour {
 				foreach (Vector3Int move in GetAllowedMoves(state)) {
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
-					if (firstAlphaBetaResult) {
-						firstAlphaBetaResult = false;
-						bestMove = move;
-						bestMove.z = alpha;
-						Debug.Log("Saving first move as best move: " + bestMove);
-					}
 					int maxValue = AlphaBeta(ResultOfMove(state, move), alpha, beta, false);
 					if (Time.realtimeSinceStartup - startSearchTime >= AI_SEARCH_TIME)
 						return v;
@@ -533,7 +529,6 @@ public class GameManager : MonoBehaviour {
 					if (v > alpha) {
 						alpha = v;
 						if (state.depth == 0) {
-							firstAlphaBetaResult = false;
 							bestMove = move;
 							bestMove.z = alpha;
 							Debug.Log("Update best move: " + bestMove);
@@ -1008,7 +1003,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public void GoBack() {
-		if (backupStates.Count == 0 || !isHumanPlayer[currentPlayerIndex] || isAIPlaying)
+		if (backupStates.Count == 0 || isAIPlaying || (!isHumanPlayer[currentPlayerIndex] && !isGameEnded))
 			return ;
 		if (isGameEnded) {
 			isGameEnded = false;

@@ -52,6 +52,8 @@ public class DialoguePanel : NetworkBehaviour {
 		if (player == null)
 			return;
 		player.ConfirmDialogueChoice(choice);
+		Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+
 	}
 
 	public void StartWaitForResponse(DialogueSubject subject) {
