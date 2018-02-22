@@ -73,6 +73,14 @@ public class GameManager : MonoBehaviour {
 	public Text AiTimer;
 	public Text displayWinner;
 
+	// Sprites square
+	public Sprite sqTopLeft;
+	public Sprite sqTopRight;
+	public Sprite sqBotRight;
+	public Sprite sqBotLeft;
+	public Sprite sqHorizontal;
+	public Sprite sqVertical;
+
 	public static int size = 19;
 	[HideInInspector]
 	public bool isGameEnded = false;
@@ -1835,14 +1843,29 @@ public class GameManager : MonoBehaviour {
 		for (int y = min; y < max; y++) {
 				for (int x = min; x < max; x++) {
 					if (boardMap[y, x] == EMPTY_VALUE) {
-					Debug.Log("y = " + y +" x = " +  x);
-					GameObject button = buttonsMap[y, x].gameObject;
-					button.GetComponent<Image>().sprite = notAllowedSprite;
-					button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
-					Color buttonColor = button.GetComponent<Image>().color;
-					buttonColor.a = 255;
-					button.GetComponent<Image>().color = buttonColor;
-					button.GetComponent<PutStone>().isEmpty = false;
+						Debug.Log("y = " + y +" x = " +  x);
+						GameObject button = buttonsMap[y, x].gameObject;
+						button.transform.localScale = new Vector3(1, 1, 1);
+						Color buttonColor = button.GetComponent<Image>().color;
+						buttonColor.a = 255;
+						button.GetComponent<Image>().color = buttonColor;
+						button.GetComponent<PutStone>().isEmpty = false;
+						if (y == min && x == min)
+							button.GetComponent<Image>().sprite = sqTopLeft;
+						else if (y == min && x == max - 1)
+							button.GetComponent<Image>().sprite = sqTopRight;
+						else if (y == max -1  && x == max -1)
+							button.GetComponent<Image>().sprite = sqBotRight;
+						else if (y == max -1  && x == min)
+							button.GetComponent<Image>().sprite = sqBotLeft;
+						else if (y == min || y == max - 1)
+							button.GetComponent<Image>().sprite = sqHorizontal;
+						else if (x == min || x == max - 1)
+							button.GetComponent<Image>().sprite = sqVertical;
+						else {
+							buttonColor.a = 0;
+							button.GetComponent<Image>().color = buttonColor;
+						}
 				}
 			}
 		}

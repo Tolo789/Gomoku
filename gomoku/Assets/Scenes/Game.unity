@@ -2720,6 +2720,11 @@ Prefab:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgument
       value: 
       objectReference: {fileID: 1583576943}
+    - target: {fileID: 114655782143372474, guid: 31e9e4f2b28424d80843c08cf17da0ca,
+        type: 2}
+      propertyPath: m_Color.a
+      value: 0.822
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 31e9e4f2b28424d80843c08cf17da0ca, type: 2}
   m_IsPrefabParent: 0
@@ -3722,6 +3727,12 @@ MonoBehaviour:
   - {fileID: 27761295}
   AiTimer: {fileID: 564232487}
   displayWinner: {fileID: 351874437}
+  sqTopLeft: {fileID: 21300000, guid: fcd4887d5fa4a4096ba5dcada57d8c64, type: 3}
+  sqTopRight: {fileID: 21300000, guid: d3c5715bd590342f7a4d53a6d8a89e65, type: 3}
+  sqBotRight: {fileID: 21300000, guid: c87126a945b9c4cb1940d7eaefa87a71, type: 3}
+  sqBotLeft: {fileID: 21300000, guid: 73047cf4b6313467bbd3f416639e4a26, type: 3}
+  sqHorizontal: {fileID: 21300000, guid: 3e653380816be426db362373d56856a6, type: 3}
+  sqVertical: {fileID: 21300000, guid: 1b4972de181fa4bb491ad09080b5aa17, type: 3}
   isGameEnded: 0
   isGamePaused: 0
 --- !u!114 &1925162075
