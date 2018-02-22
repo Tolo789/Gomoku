@@ -6,7 +6,9 @@ public enum DialogueSubject {
 	None = 0,
 	Restart = 1,
 	AiHelp = 2,
-	UndoMove = 3
+	UndoMove = 3,
+	DoSwap = 4,
+	DoSwap2 = 5
 }
 
 public abstract class AbstractDialogue : AbstractPlayerInteractable {

@@ -78,6 +78,14 @@ public class MatchManager : AbstractPlayerInteractable {
 	public Sprite notAllowedSprite;
 	public Sprite doubleThreeSprite;
 
+	// Sprites square
+	public Sprite sqTopLeft;
+	public Sprite sqTopRight;
+	public Sprite sqBotRight;
+	public Sprite sqBotLeft;
+	public Sprite sqHorizontal;
+	public Sprite sqVertical;
+
 	// Main game states
 	private bool isGameLoaded = false;  // Server only
 	private bool isGameEnded = false; // Server only
@@ -85,10 +93,10 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	// Game settings
 	private int AI_DEPTH = 3;
-	private float AI_SEARCH_TIME = 100f;
+	private float AI_SEARCH_TIME = 0.5f;
 	private int AI_MAX_SEARCHES_PER_DEPTH = 30;
 	private bool DOUBLE_THREE_RULE = true;
-	private bool SELF_CAPTURE_RULE = true;
+	private bool SELF_CAPTURE_RULE = false;
 	private int CAPTURES_NEEDED_TO_WIN = 10;
 	private int HEURISTIC_ALIGN_COEFF = 5;
 	private int HEURISTIC_CAPTURE_COEFF = 50;
@@ -133,7 +141,6 @@ public class MatchManager : AbstractPlayerInteractable {
 	private bool simulatingMove = false;
 	private bool alignmentHasBeenDone = false;
 
-	private bool swappedColors = false;
 	private bool playedTwoMoreStones = false;
 
 	private int nbrOfMoves = 0;
@@ -145,6 +152,7 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	// [Client] Vars
 	private BoardButton[,] buttonsMap;
+	private bool swappedColors = false;
 
 	protected override void Init() {
 		base.Init();
@@ -161,7 +169,7 @@ public class MatchManager : AbstractPlayerInteractable {
 
 				// Play move
 				Debug.Log("Search time: " + searchTime);
-				RpcChangeAiTimer(searchTime);
+				RpcChangeAiTimer(searchTime, AI_SEARCH_TIME);
 				if (searchTime >= AI_SEARCH_TIME)
 					Debug.LogWarning("Ai didnt find a move in time");
 				PutStone(bestMove.y, bestMove.x);
@@ -875,18 +883,23 @@ public class MatchManager : AbstractPlayerInteractable {
 	}
 
 	private void SwapPlayerTextColor() {
-		if (HANDICAP < 4) {
-				listPlayers[currentPlayerIndex].color = Color.cyan;
-				listPlayers[1 - currentPlayerIndex].color = Color.white;
+		if ((HANDICAP == 4 || HANDICAP == 5) && nbrOfMoves < 3) {
+			return ;
 		}
 		else {
-			if (nbrOfMoves > 3 && swappedColors) {
-				listPlayers[1 - currentPlayerIndex].color = Color.cyan;
-				listPlayers[currentPlayerIndex].color = Color.white;
+			if (HANDICAP < 4) {
+					listPlayers[currentPlayerIndex].color = Color.cyan;
+					listPlayers[1 - currentPlayerIndex].color = Color.white;
 			}
 			else {
-				listPlayers[currentPlayerIndex].color = Color.cyan;
-				listPlayers[1 - currentPlayerIndex].color = Color.white;
+				if (nbrOfMoves > 3 && swappedColors) {
+					listPlayers[1 - currentPlayerIndex].color = Color.cyan;
+					listPlayers[currentPlayerIndex].color = Color.white;
+				}
+				else {
+					listPlayers[currentPlayerIndex].color = Color.cyan;
+					listPlayers[1 - currentPlayerIndex].color = Color.white;
+				}
 			}
 		}
 	}
@@ -1583,6 +1596,7 @@ public class MatchManager : AbstractPlayerInteractable {
 	}
 
 	public void YesToggle(GameObject panel) {
+		// TODO: must be a command
 		player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
 		player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
 		listPlayers[1 - currentPlayerIndex].color = Color.cyan;
@@ -1643,7 +1657,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
 			SELF_CAPTURE_RULE = (PlayerPrefs.GetInt(CommonDefines.SELF_CAPTURE_SETTING) == 1) ? true : false;
 		}
-		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
+		if (PlayerPrefs.HasKey(CommonDefines.OPENING_RULE)) {
 			HANDICAP = PlayerPrefs.GetInt(CommonDefines.OPENING_RULE);
 		}
 
@@ -1740,27 +1754,24 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	[Command]
 	public void CmdSimulateAiMove() {
-		// TODO: interaction with multi
-		if (!simulatingMove) {
-			simulatingMove = true;
-			StartMinMax();
+		simulatingMove = true;
+		StartMinMax();
 
-			// Timing stuff
-			Debug.Log("Search time: " + searchTime);
-			RpcChangeAiTimer(searchTime);
-			if (searchTime > AI_SEARCH_TIME)
-				Debug.LogWarning("Ai didnt find a move in time");
+		// Timing stuff
+		Debug.Log("Search time: " + searchTime);
+		RpcChangeAiTimer(searchTime, AI_SEARCH_TIME);
+		if (searchTime > AI_SEARCH_TIME)
+			Debug.LogWarning("Ai didnt find a move in time");
 
-			// Save highlighted stone position
-			ClearHighligtedStone();
-			highlightedMove.y = bestMove.y;
-			highlightedMove.x = bestMove.x;
+		// Save highlighted stone position
+		ClearHighligtedStone();
+		highlightedMove.y = bestMove.y;
+		highlightedMove.x = bestMove.x;
 
-			// Put highlighted sprite
-			RpcHighlightStone(currentPlayerIndex, highlightedMove.y, highlightedMove.x);
+		// Put highlighted sprite
+		RpcHighlightStone(currentPlayerIndex, highlightedMove.y, highlightedMove.x);
 
-			simulatingMove = false;
-		}
+		simulatingMove = false;
 	}
 
 	[Command]
@@ -1940,7 +1951,6 @@ public class MatchManager : AbstractPlayerInteractable {
 	[ClientRpc]
 	public void RpcHighlightStone(int playerIndex, int yCoord, int xCoord) {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		// GameObject button = GameObject.Find("/Canvas/StartBoard/" + yCoord + "-" + xCoord);
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = buttonImage.color;
@@ -1953,7 +1963,6 @@ public class MatchManager : AbstractPlayerInteractable {
 	[ClientRpc]
 	public void RpcPutDT(int yCoord, int xCoord) {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		// GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = buttonImage.color;
@@ -1967,13 +1976,41 @@ public class MatchManager : AbstractPlayerInteractable {
 	[ClientRpc]
 	public void RpcPutNA(int yCoord, int xCoord) {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		// GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = buttonImage.color;
 		newColor.a = 1;
 		buttonImage.color = newColor;
 		buttonImage.sprite = notAllowedSprite;
+		buttonsMap[yCoord, xCoord].isEmpty = false;
+		button.transform.GetChild(0).gameObject.SetActive(false);
+	}
+
+	[ClientRpc]
+	public void RpcPutHandicap(int min, int max, int yCoord, int xCoord) {
+		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		button.transform.localScale = new Vector3(1, 1, 1);
+		Image buttonImage = button.GetComponent<Image>();
+		Color newColor = buttonImage.color;
+		newColor.a = 1;
+		buttonImage.color = newColor;
+
+		if (yCoord == min && xCoord == min)
+			buttonImage.sprite = sqTopLeft;
+		else if (yCoord == min && xCoord == max - 1)
+			buttonImage.sprite = sqTopRight;
+		else if (yCoord == max -1  && xCoord == max -1)
+			buttonImage.sprite = sqBotRight;
+		else if (yCoord == max -1  && xCoord == min)
+			buttonImage.sprite = sqBotLeft;
+		else if (yCoord == min || yCoord == max - 1)
+			buttonImage.sprite = sqHorizontal;
+		else if (xCoord == min || xCoord == max - 1)
+			buttonImage.sprite = sqVertical;
+		else {
+			buttonImage.sprite = null;
+		}
+
 		buttonsMap[yCoord, xCoord].isEmpty = false;
 		button.transform.GetChild(0).gameObject.SetActive(false);
 	}
@@ -1986,32 +2023,52 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	[ClientRpc]
 	private void RpcDisplayWinner(int winnerIndex) {
-		int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
-		gameEndedPanel.SetActive(true);
 		if (winnerIndex == -1) {
 			displayWinner.text = "Draw !";
 		}
 		else {
+			int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
+			if (swappedColors)
+				winner = (winner == P1_VALUE) ? P2_VALUE : P1_VALUE;
 			displayWinner.text = "Player " + winner + " won !";
 		}
+		gameEndedPanel.SetActive(true);
 		if(isServer)
 			isGameEnded = true;
 	}
 
 	[ClientRpc]
 	private void RpcChangePlayerHiglight(int playerIndex) {
-		listPlayers[playerIndex].color = Color.cyan;
-		listPlayers[1 - playerIndex].color = Color.white;
+		if (swappedColors) {
+			listPlayers[1 - playerIndex].color = Color.cyan;
+			listPlayers[playerIndex].color = Color.white;
+		}
+		else {
+			listPlayers[playerIndex].color = Color.cyan;
+			listPlayers[1 - playerIndex].color = Color.white;
+		}
 	}
 
 	[ClientRpc]
 	private void RpcChangePlayerScore(int playerIndex, string newText) {
-		listPlayers[playerIndex].text = newText;
+		if (swappedColors)
+			listPlayers[1 - playerIndex].text = newText;
+		else
+			listPlayers[playerIndex].text = newText;
 	}
 
 	[ClientRpc]
-	private void RpcChangeAiTimer(float searchingTime) {
+	private void RpcChangeAiTimer(float searchingTime, float maxSearchTime) {
 		AiTimer.text = "AI Timer: " + searchingTime.ToString();
+		if (searchTime >= maxSearchTime)
+			AiTimer.color = Color.red;
+		else
+			AiTimer.color = Color.white;
+	}
+
+	[ClientRpc]
+	private void RpcHasSwappedColors(bool hasSwapped) {
+		swappedColors = hasSwapped;
 	}
 #endregion
 
@@ -2047,7 +2104,7 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	[Command]
 	public void CmdStartDialogue(NetworkInstanceId playerNetId, DialogueSubject subject) {
-		if (ongoingSubject != DialogueSubject.None || subject == DialogueSubject.None)
+		if (ongoingSubject != DialogueSubject.None || subject == DialogueSubject.None || simulatingMove)
 			return;
 
 		string playerName = "";

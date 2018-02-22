@@ -88,10 +88,10 @@ public class GameManager : MonoBehaviour {
 
 	// Game settings
 	private int AI_DEPTH = 3;
-	private float AI_SEARCH_TIME = 100f;
+	private float AI_SEARCH_TIME = 0.5f;
 	private int AI_MAX_SEARCHES_PER_DEPTH = 30;
 	private bool DOUBLE_THREE_RULE = true;
-	private bool SELF_CAPTURE_RULE = true;
+	private bool SELF_CAPTURE_RULE = false;
 	private int CAPTURES_NEEDED_TO_WIN = 10;
 	private int HEURISTIC_ALIGN_COEFF = 5;
 	private int HEURISTIC_CAPTURE_COEFF = 50;
@@ -1130,7 +1130,7 @@ public class GameManager : MonoBehaviour {
 					listPlayers[currentPlayerIndex].color = Color.cyan;
 					listPlayers[1 - currentPlayerIndex].color = Color.white;
 				}
-		}
+			}
 		}
 	}
 

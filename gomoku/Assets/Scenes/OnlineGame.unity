@@ -12823,7 +12823,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 4294967295
   m_IsActive: 1
 --- !u!114 &548388402
 MonoBehaviour:
@@ -12857,6 +12857,12 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 0a61c71689d864cfca925cd939b7bd3f, type: 3}
   notAllowedSprite: {fileID: 21300000, guid: 008aae56ae4744c13813361e158118e7, type: 3}
   doubleThreeSprite: {fileID: 21300000, guid: 7b7108aec150848a980da36770316671, type: 3}
+  sqTopLeft: {fileID: 21300000, guid: fcd4887d5fa4a4096ba5dcada57d8c64, type: 3}
+  sqTopRight: {fileID: 21300000, guid: d3c5715bd590342f7a4d53a6d8a89e65, type: 3}
+  sqBotRight: {fileID: 21300000, guid: c87126a945b9c4cb1940d7eaefa87a71, type: 3}
+  sqBotLeft: {fileID: 21300000, guid: 73047cf4b6313467bbd3f416639e4a26, type: 3}
+  sqHorizontal: {fileID: 21300000, guid: 3e653380816be426db362373d56856a6, type: 3}
+  sqVertical: {fileID: 21300000, guid: 1b4972de181fa4bb491ad09080b5aa17, type: 3}
 --- !u!114 &548388403
 MonoBehaviour:
   m_ObjectHideFlags: 0
