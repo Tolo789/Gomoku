@@ -50,6 +50,7 @@ public struct NetworkBackupState {
 	public int[] playerScores;
 
 	public int currentPlayerIndex;
+	public NetworkInstanceId currentNetId;
 
 	public bool alignmentHasBeenDone;
 	public List<Vector2Int> counterMoves;
@@ -78,6 +79,14 @@ public class MatchManager : AbstractPlayerInteractable {
 	public Sprite notAllowedSprite;
 	public Sprite doubleThreeSprite;
 
+	// Sprites square
+	public Sprite sqTopLeft;
+	public Sprite sqTopRight;
+	public Sprite sqBotRight;
+	public Sprite sqBotLeft;
+	public Sprite sqHorizontal;
+	public Sprite sqVertical;
+
 	// Main game states
 	private bool isGameLoaded = false;  // Server only
 	private bool isGameEnded = false; // Server only
@@ -85,10 +94,10 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	// Game settings
 	private int AI_DEPTH = 3;
-	private float AI_SEARCH_TIME = 100f;
+	private float AI_SEARCH_TIME = 0.5f;
 	private int AI_MAX_SEARCHES_PER_DEPTH = 30;
 	private bool DOUBLE_THREE_RULE = true;
-	private bool SELF_CAPTURE_RULE = true;
+	private bool SELF_CAPTURE_RULE = false;
 	private int CAPTURES_NEEDED_TO_WIN = 10;
 	private int HEURISTIC_ALIGN_COEFF = 5;
 	private int HEURISTIC_CAPTURE_COEFF = 50;
@@ -110,12 +119,13 @@ public class MatchManager : AbstractPlayerInteractable {
 	// [Server] Netwoking vars
 	private NetworkInstanceId p1NetId = NetworkInstanceId.Invalid;
 	private NetworkInstanceId p2NetId = NetworkInstanceId.Invalid;
-	private NetworkInstanceId dialogueStarter = NetworkInstanceId.Invalid;
+	private NetworkInstanceId dialogAnswerId = NetworkInstanceId.Invalid;
 	private DialogueSubject ongoingSubject = DialogueSubject.None;
 
 
 	// [Server] Game logic vars
 	private int currentPlayerIndex = 0;
+	private NetworkInstanceId currentPlayerNetId = NetworkInstanceId.Invalid;
 	private int currentPlayerVal = P1_VALUE;
 	private int otherPlayerVal = P2_VALUE;
 	private int[,] boardMap;
@@ -133,18 +143,18 @@ public class MatchManager : AbstractPlayerInteractable {
 	private bool simulatingMove = false;
 	private bool alignmentHasBeenDone = false;
 
-	private bool swappedColors = false;
 	private bool playedTwoMoreStones = false;
 
 	private int nbrOfMoves = 0;
 
-	private List<BackupState> backupStates;
+	private List<NetworkBackupState> backupStates;
 	private List<int> allowedSpacesP1;
 	private List<int> allowedSpacesP2;
 
 
 	// [Client] Vars
 	private BoardButton[,] buttonsMap;
+	private bool swappedColors = false;
 
 	protected override void Init() {
 		base.Init();
@@ -161,7 +171,7 @@ public class MatchManager : AbstractPlayerInteractable {
 
 				// Play move
 				Debug.Log("Search time: " + searchTime);
-				RpcChangeAiTimer(searchTime);
+				RpcChangeAiTimer(searchTime, AI_SEARCH_TIME);
 				if (searchTime >= AI_SEARCH_TIME)
 					Debug.LogWarning("Ai didnt find a move in time");
 				PutStone(bestMove.y, bestMove.x);
@@ -276,7 +286,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		int maxSearches = AI_MAX_SEARCHES_PER_DEPTH;
 		if (nbrOfMoves == 0 && state.depth == 0)
 			maxSearches = 1;
-		else if (nbrOfMoves == 1 && state.depth == 0)
+		else if ((nbrOfMoves == 1 && state.depth == 0) || (nbrOfMoves == 0 && state.depth == 1))
 			maxSearches = Mathf.Min(20, maxSearches);
 		allowedMoves = allowedMoves.OrderByDescending(move => move.z).Take(maxSearches).ToList();
 		return allowedMoves;
@@ -652,12 +662,13 @@ public class MatchManager : AbstractPlayerInteractable {
 	private void PutStone(int yCoord, int xCoord) {
 		// Backup moves only if it is a human move
 		if (isHumanPlayer[currentPlayerIndex]) {
-			BackupState newBackup = new BackupState();
+			NetworkBackupState newBackup = new NetworkBackupState();
 			newBackup.map = CopyMap(boardMap);
 			newBackup.playerScores = new int[2];
 			newBackup.playerScores[0] = playerScores[0];
 			newBackup.playerScores[1] = playerScores[1];
 			newBackup.currentPlayerIndex = currentPlayerIndex;
+			newBackup.currentNetId = currentPlayerNetId;
 			newBackup.alignmentHasBeenDone = alignmentHasBeenDone;
 			newBackup.counterMoves = counterMoves;
 			newBackup.lastMove = lastMove;
@@ -706,16 +717,6 @@ public class MatchManager : AbstractPlayerInteractable {
 		currentPlayerIndex = 1 - currentPlayerIndex;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
-		if ((HANDICAP != 4 && HANDICAP != 5) || nbrOfMoves != 1) {
-			RpcChangePlayerHiglight(currentPlayerIndex);
-		}
-		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
-			playedTwoMoreStones = false;
-			swapPlayers.SetActive(true);
-		}
-		else if (HANDICAP == 5 && nbrOfMoves == 3) {
-			chooseSwapOptions.SetActive(true);
-		}
 
 		// update allowed movements in map
 		bool thereIsAvailableMoves = false;
@@ -857,12 +858,12 @@ public class MatchManager : AbstractPlayerInteractable {
 
 
 	public bool PlayerCanPutStone(NetworkInstanceId playerNetId) {
-		if (!IsHumanTurn() || isGameEnded || simulatingMove || ongoingSubject != DialogueSubject.None)
+		if (!IsHumanTurn() || isGameEnded || simulatingMove || ongoingSubject != DialogueSubject.None || currentPlayerNetId != playerNetId)
 			return false;
-		if (currentPlayerIndex == 0 && p1NetId != playerNetId)
-			return false;
-		if (currentPlayerIndex == 1 && p2NetId != playerNetId)
-			return false;
+		// if (currentPlayerIndex == 0 && p1NetId != playerNetId)
+		// 	return false;
+		// if (currentPlayerIndex == 1 && p2NetId != playerNetId)
+		// 	return false;
 		return true;
 	}
 
@@ -875,19 +876,15 @@ public class MatchManager : AbstractPlayerInteractable {
 	}
 
 	private void SwapPlayerTextColor() {
-		if (HANDICAP < 4) {
-				listPlayers[currentPlayerIndex].color = Color.cyan;
-				listPlayers[1 - currentPlayerIndex].color = Color.white;
+		if ((HANDICAP == 4 || HANDICAP == 5) && nbrOfMoves < 3) {
+			return ;
+		}
+		else if (HANDICAP == 5 && nbrOfMoves < 5 && playedTwoMoreStones) {
+			return ;
 		}
 		else {
-			if (nbrOfMoves > 3 && swappedColors) {
-				listPlayers[1 - currentPlayerIndex].color = Color.cyan;
-				listPlayers[currentPlayerIndex].color = Color.white;
-			}
-			else {
-				listPlayers[currentPlayerIndex].color = Color.cyan;
-				listPlayers[1 - currentPlayerIndex].color = Color.white;
-			}
+			RpcChangePlayerHiglight(currentPlayerIndex);
+			currentPlayerNetId = (currentPlayerIndex == 0) ? p1NetId : p2NetId;
 		}
 	}
 	#endregion
@@ -1555,19 +1552,22 @@ public class MatchManager : AbstractPlayerInteractable {
 
 #region OpeningRules
 	private void OpeningRules() {
-		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
-			if (HANDICAP == 3)
-				SetForbiddenMove(7, 12);
-			else if (HANDICAP == 2)
-				SetForbiddenMove(5, 14);
+		if (nbrOfMoves == 2 && HANDICAP == 3) {
+			SetForbiddenMove(7, 12);
 		}
-		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
-			isGamePaused = true;
-			swapPlayers.SetActive(true);
+		else if (nbrOfMoves == 2 && HANDICAP == 2)
+			SetForbiddenMove(5, 14);
+		else if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
+			// TODO: handle online
+			ShowSwapChoice();
+			// isGamePaused = true;
+			// swapPlayers.SetActive(true);
 		}
 		else if (HANDICAP == 5 && nbrOfMoves == 3) {
-			isGamePaused = true;
-			chooseSwapOptions.SetActive(true);
+			// TODO: handle online
+			ShowSwap2Choice();
+			// isGamePaused = true;
+			// chooseSwapOptions.SetActive(true);
 		}
 	}
 
@@ -1575,14 +1575,14 @@ public class MatchManager : AbstractPlayerInteractable {
 		for (int y = min; y < max; y++) {
 				for (int x = min; x < max; x++) {
 					if (boardMap[y, x] == EMPTY_VALUE) {
-					Debug.Log("y = " + y +" x = " +  x);
-					RpcPutNA(y, x);
+						RpcPutHandicap(min, max, y, x);
 				}
 			}
 		}
 	}
 
 	public void YesToggle(GameObject panel) {
+		// TODO: must be a command
 		player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
 		player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
 		listPlayers[1 - currentPlayerIndex].color = Color.cyan;
@@ -1613,12 +1613,11 @@ public class MatchManager : AbstractPlayerInteractable {
 		Debug.Log("Registering playerId: " + playerNetId);
 		if (p1NetId == NetworkInstanceId.Invalid) {
 			p1NetId = playerNetId;
-			// TODO: should initialize board only after 2 players register
+			// TODO: handle offline match ?
 			// CmdStart(firstStart: true);
 		}
 		else if (p2NetId == NetworkInstanceId.Invalid) {
 			p2NetId = playerNetId;
-			// TODO: should initialize board only once we get here
 			CmdStart(firstStart: true);
 		}
 
@@ -1643,7 +1642,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
 			SELF_CAPTURE_RULE = (PlayerPrefs.GetInt(CommonDefines.SELF_CAPTURE_SETTING) == 1) ? true : false;
 		}
-		if (PlayerPrefs.HasKey(CommonDefines.SELF_CAPTURE_SETTING)) {
+		if (PlayerPrefs.HasKey(CommonDefines.OPENING_RULE)) {
 			HANDICAP = PlayerPrefs.GetInt(CommonDefines.OPENING_RULE);
 		}
 
@@ -1672,7 +1671,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		swappedColors = false;
 		playedTwoMoreStones = false;
 		nbrOfMoves = 0;
-		backupStates = new List<BackupState>();
+		backupStates = new List<NetworkBackupState>();
 		allowedSpacesP1 = new List<int>();
 		allowedSpacesP1.Add(EMPTY_VALUE);
 		allowedSpacesP1.Add(DT_P2_VALUE);
@@ -1727,6 +1726,7 @@ public class MatchManager : AbstractPlayerInteractable {
 
 		// Start accepting inputs
 		isGameLoaded = true;
+		currentPlayerNetId = (currentPlayerIndex == 0) ? p1NetId : p2NetId;
 		Debug.Log("Game Loaded !");
 	}
 
@@ -1740,27 +1740,24 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	[Command]
 	public void CmdSimulateAiMove() {
-		// TODO: interaction with multi
-		if (!simulatingMove) {
-			simulatingMove = true;
-			StartMinMax();
+		simulatingMove = true;
+		StartMinMax();
 
-			// Timing stuff
-			Debug.Log("Search time: " + searchTime);
-			RpcChangeAiTimer(searchTime);
-			if (searchTime > AI_SEARCH_TIME)
-				Debug.LogWarning("Ai didnt find a move in time");
+		// Timing stuff
+		Debug.Log("Search time: " + searchTime);
+		RpcChangeAiTimer(searchTime, AI_SEARCH_TIME);
+		if (searchTime > AI_SEARCH_TIME)
+			Debug.LogWarning("Ai didnt find a move in time");
 
-			// Save highlighted stone position
-			ClearHighligtedStone();
-			highlightedMove.y = bestMove.y;
-			highlightedMove.x = bestMove.x;
+		// Save highlighted stone position
+		ClearHighligtedStone();
+		highlightedMove.y = bestMove.y;
+		highlightedMove.x = bestMove.x;
 
-			// Put highlighted sprite
-			RpcHighlightStone(currentPlayerIndex, highlightedMove.y, highlightedMove.x);
+		// Put highlighted sprite
+		RpcHighlightStone(currentPlayerIndex, highlightedMove.y, highlightedMove.x);
 
-			simulatingMove = false;
-		}
+		simulatingMove = false;
 	}
 
 	[Command]
@@ -1771,7 +1768,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		if (isGameEnded) {
 			isGameEnded = false;
 		}
-		BackupState oldState = backupStates[0];
+		NetworkBackupState oldState = backupStates[0];
 
 		boardMap = CopyMap(oldState.map);
 		playerScores[0] = oldState.playerScores[0];
@@ -1781,6 +1778,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		lastMove = oldState.lastMove;
 		// Player playing logic
 		currentPlayerIndex = oldState.currentPlayerIndex;
+		currentPlayerNetId = oldState.currentNetId;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
 
@@ -1940,7 +1938,6 @@ public class MatchManager : AbstractPlayerInteractable {
 	[ClientRpc]
 	public void RpcHighlightStone(int playerIndex, int yCoord, int xCoord) {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		// GameObject button = GameObject.Find("/Canvas/StartBoard/" + yCoord + "-" + xCoord);
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = buttonImage.color;
@@ -1953,7 +1950,6 @@ public class MatchManager : AbstractPlayerInteractable {
 	[ClientRpc]
 	public void RpcPutDT(int yCoord, int xCoord) {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		// GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = buttonImage.color;
@@ -1967,13 +1963,43 @@ public class MatchManager : AbstractPlayerInteractable {
 	[ClientRpc]
 	public void RpcPutNA(int yCoord, int xCoord) {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		// GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = buttonImage.color;
 		newColor.a = 1;
 		buttonImage.color = newColor;
 		buttonImage.sprite = notAllowedSprite;
+		buttonsMap[yCoord, xCoord].isEmpty = false;
+		button.transform.GetChild(0).gameObject.SetActive(false);
+	}
+
+	[ClientRpc]
+	public void RpcPutHandicap(int min, int max, int yCoord, int xCoord) {
+		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		button.transform.localScale = new Vector3(1, 1, 1);
+		Image buttonImage = button.GetComponent<Image>();
+		Color newColor = buttonImage.color;
+		newColor.a = 1;
+		buttonImage.color = newColor;
+
+		if (yCoord == min && xCoord == min)
+			buttonImage.sprite = sqTopLeft;
+		else if (yCoord == min && xCoord == max - 1)
+			buttonImage.sprite = sqTopRight;
+		else if (yCoord == max -1  && xCoord == max -1)
+			buttonImage.sprite = sqBotRight;
+		else if (yCoord == max -1  && xCoord == min)
+			buttonImage.sprite = sqBotLeft;
+		else if (yCoord == min || yCoord == max - 1)
+			buttonImage.sprite = sqHorizontal;
+		else if (xCoord == min || xCoord == max - 1)
+			buttonImage.sprite = sqVertical;
+		else {
+			buttonImage.sprite = null;
+			newColor.a = 0;
+			buttonImage.color = newColor;
+		}
+
 		buttonsMap[yCoord, xCoord].isEmpty = false;
 		button.transform.GetChild(0).gameObject.SetActive(false);
 	}
@@ -1986,32 +2012,52 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	[ClientRpc]
 	private void RpcDisplayWinner(int winnerIndex) {
-		int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
-		gameEndedPanel.SetActive(true);
 		if (winnerIndex == -1) {
 			displayWinner.text = "Draw !";
 		}
 		else {
+			int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
+			if (swappedColors)
+				winner = (winner == P1_VALUE) ? P2_VALUE : P1_VALUE;
 			displayWinner.text = "Player " + winner + " won !";
 		}
+		gameEndedPanel.SetActive(true);
 		if(isServer)
 			isGameEnded = true;
 	}
 
 	[ClientRpc]
 	private void RpcChangePlayerHiglight(int playerIndex) {
-		listPlayers[playerIndex].color = Color.cyan;
-		listPlayers[1 - playerIndex].color = Color.white;
+		if (swappedColors) {
+			listPlayers[1 - playerIndex].color = Color.cyan;
+			listPlayers[playerIndex].color = Color.white;
+		}
+		else {
+			listPlayers[playerIndex].color = Color.cyan;
+			listPlayers[1 - playerIndex].color = Color.white;
+		}
 	}
 
 	[ClientRpc]
 	private void RpcChangePlayerScore(int playerIndex, string newText) {
-		listPlayers[playerIndex].text = newText;
+		if (swappedColors)
+			listPlayers[1 - playerIndex].text = newText;
+		else
+			listPlayers[playerIndex].text = newText;
 	}
 
 	[ClientRpc]
-	private void RpcChangeAiTimer(float searchingTime) {
+	private void RpcChangeAiTimer(float searchingTime, float maxSearchTime) {
 		AiTimer.text = "AI Timer: " + searchingTime.ToString();
+		if (searchingTime >= maxSearchTime)
+			AiTimer.color = Color.red;
+		else
+			AiTimer.color = Color.white;
+	}
+
+	[ClientRpc]
+	private void RpcHasSwappedColors(bool hasSwapped) {
+		swappedColors = hasSwapped;
 	}
 #endregion
 
@@ -2019,21 +2065,23 @@ public class MatchManager : AbstractPlayerInteractable {
 	private void HideAllPanels() {
 		gameEndedPanel.SetActive(false);
 		menuPanel.SetActive(false);
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 	}
 
 
     [TargetRpc]
 	private void TargetHideDialoguePanel(NetworkConnection target) {
 		dialoguePanel.SetActive(false);
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 	}
 
     [TargetRpc]
-    private void TargetWaitForResponse(NetworkConnection target)
+    private void TargetWaitForResponse(NetworkConnection target, DialogueSubject subject)
     {
 		HideAllPanels();
 		dialoguePanel.SetActive(true);
 		DialoguePanel panelScript = dialoguePanel.GetComponent<DialoguePanel>();
-		panelScript.StartWaitForResponse(ongoingSubject);
+		panelScript.StartWaitForResponse(subject);
     }
 
     [TargetRpc]
@@ -2045,41 +2093,63 @@ public class MatchManager : AbstractPlayerInteractable {
 		panelScript.ShowOtherPlayerRequest(subject, playerName);
     }
 
+	public void ShowSwapChoice() {
+		string playerName = "";
+		dialogAnswerId = currentPlayerNetId; // TODO: verify this
+		NetworkConnection target = NetworkServer.objects[dialogAnswerId].connectionToClient;
+		NetworkConnection waiter = (dialogAnswerId == p1NetId) ? NetworkServer.objects[p2NetId].connectionToClient : NetworkServer.objects[p1NetId].connectionToClient;
+
+		ongoingSubject = DialogueSubject.DoSwap;
+		TargetShowDialogue(target, ongoingSubject, playerName);
+		TargetWaitForResponse(waiter, ongoingSubject);
+	}
+
+	public void ShowSwap2Choice() {
+		string playerName = "";
+		dialogAnswerId = currentPlayerNetId; // TODO: verify this
+		NetworkConnection target = NetworkServer.objects[dialogAnswerId].connectionToClient;
+		NetworkConnection waiter = (dialogAnswerId == p1NetId) ? NetworkServer.objects[p2NetId].connectionToClient : NetworkServer.objects[p1NetId].connectionToClient;
+
+		ongoingSubject = DialogueSubject.DoSwap2;
+		TargetShowDialogue(target, ongoingSubject, playerName);
+		TargetWaitForResponse(waiter, ongoingSubject);
+	}
+
 	[Command]
 	public void CmdStartDialogue(NetworkInstanceId playerNetId, DialogueSubject subject) {
-		if (ongoingSubject != DialogueSubject.None || subject == DialogueSubject.None)
+		if (ongoingSubject != DialogueSubject.None || subject == DialogueSubject.None || simulatingMove)
 			return;
 
 		string playerName = "";
 		NetworkConnection target = null;
 		// Only current player can ask AiHelp + only other player can ask UndoMove
 		if (subject == DialogueSubject.UndoMove) {
-			if (backupStates.Count == 0 || (currentPlayerIndex == 0 && playerNetId == p1NetId) || (currentPlayerIndex == 1 && playerNetId == p2NetId))
+			if (backupStates.Count == 0 || playerNetId != backupStates[0].currentNetId)
 				return;
 		}
 		else if (subject == DialogueSubject.AiHelp) {
-			if (isGameEnded || (currentPlayerIndex == 0 && playerNetId == p2NetId) || (currentPlayerIndex == 1 && playerNetId == p1NetId))
+			if (isGameEnded || playerNetId != currentPlayerNetId)
 				return;
 		}
 
 		if (playerNetId == p1NetId) {
 			playerName = "Player" + P1_VALUE;
-			target = NetworkServer.objects[p2NetId].connectionToClient;
+			dialogAnswerId = p2NetId;
 		}
 		else if (playerNetId == p2NetId) {
 			playerName = "Player" + P2_VALUE;
-			target = NetworkServer.objects[p1NetId].connectionToClient;
+			dialogAnswerId = p1NetId;
 		}
 
 		ongoingSubject = subject;
-		dialogueStarter = playerNetId;
-		TargetShowDialogue(target, subject, playerName);
-		TargetWaitForResponse(NetworkServer.objects[playerNetId].connectionToClient);
+		target = NetworkServer.objects[dialogAnswerId].connectionToClient;
+		TargetShowDialogue(target, ongoingSubject, playerName);
+		TargetWaitForResponse(NetworkServer.objects[playerNetId].connectionToClient, ongoingSubject);
 	}
 
     [Command]
 	public void CmdExecuteResponse(NetworkInstanceId playerNetId, bool response) {
-		if (ongoingSubject == DialogueSubject.None || (playerNetId != p1NetId && playerNetId != p2NetId) || playerNetId == dialogueStarter)
+		if (ongoingSubject == DialogueSubject.None || playerNetId != dialogAnswerId)
 			return;
 		if (response) {
 			if (ongoingSubject == DialogueSubject.Restart) {
@@ -2091,11 +2161,19 @@ public class MatchManager : AbstractPlayerInteractable {
 			else if (ongoingSubject == DialogueSubject.AiHelp) {
 				CmdSimulateAiMove();
 			}
-
+			else if (ongoingSubject == DialogueSubject.DoSwap) {
+				// TODO: do swap
+			}
+			else if (ongoingSubject == DialogueSubject.DoSwap2) {
+				// TODO: put two more stones
+			}
+		}
+		else if (ongoingSubject == DialogueSubject.DoSwap2) {
+			// TODO: present panel to swap
 		}
 		TargetHideDialoguePanel(NetworkServer.objects[p1NetId].connectionToClient);
 		TargetHideDialoguePanel(NetworkServer.objects[p2NetId].connectionToClient);
-		dialogueStarter = NetworkInstanceId.Invalid;
+		dialogAnswerId = NetworkInstanceId.Invalid;
 		ongoingSubject = DialogueSubject.None;
 	}
 
