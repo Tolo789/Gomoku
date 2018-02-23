@@ -209,10 +209,6 @@ public class GameManager : MonoBehaviour {
 			}
 		}
 
-		if (HANDICAP == 5 || HANDICAP == 4) {
-			currentPlayerIndex = 0;
-		}
-
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
 		listPlayers[currentPlayerIndex].color = Color.cyan;
@@ -1113,7 +1109,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private void SwapPlayerTextColor() {
-		if ((HANDICAP == 4 || HANDICAP == 5) && nbrOfMoves < 3) {
+		if ((HANDICAP == 4 || HANDICAP == 5) && (nbrOfMoves < 3 || (nbrOfMoves < 5 && playedTwoMoreStones))) {
 			return ;
 		}
 		else {
@@ -1884,14 +1880,19 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-	public void YesToggle(GameObject panel) {
+	public void SwapColorChoice() {
 		player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
 		player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
 		listPlayers[1 - currentPlayerIndex].color = Color.cyan;
 		listPlayers[currentPlayerIndex].color = Color.white;
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		isGamePaused = false;
 		swappedColors = true;
+	}
+
+	public void YesToggle(GameObject panel) {
+		if (currentPlayerIndex == 1)
+			SwapColorChoice();
+		isGamePaused = false;
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 		panel.SetActive(false);
 	}
 
@@ -1902,7 +1903,9 @@ public class GameManager : MonoBehaviour {
 		panel.SetActive(false);
 	}
 	public void NoToggle(GameObject panel) {
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		if (currentPlayerIndex == 0)
+			SwapColorChoice();
+		Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 		isGamePaused = false;
 		panel.SetActive(false);
 	}
