@@ -14,18 +14,33 @@ public class DialoguePanel : AbstractDialogue {
 			return;
 
 		// Adapt message to subject
-		if (subject == DialogueSubject.Restart)
-			messageText.text = askerName + " asks to restart the game..";
-		else if (subject == DialogueSubject.AiHelp)
-			messageText.text = askerName + " asks for AI help..";
-		else if (subject == DialogueSubject.UndoMove)
-			messageText.text = askerName + " asks to undo his last move..";
+		if (subject == DialogueSubject.DoSwap) {
+			messageText.text = "Do you want to swap players ?";
+
+			affirmativeButton.GetComponentInChildren<Text>().text = "Yes";
+			negativeButton.GetComponentInChildren<Text>().text = "No";
+		}
+		else if (subject == DialogueSubject.DoSwap2) {
+			messageText.text = "Choose an option:";
+
+			affirmativeButton.GetComponentInChildren<Text>().text = "Put two more stones";
+			negativeButton.GetComponentInChildren<Text>().text = "Chose if swap";
+		}
+		else {
+			if (subject == DialogueSubject.Restart)
+				messageText.text = askerName + " asks to restart the game..";
+			else if (subject == DialogueSubject.AiHelp)
+				messageText.text = askerName + " asks for AI help..";
+			else if (subject == DialogueSubject.UndoMove)
+				messageText.text = askerName + " asks to undo his last move..";
+
+			affirmativeButton.GetComponentInChildren<Text>().text = "Allow";
+			negativeButton.GetComponentInChildren<Text>().text = "Deny";
+		}
 
 
 		affirmativeButton.interactable = true;
-		affirmativeButton.GetComponentInChildren<Text>().text = "Allow";
 		negativeButton.interactable = true;
-		negativeButton.GetComponentInChildren<Text>().text = "Deny";
 	}
 
 	public void ConfirmChoice(bool choice) {
@@ -45,6 +60,10 @@ public class DialoguePanel : AbstractDialogue {
 			messageText.text = "Asking for AI help..";
 		else if (subject == DialogueSubject.UndoMove)
 			messageText.text = "Asking to undo your last move..";
+		else if (subject == DialogueSubject.DoSwap)
+			messageText.text = "Waiting Swap choice..";
+		else if (subject == DialogueSubject.DoSwap2)
+			messageText.text = "Waiting Swap2 choice..";
 
 		affirmativeButton.interactable = false;
 		affirmativeButton.GetComponentInChildren<Text>().text = "";
