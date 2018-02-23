@@ -51055,6 +51055,11 @@ Prefab:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 114655782143372474, guid: 31e9e4f2b28424d80843c08cf17da0ca,
+        type: 2}
+      propertyPath: m_Color.a
+      value: 0.6666667
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 31e9e4f2b28424d80843c08cf17da0ca, type: 2}
   m_IsPrefabParent: 0

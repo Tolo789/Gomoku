@@ -15,7 +15,7 @@ public class DialoguePanel : AbstractDialogue {
 
 		// Adapt message to subject
 		if (subject == DialogueSubject.DoSwap) {
-			messageText.text = "Do you want to swap players ?";
+			messageText.text = "Do you want to swap stones ?";
 
 			affirmativeButton.GetComponentInChildren<Text>().text = "Yes";
 			negativeButton.GetComponentInChildren<Text>().text = "No";

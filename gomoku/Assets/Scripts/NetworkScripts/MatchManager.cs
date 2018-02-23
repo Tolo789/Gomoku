@@ -55,6 +55,9 @@ public struct NetworkBackupState {
 	public bool alignmentHasBeenDone;
 	public List<Vector2Int> counterMoves;
 	public Vector2Int lastMove;
+
+	public bool swapped;
+	public bool putTwoMoreStones;
 }
 
 public class MatchManager : AbstractPlayerInteractable {
@@ -672,6 +675,8 @@ public class MatchManager : AbstractPlayerInteractable {
 			newBackup.alignmentHasBeenDone = alignmentHasBeenDone;
 			newBackup.counterMoves = counterMoves;
 			newBackup.lastMove = lastMove;
+			newBackup.swapped = swappedColors;
+			newBackup.putTwoMoreStones = playedTwoMoreStones;
 			backupStates.Insert(0, newBackup);
 		}
 
@@ -684,11 +689,19 @@ public class MatchManager : AbstractPlayerInteractable {
 		nbrOfMoves += 1;
 
 		// Do captures
-		playerScores[currentPlayerIndex] += CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
-		RpcChangePlayerScore(currentPlayerIndex, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
-		if (playerScores[currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
-			RpcDisplayWinner(currentPlayerIndex);
-			return;
+		int captures = CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
+		if (captures > 0) {
+			playerScores[currentPlayerIndex] += captures;
+			if (swappedColors) {
+				RpcChangePlayerScore(currentPlayerIndex, "Player" + otherPlayerVal + ": " + playerScores[currentPlayerIndex]);
+			}
+			else {
+				RpcChangePlayerScore(currentPlayerIndex, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
+			}
+			if (playerScores[currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
+				RpcDisplayWinner(currentPlayerIndex);
+				return;
+			}
 		}
 
 		// Debug.Log("Alignment has been done: " + alignmentHasBeenDone);
@@ -860,10 +873,6 @@ public class MatchManager : AbstractPlayerInteractable {
 	public bool PlayerCanPutStone(NetworkInstanceId playerNetId) {
 		if (!IsHumanTurn() || isGameEnded || simulatingMove || ongoingSubject != DialogueSubject.None || currentPlayerNetId != playerNetId)
 			return false;
-		// if (currentPlayerIndex == 0 && p1NetId != playerNetId)
-		// 	return false;
-		// if (currentPlayerIndex == 1 && p2NetId != playerNetId)
-		// 	return false;
 		return true;
 	}
 
@@ -882,10 +891,13 @@ public class MatchManager : AbstractPlayerInteractable {
 		else if (HANDICAP == 5 && nbrOfMoves < 5 && playedTwoMoreStones) {
 			return ;
 		}
+		else if (HANDICAP == 5 && nbrOfMoves == 5 && playedTwoMoreStones) {
+			RpcChangePlayerHiglight(1 - currentPlayerIndex);
+		}
 		else {
 			RpcChangePlayerHiglight(currentPlayerIndex);
-			currentPlayerNetId = (currentPlayerIndex == 0) ? p1NetId : p2NetId;
 		}
+		currentPlayerNetId = (currentPlayerNetId == p1NetId) ? p2NetId : p1NetId;
 	}
 	#endregion
 
@@ -1605,6 +1617,16 @@ public class MatchManager : AbstractPlayerInteractable {
 		isGamePaused = false;
 		panel.SetActive(false);
 	}
+
+	[Command]
+	private void CmdDoSwap() {
+		RpcHasSwappedColors(true);
+		if (playedTwoMoreStones)
+			return;
+
+		currentPlayerNetId = (currentPlayerNetId == p1NetId) ? p2NetId : p1NetId;
+		RpcChangePlayerHiglight(currentPlayerIndex);
+	}
 #endregion
 
 #region Commands functions
@@ -1669,6 +1691,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		simulatingMove = false;
 		alignmentHasBeenDone = false;
 		swappedColors = false;
+		RpcHasSwappedColors(false);
 		playedTwoMoreStones = false;
 		nbrOfMoves = 0;
 		backupStates = new List<NetworkBackupState>();
@@ -1776,6 +1799,8 @@ public class MatchManager : AbstractPlayerInteractable {
 		alignmentHasBeenDone = oldState.alignmentHasBeenDone;
 		counterMoves = oldState.counterMoves;
 		lastMove = oldState.lastMove;
+		RpcHasSwappedColors(oldState.swapped);
+		playedTwoMoreStones = oldState.putTwoMoreStones;
 		// Player playing logic
 		currentPlayerIndex = oldState.currentPlayerIndex;
 		currentPlayerNetId = oldState.currentNetId;
@@ -1825,7 +1850,6 @@ public class MatchManager : AbstractPlayerInteractable {
 		RpcChangePlayerScore(currentPlayerIndex, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
 		RpcChangePlayerScore(1 - currentPlayerIndex, "Player" + otherPlayerVal + ": " + playerScores[1 - currentPlayerIndex]);
 		RpcChangePlayerHiglight(currentPlayerIndex);
-		SwapPlayerTextColor();
 
 		//OpeningRules RULES UNDO
 		nbrOfMoves = nbrOfMoves - 1;
@@ -1907,7 +1931,6 @@ public class MatchManager : AbstractPlayerInteractable {
 	[ClientRpc]
 	public void RpcClearButton(int yCoord, int xCoord) {		
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		// GameObject button = GameObject.Find("/Canvas/StartBoard/" + yCoord + "-" + xCoord);
 		if (button == null) {
 			Debug.LogWarning("Button not found: " + yCoord + " " + xCoord);
 		}
@@ -1924,7 +1947,6 @@ public class MatchManager : AbstractPlayerInteractable {
 	[ClientRpc]
 	public void RpcPutStone(int playerIndex, int yCoord, int xCoord) {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		// GameObject button = GameObject.Find("/Canvas/StartBoard/" + yCoord + "-" + xCoord);
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = buttonImage.color;
@@ -2018,7 +2040,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		else {
 			int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
 			if (swappedColors)
-				winner = (winner == P1_VALUE) ? P2_VALUE : P1_VALUE;
+				winner = (winnerIndex == 0) ? P2_VALUE : P1_VALUE;
 			displayWinner.text = "Player " + winner + " won !";
 		}
 		gameEndedPanel.SetActive(true);
@@ -2058,6 +2080,14 @@ public class MatchManager : AbstractPlayerInteractable {
 	[ClientRpc]
 	private void RpcHasSwappedColors(bool hasSwapped) {
 		swappedColors = hasSwapped;
+		if (swappedColors) {
+			player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+			player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+		}
+		else {
+			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+		}
 	}
 #endregion
 
@@ -2067,7 +2097,6 @@ public class MatchManager : AbstractPlayerInteractable {
 		menuPanel.SetActive(false);
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 	}
-
 
     [TargetRpc]
 	private void TargetHideDialoguePanel(NetworkConnection target) {
@@ -2093,7 +2122,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		panelScript.ShowOtherPlayerRequest(subject, playerName);
     }
 
-	public void ShowSwapChoice() {
+	private void ShowSwapChoice() {
 		string playerName = "";
 		dialogAnswerId = currentPlayerNetId; // TODO: verify this
 		NetworkConnection target = NetworkServer.objects[dialogAnswerId].connectionToClient;
@@ -2104,7 +2133,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		TargetWaitForResponse(waiter, ongoingSubject);
 	}
 
-	public void ShowSwap2Choice() {
+	private void ShowSwap2Choice() {
 		string playerName = "";
 		dialogAnswerId = currentPlayerNetId; // TODO: verify this
 		NetworkConnection target = NetworkServer.objects[dialogAnswerId].connectionToClient;
@@ -2151,6 +2180,7 @@ public class MatchManager : AbstractPlayerInteractable {
 	public void CmdExecuteResponse(NetworkInstanceId playerNetId, bool response) {
 		if (ongoingSubject == DialogueSubject.None || playerNetId != dialogAnswerId)
 			return;
+
 		if (response) {
 			if (ongoingSubject == DialogueSubject.Restart) {
 				CmdStart(firstStart: false);
@@ -2162,15 +2192,21 @@ public class MatchManager : AbstractPlayerInteractable {
 				CmdSimulateAiMove();
 			}
 			else if (ongoingSubject == DialogueSubject.DoSwap) {
-				// TODO: do swap
+				CmdDoSwap();
 			}
 			else if (ongoingSubject == DialogueSubject.DoSwap2) {
-				// TODO: put two more stones
+				playedTwoMoreStones = true;
 			}
 		}
 		else if (ongoingSubject == DialogueSubject.DoSwap2) {
-			// TODO: present panel to swap
+			ShowSwapChoice();
+			return;
 		}
+		else if (ongoingSubject == DialogueSubject.DoSwap && playedTwoMoreStones) {
+			currentPlayerNetId = (currentPlayerNetId == p1NetId) ? p2NetId : p1NetId;
+			RpcChangePlayerHiglight(currentPlayerIndex);
+		}
+
 		TargetHideDialoguePanel(NetworkServer.objects[p1NetId].connectionToClient);
 		TargetHideDialoguePanel(NetworkServer.objects[p2NetId].connectionToClient);
 		dialogAnswerId = NetworkInstanceId.Invalid;
