@@ -45,6 +45,9 @@ public class MainMenu : MonoBehaviour {
     public void PlayClick(GameObject playSettings) {
         playSettings.SetActive(true);
     }
+    public void PlayOnlineClick(GameObject playSettings) {
+        SceneManager.LoadScene("Lobby");
+    }
     public void ExitClick() {
         Application.Quit();
     }

@@ -26,4 +26,8 @@ public class InGameMenu : MonoBehaviour {
         int nextScene = (SceneManager.GetActiveScene().buildIndex + 1) % numScenes;
         SceneManager.LoadScene(nextScene);
     }
+
+    public void BackToMainMenu() {
+        SceneManager.LoadScene("MainMenu");
+    }
 }
