@@ -22,8 +22,20 @@ public class PlayerHandler : NetworkBehaviour {
 
 	[Command]
 	private void CmdRegisterSelf(NetworkInstanceId playerNetId) {
-		if (gameManager == null)
-			gameManager = GameObject.Find("MatchManager").GetComponent<MatchManager>();
+		StartCoroutine(RegisterToMatchManager(playerNetId));
+		// if (gameManager == null)
+		// 	gameManager = GameObject.Find("MatchManager").GetComponent<MatchManager>();
+		// gameManager.CmdRegisterPlayer(playerNetId);
+	}
+
+	private IEnumerator RegisterToMatchManager(NetworkInstanceId playerNetId) {
+		while (gameManager == null) {
+			GameObject obj = GameObject.Find("MatchManager");
+			if (obj != null)
+				gameManager = obj.GetComponent<MatchManager>();
+			yield return new WaitForFixedUpdate();
+		}
+
 		gameManager.CmdRegisterPlayer(playerNetId);
 	}
 

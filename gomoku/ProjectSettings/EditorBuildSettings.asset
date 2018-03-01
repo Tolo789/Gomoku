@@ -17,3 +17,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/OnlineGame.unity
     guid: 9d7549fee5290451794a9ef4e1b98765
+  - enabled: 1
+    path: Assets/Scenes/LobbyTest.unity
+    guid: 55a6ec1a00c6b42af89118884af777bc
