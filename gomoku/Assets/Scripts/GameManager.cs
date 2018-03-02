@@ -1832,9 +1832,8 @@ public class GameManager : MonoBehaviour {
 
 	private void SetForbiddenMove(int min, int max) {
 		for (int y = min; y < max; y++) {
-				for (int x = min; x < max; x++) {
-					if (boardMap[y, x] == EMPTY_VALUE) {
-						Debug.Log("y = " + y +" x = " +  x);
+			for (int x = min; x < max; x++) {
+				if (boardMap[y, x] == EMPTY_VALUE) {
 						GameObject button = buttonsMap[y, x].gameObject;
 						button.transform.localScale = new Vector3(1, 1, 1);
 						Color buttonColor = button.GetComponent<Image>().color;
@@ -1857,6 +1856,7 @@ public class GameManager : MonoBehaviour {
 							buttonColor.a = 0;
 							button.GetComponent<Image>().color = buttonColor;
 						}
+					boardMap[y, x] = HANDICAP_CANT_PlAY;
 				}
 			}
 		}
