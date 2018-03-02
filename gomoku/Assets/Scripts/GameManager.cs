@@ -1889,8 +1889,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public void YesToggle(GameObject panel) {
-		if (currentPlayerIndex == 1)
-			SwapColorChoice();
+		SwapColorChoice();
 		isGamePaused = false;
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 		panel.SetActive(false);
@@ -1903,11 +1902,28 @@ public class GameManager : MonoBehaviour {
 		panel.SetActive(false);
 	}
 	public void NoToggle(GameObject panel) {
-		if (currentPlayerIndex == 0)
-			SwapColorChoice();
 		Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 		isGamePaused = false;
 		panel.SetActive(false);
 	}
+
+	public void chooseWhite(GameObject panel) {
+		if (currentPlayerIndex == 0) {
+			SwapColorChoice();
+		}
+		isGamePaused = false;
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		panel.SetActive(false);
+	}
+
+	public void chooseBlack(GameObject panel) {
+		if (currentPlayerIndex == 1) {
+			SwapColorChoice();
+		}
+		isGamePaused = false;
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		panel.SetActive(false);
+	}
+
 }
 
