@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 namespace Prototype.NetworkLobby
 {
@@ -9,6 +10,7 @@ namespace Prototype.NetworkLobby
     {
         public LobbyManager lobbyManager;
 
+        public RectTransform createGamePanel;
         public RectTransform lobbyServerList;
         public RectTransform lobbyPanel;
 
@@ -74,8 +76,15 @@ namespace Prototype.NetworkLobby
         public void OnClickOpenServerList()
         {
             lobbyManager.StartMatchMaker();
-            lobbyManager.backDelegate = lobbyManager.SimpleBackClbk;
+            // lobbyManager.backDelegate = lobbyManager.SimpleBackClbk;
+            lobbyManager.backDelegate = lobbyManager.BackToMainMenu;
             lobbyManager.ChangeTo(lobbyServerList);
+        }
+
+        public void OnClickStartCreateMatch()
+        {
+            lobbyManager.backDelegate = lobbyManager.BackToMainMenu;
+            lobbyManager.ChangeTo(createGamePanel);
         }
 
         void onEndEditIP(string text)

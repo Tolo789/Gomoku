@@ -53,8 +53,9 @@ public class MainMenu : MonoBehaviour {
     }
     public void GoClick(GameObject playSettings) {
         GetSettingsGameInfo();
-        playSettings.SetActive(false);
+        // playSettings.SetActive(false);
         SceneManager.LoadScene("Game");
+        // SceneManager.LoadScene("Lobby");
     }
      public void GoBack(GameObject playSettings) {
        playSettings.SetActive(false);

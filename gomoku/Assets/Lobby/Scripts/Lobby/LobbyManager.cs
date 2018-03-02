@@ -24,7 +24,8 @@ namespace Prototype.NetworkLobby
         [Header("UI Reference")]
         public LobbyTopPanel topPanel;
 
-        public RectTransform mainMenuPanel;
+        // public RectTransform mainMenuPanel;
+        public RectTransform createGamePanel;
         public RectTransform lobbyPanel;
 
         public LobbyInfoPanel infoPanel;
@@ -57,9 +58,10 @@ namespace Prototype.NetworkLobby
         {
             s_Singleton = this;
             _lobbyHooks = GetComponent<Prototype.NetworkLobby.LobbyHook>();
-            currentPanel = mainMenuPanel;
+            currentPanel = createGamePanel;
 
-            backButton.gameObject.SetActive(false);
+            // backButton.gameObject.SetActive(false);
+            backDelegate = BackToMainMenu;
             GetComponent<Canvas>().enabled = true;
 
             DontDestroyOnLoad(gameObject);
@@ -69,7 +71,8 @@ namespace Prototype.NetworkLobby
 
         public override void OnLobbyClientSceneChanged(NetworkConnection conn)
         {
-            if (SceneManager.GetSceneAt(0).name == lobbyScene)
+            if (SceneManager.GetSceneAt(1).name == lobbyScene)
+            // if (SceneManager.GetSceneAt(0).name == lobbyScene)
             {
                 if (topPanel.isInGame)
                 {
@@ -99,7 +102,7 @@ namespace Prototype.NetworkLobby
                 }
                 else
                 {
-                    ChangeTo(mainMenuPanel);
+                    ChangeTo(createGamePanel);
                 }
 
                 topPanel.ToggleVisibility(true);
@@ -131,13 +134,14 @@ namespace Prototype.NetworkLobby
 
             currentPanel = newPanel;
 
-            if (currentPanel != mainMenuPanel)
+            if (currentPanel != createGamePanel)
             {
                 backButton.gameObject.SetActive(true);
             }
             else
             {
-                backButton.gameObject.SetActive(false);
+                // backButton.gameObject.SetActive(false);
+                backButton.gameObject.SetActive(true);
                 SetServerInfo("Offline", "None");
                 _isMatchmaking = false;
             }
@@ -164,6 +168,12 @@ namespace Prototype.NetworkLobby
 			topPanel.isInGame = false;
         }
 
+        public void BackToMainMenu() {
+            SceneManager.LoadScene("MainMenu");
+            s_Singleton = null;
+            Destroy(this.gameObject);
+        }
+
         // ----------------- Server management
 
         public void AddLocalPlayer()
@@ -178,7 +188,7 @@ namespace Prototype.NetworkLobby
 
         public void SimpleBackClbk()
         {
-            ChangeTo(mainMenuPanel);
+            ChangeTo(createGamePanel);
         }
                  
         public void StopHostClbk()
@@ -194,7 +204,7 @@ namespace Prototype.NetworkLobby
             }
 
             
-            ChangeTo(mainMenuPanel);
+            ChangeTo(createGamePanel);
         }
 
         public void StopClientClbk()
@@ -206,13 +216,13 @@ namespace Prototype.NetworkLobby
                 StopMatchMaker();
             }
 
-            ChangeTo(mainMenuPanel);
+            ChangeTo(createGamePanel);
         }
 
         public void StopServerClbk()
         {
             StopServer();
-            ChangeTo(mainMenuPanel);
+            ChangeTo(createGamePanel);
         }
 
         class KickMsg : MessageBase { }
@@ -409,12 +419,12 @@ namespace Prototype.NetworkLobby
         public override void OnClientDisconnect(NetworkConnection conn)
         {
             base.OnClientDisconnect(conn);
-            ChangeTo(mainMenuPanel);
+            ChangeTo(createGamePanel);
         }
 
         public override void OnClientError(NetworkConnection conn, int errorCode)
         {
-            ChangeTo(mainMenuPanel);
+            ChangeTo(createGamePanel);
             infoPanel.Display("Cient error : " + (errorCode == 6 ? "timeout" : errorCode.ToString()), "Close", null);
         }
     }
