@@ -1940,7 +1940,7 @@ Prefab:
     - target: {fileID: 114402704428258764, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: YesToggle
+      value: chooseBlack
       objectReference: {fileID: 0}
     - target: {fileID: 224677032418605910, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
@@ -1978,7 +1978,7 @@ Prefab:
     - target: {fileID: 114504263790945024, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: NoToggle
+      value: chooseWhite
       objectReference: {fileID: 0}
     - target: {fileID: 114504263790945024, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
