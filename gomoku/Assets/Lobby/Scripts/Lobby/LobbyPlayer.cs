@@ -34,7 +34,7 @@ namespace Prototype.NetworkLobby
         public Color OddRowColor = new Color(250.0f / 255.0f, 250.0f / 255.0f, 250.0f / 255.0f, 1.0f);
         public Color EvenRowColor = new Color(180.0f / 255.0f, 180.0f / 255.0f, 180.0f / 255.0f, 1.0f);
 
-        static Color JoinColor = new Color(255.0f/255.0f, 0.0f, 101.0f/255.0f,1.0f);
+        static Color JoinColor = new Color(255.0f/255.0f, 197.0f/255.0f, 8.0f/255.0f,1.0f);
         static Color NotReadyColor = new Color(34.0f / 255.0f, 44 / 255.0f, 55.0f / 255.0f, 1.0f);
         static Color ReadyColor = new Color(0.0f, 204.0f / 255.0f, 204.0f / 255.0f, 1.0f);
         static Color TransparentColor = new Color(0, 0, 0, 0);
@@ -148,6 +148,7 @@ namespace Prototype.NetworkLobby
             if (!isLocalPlayer) {
                 Debug.Log("2 " + isServer);
                 removePlayerButton.gameObject.SetActive(isServer);  // Only server can kick
+                removePlayerButton.interactable = isServer;
 
                 return;
             }
@@ -157,7 +158,7 @@ namespace Prototype.NetworkLobby
             foreach (PlayerController p in ClientScene.localPlayers)
                 localPlayerCount += (p == null || p.playerControllerId == -1) ? 0 : 1;
 
-            // removePlayerButton.interactable = localPlayerCount > 1;
+            removePlayerButton.interactable = localPlayerCount > 1;
             removePlayerButton.gameObject.SetActive(localPlayerCount > 1);  // Hide button instead of making not interactable
         }
 

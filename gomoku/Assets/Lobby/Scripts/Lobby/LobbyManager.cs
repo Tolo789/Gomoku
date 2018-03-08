@@ -37,8 +37,6 @@ namespace Prototype.NetworkLobby
         public Button backButton;
 
         public Text roomName;
-        public Text statusInfo;
-        public Text hostInfo;
 
         //Client numPlayers from NetworkManager is always 0, so we count (throught connect/destroy in LobbyPlayer) the number
         //of players, so that even client know how many player there is.
@@ -73,8 +71,8 @@ namespace Prototype.NetworkLobby
 
         public override void OnLobbyClientSceneChanged(NetworkConnection conn)
         {
-            if (SceneManager.GetSceneAt(1).name == lobbyScene)
-            // if (SceneManager.GetSceneAt(0).name == lobbyScene)
+            // if (SceneManager.GetSceneAt(1).name == lobbyScene)
+            if (SceneManager.GetSceneAt(0).name == lobbyScene)
             {
                 if (topPanel.isInGame)
                 {
