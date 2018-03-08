@@ -14,12 +14,13 @@ namespace Prototype.NetworkLobby
         public RectTransform serverListRect;
         public GameObject serverEntryPrefab;
         public GameObject noServerFound;
+        public Text roomNameField;
 
         protected int currentPage = 0;
         protected int previousPage = 0;
 
-        static Color OddServerColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
-        static Color EvenServerColor = new Color(.94f, .94f, .94f, 1.0f);
+        static Color OddServerColor = new Color(0.16f, 0.18f, 0.21f, 1f);
+        static Color EvenServerColor = new Color(0.24f, 0.26f, 0.29f, 1f);
 
         void OnEnable()
         {
@@ -73,11 +74,20 @@ namespace Prototype.NetworkLobby
             RequestPage(newPage);
         }
 
-        public void RequestPage(int page)
+        public void FindRoomByName()
         {
+            string roomName = roomNameField.text;
+            RequestPage(0, roomName);
+		}
+
+        public void RequestPage(int page, string roomName = "")
+        {
+            if (roomName == "")         // Enable prev/next button to work with roomNameSearch
+                roomName = roomNameField.text;
             previousPage = currentPage;
             currentPage = page;
-			lobbyManager.matchMaker.ListMatches(page, 6, "", true, 0, 0, OnGUIMatchList);
+			lobbyManager.matchMaker.ListMatches(page, 6, roomName, true, 0, 0, OnGUIMatchList);
+			//lobbyManager.matchMaker.ListMatches(page, 6, roomName, false, 0, 0, OnGUIMatchList); // TODO: need this if you want to implement password
 		}
     }
 }

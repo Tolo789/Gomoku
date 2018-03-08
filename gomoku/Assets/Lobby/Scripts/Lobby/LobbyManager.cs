@@ -59,6 +59,7 @@ namespace Prototype.NetworkLobby
             s_Singleton = this;
             _lobbyHooks = GetComponent<Prototype.NetworkLobby.LobbyHook>();
             currentPanel = createGamePanel;
+            ChangeTo(createGamePanel);
 
             // backButton.gameObject.SetActive(false);
             backDelegate = BackToMainMenu;
@@ -142,6 +143,7 @@ namespace Prototype.NetworkLobby
             {
                 // backButton.gameObject.SetActive(false);
                 backButton.gameObject.SetActive(true);
+                backDelegate = BackToMainMenu;
                 SetServerInfo("Offline", "None");
                 _isMatchmaking = false;
             }

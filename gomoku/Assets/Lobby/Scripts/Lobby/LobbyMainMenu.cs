@@ -13,6 +13,7 @@ namespace Prototype.NetworkLobby
         public RectTransform createGamePanel;
         public RectTransform lobbyServerList;
         public RectTransform lobbyPanel;
+        public Button createMatchButton;
 
         // public InputField ipInput;
         public InputField matchNameInput;
@@ -26,6 +27,8 @@ namespace Prototype.NetworkLobby
 
             matchNameInput.onEndEdit.RemoveAllListeners();
             matchNameInput.onEndEdit.AddListener(onEndEditGameName);
+
+            createMatchButton.interactable = false; // Force match to have a name
         }
 
         public void OnClickHost()
@@ -97,9 +100,14 @@ namespace Prototype.NetworkLobby
 
         void onEndEditGameName(string text)
         {
-            if (Input.GetKeyDown(KeyCode.Return))
-            {
-                OnClickCreateMatchmakingGame();
+            if (text == "")
+                createMatchButton.interactable = false;
+            else {
+                createMatchButton.interactable = true;
+                if (Input.GetKeyDown(KeyCode.Return))
+                {
+                    OnClickCreateMatchmakingGame();
+                }
             }
         }
 

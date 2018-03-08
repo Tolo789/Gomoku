@@ -1585,9 +1585,10 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	private void SetForbiddenMove(int min, int max) {
 		for (int y = min; y < max; y++) {
-				for (int x = min; x < max; x++) {
-					if (boardMap[y, x] == EMPTY_VALUE) {
-						RpcPutHandicap(min, max, y, x);
+			for (int x = min; x < max; x++) {
+				if (boardMap[y, x] == EMPTY_VALUE) {
+					boardMap[y,x] = HANDICAP_CANT_PlAY;
+					RpcPutHandicap(min, max, y, x);
 				}
 			}
 		}
