@@ -11,7 +11,7 @@ namespace Prototype.NetworkLobby
     //Any LobbyHook can then grab it and pass those value to the game player prefab (see the Pong Example in the Samples Scenes)
     public class LobbyPlayer : NetworkLobbyPlayer
     {
-        static Color[] Colors = new Color[] { Color.magenta, Color.red, Color.cyan, Color.blue, Color.green, Color.yellow };
+        static Color[] Colors = new Color[] {Color.black, Color.white, Color.magenta, Color.red, Color.cyan, Color.blue, Color.green, Color.yellow };
         //used on server to avoid assigning the same color to two player
         static List<int> _colorInUse = new List<int>();
 
@@ -21,8 +21,9 @@ namespace Prototype.NetworkLobby
         public Button waitingPlayerButton;
         public Button removePlayerButton;
 
-        public GameObject localIcone;
-        public GameObject remoteIcone;
+        public Image IconImage;
+        public Sprite localIcon;
+        public Sprite remoteIcon;
 
         //OnMyName function will be invoked on clients when server change the value of playerName
         [SyncVar(hook = "OnMyName")]
@@ -88,6 +89,7 @@ namespace Prototype.NetworkLobby
 
         void SetupOtherPlayer()
         {
+            IconImage.sprite = remoteIcon;
             nameInput.interactable = false;
             removePlayerButton.interactable = NetworkServer.active;
 
@@ -102,8 +104,7 @@ namespace Prototype.NetworkLobby
         void SetupLocalPlayer()
         {
             nameInput.interactable = true;
-            remoteIcone.gameObject.SetActive(false);
-            localIcone.gameObject.SetActive(true);
+            IconImage.sprite = localIcon;
 
             CheckRemoveButton();
 
@@ -140,14 +141,24 @@ namespace Prototype.NetworkLobby
         //This enable/disable the remove button depending on if that is the only local player or not
         public void CheckRemoveButton()
         {
-            if (!isLocalPlayer)
+            // if (!isLocalPlayer)
+            //     return;
+                
+            Debug.Log("1 " + playerName + "/");
+            if (!isLocalPlayer) {
+                Debug.Log("2 " + isServer);
+                removePlayerButton.gameObject.SetActive(isServer);  // Only server can kick
+
                 return;
+            }
+            Debug.Log("3");
 
             int localPlayerCount = 0;
             foreach (PlayerController p in ClientScene.localPlayers)
                 localPlayerCount += (p == null || p.playerControllerId == -1) ? 0 : 1;
 
-            removePlayerButton.interactable = localPlayerCount > 1;
+            // removePlayerButton.interactable = localPlayerCount > 1;
+            removePlayerButton.gameObject.SetActive(localPlayerCount > 1);  // Hide button instead of making not interactable
         }
 
         public override void OnClientReady(bool readyState)

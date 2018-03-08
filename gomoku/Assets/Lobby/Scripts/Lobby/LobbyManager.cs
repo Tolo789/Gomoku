@@ -36,6 +36,7 @@ namespace Prototype.NetworkLobby
 
         public Button backButton;
 
+        public Text roomName;
         public Text statusInfo;
         public Text hostInfo;
 
@@ -67,7 +68,7 @@ namespace Prototype.NetworkLobby
 
             DontDestroyOnLoad(gameObject);
 
-            SetServerInfo("Offline", "None");
+            //SetServerInfo("Offline", "None");
         }
 
         public override void OnLobbyClientSceneChanged(NetworkConnection conn)
@@ -144,7 +145,7 @@ namespace Prototype.NetworkLobby
                 // backButton.gameObject.SetActive(false);
                 backButton.gameObject.SetActive(true);
                 backDelegate = BackToMainMenu;
-                SetServerInfo("Offline", "None");
+                // SetServerInfo("Offline", "None");
                 _isMatchmaking = false;
             }
         }
@@ -157,6 +158,8 @@ namespace Prototype.NetworkLobby
 
         public void SetServerInfo(string status, string host)
         {
+            Debug.Log("Status: " + status + ", host:" + host);
+            // roomName.text = host;
             // statusInfo.text = status;
             // hostInfo.text = host;
         }
@@ -250,7 +253,7 @@ namespace Prototype.NetworkLobby
 
             ChangeTo(lobbyPanel);
             backDelegate = StopHostClbk;
-            SetServerInfo("Hosting", networkAddress);
+            // SetServerInfo("Hosting", networkAddress);
         }
 
 		public override void OnMatchCreate(bool success, string extendedInfo, MatchInfo matchInfo)
