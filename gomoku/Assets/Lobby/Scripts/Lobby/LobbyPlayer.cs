@@ -141,25 +141,22 @@ namespace Prototype.NetworkLobby
         //This enable/disable the remove button depending on if that is the only local player or not
         public void CheckRemoveButton()
         {
-            // if (!isLocalPlayer)
-            //     return;
-                
-            Debug.Log("1 " + playerName + "/");
+            bool activateRemoveButton = !waitingPlayerButton.gameObject.activeSelf;
             if (!isLocalPlayer) {
-                Debug.Log("2 " + isServer);
-                removePlayerButton.gameObject.SetActive(isServer);  // Only server can kick
-                removePlayerButton.interactable = isServer;
+                activateRemoveButton = activateRemoveButton && isServer; // Server can kick
+                removePlayerButton.gameObject.SetActive(activateRemoveButton);
+                removePlayerButton.interactable = activateRemoveButton;
 
                 return;
             }
-            Debug.Log("3");
 
             int localPlayerCount = 0;
             foreach (PlayerController p in ClientScene.localPlayers)
                 localPlayerCount += (p == null || p.playerControllerId == -1) ? 0 : 1;
 
-            removePlayerButton.interactable = localPlayerCount > 1;
-            removePlayerButton.gameObject.SetActive(localPlayerCount > 1);  // Hide button instead of making not interactable
+            activateRemoveButton = activateRemoveButton && localPlayerCount > 1 ;
+            removePlayerButton.interactable = activateRemoveButton;
+            removePlayerButton.gameObject.SetActive(activateRemoveButton);
         }
 
         public override void OnClientReady(bool readyState)

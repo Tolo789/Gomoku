@@ -172,9 +172,14 @@ namespace Prototype.NetworkLobby
         }
 
         public void BackToMainMenu() {
-            SceneManager.LoadScene("MainMenu");
             s_Singleton = null;
             Destroy(this.gameObject);
+            SceneManager.LoadScene("MainMenu");
+        }
+
+        public void BackFromGame() {
+            backDelegate();
+			topPanel.isInGame = true;
         }
 
         // ----------------- Server management

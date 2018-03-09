@@ -64,6 +64,8 @@ public class DialoguePanel : AbstractDialogue {
 			messageText.text = "Waiting Swap choice..";
 		else if (subject == DialogueSubject.DoSwap2)
 			messageText.text = "Waiting Swap2 choice..";
+		else if (subject == DialogueSubject.Disconnection)
+			messageText.text = "Disconnecting..";
 
 		affirmativeButton.interactable = false;
 		affirmativeButton.GetComponentInChildren<Text>().text = "";

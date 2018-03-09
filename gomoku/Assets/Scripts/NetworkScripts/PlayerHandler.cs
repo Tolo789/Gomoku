@@ -56,7 +56,7 @@ public class PlayerHandler : NetworkBehaviour {
 
 #region Dialogues logic
 	public void StartDialogue(DialogueSubject subject) {
-		if (menuPanel.activeSelf && subject != DialogueSubject.Restart) // If players opened the Menu, then he can only ask for a rematch
+		if (menuPanel.activeSelf && !(subject == DialogueSubject.Restart || subject == DialogueSubject.Disconnection)) // If players opened the Menu, then he can only ask for a rematch or quit game
 			return;
 		CmdStartDialogue(netId, subject);
 	}
@@ -78,6 +78,7 @@ public class PlayerHandler : NetworkBehaviour {
 			return ;
 		gameManager.CmdExecuteResponse(playerNetId, choice);
 	}
+
 #endregion
 
 #region Client-only UI

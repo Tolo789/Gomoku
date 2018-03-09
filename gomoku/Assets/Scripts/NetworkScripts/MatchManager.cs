@@ -1749,6 +1749,8 @@ public class MatchManager : AbstractPlayerInteractable {
 		}
 
 		// Start accepting inputs
+		TargetHideDialoguePanel(NetworkServer.objects[p1NetId].connectionToClient);
+		TargetHideDialoguePanel(NetworkServer.objects[p2NetId].connectionToClient);
 		isGameLoaded = true;
 		currentPlayerNetId = (currentPlayerIndex == 0) ? p1NetId : p2NetId;
 		Debug.Log("Game Loaded !");
@@ -2147,6 +2149,14 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	[Command]
 	public void CmdStartDialogue(NetworkInstanceId playerNetId, DialogueSubject subject) {
+		if (subject == DialogueSubject.Disconnection) { // Disconnection has priority over everything else
+			if (ongoingSubject != subject) {
+				ongoingSubject = subject;
+				RpcBackToLobby();
+			}
+			return;
+		}
+
 		if (ongoingSubject != DialogueSubject.None || subject == DialogueSubject.None || simulatingMove)
 			return;
 
@@ -2214,6 +2224,23 @@ public class MatchManager : AbstractPlayerInteractable {
 		ongoingSubject = DialogueSubject.None;
 	}
 
+#endregion
+
+#region ExitLogic
+	[ClientRpc]
+	private void RpcBackToLobby() {
+		HideAllPanels();
+		dialoguePanel.SetActive(true);
+		DialoguePanel panelScript = dialoguePanel.GetComponent<DialoguePanel>();
+		panelScript.StartWaitForResponse(DialogueSubject.Disconnection);
+
+		StartCoroutine(PrepareExit());
+	}
+
+	private IEnumerator PrepareExit() {
+		yield return new WaitForSeconds(2.5f);
+		Prototype.NetworkLobby.LobbyManager.s_Singleton.BackFromGame();
+	}
 #endregion
 }
 

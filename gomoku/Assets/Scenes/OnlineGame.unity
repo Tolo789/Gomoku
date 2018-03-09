@@ -1813,7 +1813,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &57359211
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3442,7 +3442,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Deny
+  m_Text: 
 --- !u!222 &150489775
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4189,7 +4189,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Player1 is asking for undo..
+  m_Text: Waiting other player to join game..
 --- !u!222 &187828245
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -23918,7 +23918,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Allow
+  m_Text: 
 --- !u!222 &976797812
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -27792,7 +27792,7 @@ MonoBehaviour:
     m_HighlightedTrigger: Highlighted
     m_PressedTrigger: Pressed
     m_DisabledTrigger: Disabled
-  m_Interactable: 1
+  m_Interactable: 0
   m_TargetGraphic: {fileID: 1104512947}
   m_OnClick:
     m_PersistentCalls:
@@ -33693,11 +33693,11 @@ Prefab:
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1925162075}
+      objectReference: {fileID: 1317837759}
     - target: {fileID: 114402704428258764, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: BackToMainMenu
+      value: StartDialogue
       objectReference: {fileID: 0}
     - target: {fileID: 114402704428258764, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
@@ -33876,6 +33876,55 @@ GameObject:
   m_PrefabParentObject: {fileID: 1471725344569852, guid: 31e9e4f2b28424d80843c08cf17da0ca,
     type: 2}
   m_PrefabInternal: {fileID: 1317837753}
+--- !u!1 &1317837758 stripped
+GameObject:
+  m_PrefabParentObject: {fileID: 1100415147910856, guid: 31e9e4f2b28424d80843c08cf17da0ca,
+    type: 2}
+  m_PrefabInternal: {fileID: 1317837753}
+--- !u!114 &1317837759
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1317837758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8770ec01e0301456b8daab133596cc56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  subject: 6
+--- !u!114 &1317837760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1317837758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 372142912, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SceneId:
+    m_Value: 0
+  m_AssetId:
+    i0: 49
+    i1: 233
+    i2: 228
+    i3: 242
+    i4: 178
+    i5: 132
+    i6: 36
+    i7: 216
+    i8: 8
+    i9: 67
+    i10: 192
+    i11: 140
+    i12: 241
+    i13: 125
+    i14: 160
+    i15: 202
+  m_ServerOnly: 0
+  m_LocalPlayerAuthority: 1
 --- !u!1001 &1341527774
 Prefab:
   m_ObjectHideFlags: 0
@@ -40318,7 +40367,7 @@ MonoBehaviour:
     m_HighlightedTrigger: Highlighted
     m_PressedTrigger: Pressed
     m_DisabledTrigger: Disabled
-  m_Interactable: 1
+  m_Interactable: 0
   m_TargetGraphic: {fileID: 1544194946}
   m_OnClick:
     m_PersistentCalls:
@@ -50978,12 +51027,12 @@ Prefab:
     - target: {fileID: 224496862743883074, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
       propertyPath: m_RootOrder
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 224285908852277710, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
       propertyPath: m_RootOrder
-      value: 4
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 224285908852277710, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
@@ -51029,11 +51078,11 @@ Prefab:
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1972667947}
     - target: {fileID: 114402704428258764, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: ExitClick
+      value: StartDialogue
       objectReference: {fileID: 0}
     - target: {fileID: 114504263790945024, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
@@ -51086,6 +51135,55 @@ MonoBehaviour:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1972667943}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 372142912, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SceneId:
+    m_Value: 0
+  m_AssetId:
+    i0: 49
+    i1: 233
+    i2: 228
+    i3: 242
+    i4: 178
+    i5: 132
+    i6: 36
+    i7: 216
+    i8: 8
+    i9: 67
+    i10: 192
+    i11: 140
+    i12: 241
+    i13: 125
+    i14: 160
+    i15: 202
+  m_ServerOnly: 0
+  m_LocalPlayerAuthority: 1
+--- !u!1 &1972667946 stripped
+GameObject:
+  m_PrefabParentObject: {fileID: 1100415147910856, guid: 31e9e4f2b28424d80843c08cf17da0ca,
+    type: 2}
+  m_PrefabInternal: {fileID: 1972667942}
+--- !u!114 &1972667947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1972667946}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8770ec01e0301456b8daab133596cc56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  subject: 6
+--- !u!114 &1972667948
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1972667946}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 372142912, guid: 870353891bb340e2b2a9c8707e7419ba, type: 3}
