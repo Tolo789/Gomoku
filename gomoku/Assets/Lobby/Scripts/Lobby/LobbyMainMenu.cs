@@ -18,8 +18,12 @@ namespace Prototype.NetworkLobby
         // public InputField ipInput;
         public InputField matchNameInput;
 
+        public LobbyRoomSettings lobbyRoomSettings;
+
         public void OnEnable()
         {
+            lobbyRoomSettings.PrefillSettings();
+
             lobbyManager.topPanel.ToggleVisibility(true);
 
             // ipInput.onEndEdit.RemoveAllListeners();
@@ -61,6 +65,8 @@ namespace Prototype.NetworkLobby
 
         public void OnClickCreateMatchmakingGame()
         {
+            lobbyRoomSettings.SaveGameSettings();
+
             lobbyManager.StartMatchMaker();
             lobbyManager.matchMaker.CreateMatch(
                 matchNameInput.text,

@@ -36,7 +36,7 @@ namespace Prototype.NetworkLobby
 
         public Button backButton;
 
-        public Text roomName;
+        public LobbyRoomSettings lobbyRoomSettings;
 
         //Client numPlayers from NetworkManager is always 0, so we count (throught connect/destroy in LobbyPlayer) the number
         //of players, so that even client know how many player there is.
@@ -52,6 +52,8 @@ namespace Prototype.NetworkLobby
         protected ulong _currentMatchID;
 
         protected LobbyHook _lobbyHooks;
+
+        protected RoomInfo roomInfo;
 
         void Start()
         {
@@ -162,6 +164,9 @@ namespace Prototype.NetworkLobby
             // hostInfo.text = host;
         }
 
+        public void SetRoomInfo(RoomInfo info) {
+            lobbyRoomSettings.SetRoomInfo(info);
+        }
 
         public delegate void BackButtonDelegate();
         public BackButtonDelegate backDelegate;
@@ -263,6 +268,7 @@ namespace Prototype.NetworkLobby
 		{
 			base.OnMatchCreate(success, extendedInfo, matchInfo);
             _currentMatchID = (System.UInt64)matchInfo.networkId;
+            roomInfo = lobbyRoomSettings.GetRoomInfo();
 		}
 
 		public override void OnDestroyMatch(bool success, string extendedInfo)
@@ -298,6 +304,8 @@ namespace Prototype.NetworkLobby
             LobbyPlayer newPlayer = obj.GetComponent<LobbyPlayer>();
             newPlayer.ToggleJoinButton(numPlayers + 1 >= minPlayers);
 
+            // give same infos to all players
+            newPlayer.roomInfo = roomInfo;
 
             for (int i = 0; i < lobbySlots.Length; ++i)
             {

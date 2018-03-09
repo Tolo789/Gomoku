@@ -908,7 +908,7 @@ MonoBehaviour:
   localIcon: {fileID: 21300000, guid: 70ed02e882fd2ac46a242f45f5ea35df, type: 3}
   remoteIcon: {fileID: 21300000, guid: 11f191f8d6382e349be699ab8fe1d300, type: 3}
   playerName: 
-  playerColor: {r: 1, g: 1, b: 1, a: 1}
+  playerColor: {r: 0.6467129, g: 0.09623704, b: 0.6544118, a: 1}
   OddRowColor: {r: 0.16078432, g: 0.18039216, b: 0.20784315, a: 1}
   EvenRowColor: {r: 0.16078432, g: 0.18039216, b: 0.20784315, a: 1}
 --- !u!114 &11487112

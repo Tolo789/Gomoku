@@ -13,4 +13,5 @@ public class CommonDefines {
 	public const string SELF_CAPTURE_SETTING = "SelfCaptureSetting";
 	public const string DIFFICULTY_SETTING = "DifficultySetting";
 	public const string OPENING_RULE = "OpeningRule";
+	public const string ROOM_NAME = "RoomName";
 }

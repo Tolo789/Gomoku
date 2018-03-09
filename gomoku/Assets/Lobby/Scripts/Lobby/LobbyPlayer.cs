@@ -11,7 +11,7 @@ namespace Prototype.NetworkLobby
     //Any LobbyHook can then grab it and pass those value to the game player prefab (see the Pong Example in the Samples Scenes)
     public class LobbyPlayer : NetworkLobbyPlayer
     {
-        static Color[] Colors = new Color[] {Color.black, Color.white, Color.magenta, Color.red, Color.cyan, Color.blue, Color.green, Color.yellow };
+        static Color[] Colors = new Color[] {Color.magenta, Color.black, Color.white, Color.red, Color.cyan, Color.blue, Color.green, Color.yellow };
         //used on server to avoid assigning the same color to two player
         static List<int> _colorInUse = new List<int>();
 
@@ -29,7 +29,9 @@ namespace Prototype.NetworkLobby
         [SyncVar(hook = "OnMyName")]
         public string playerName = "";
         [SyncVar(hook = "OnMyColor")]
-        public Color playerColor = Color.white;
+        public Color playerColor = Color.black;
+        [SyncVar]
+        public RoomInfo roomInfo;
 
         public Color OddRowColor = new Color(250.0f / 255.0f, 250.0f / 255.0f, 250.0f / 255.0f, 1.0f);
         public Color EvenRowColor = new Color(180.0f / 255.0f, 180.0f / 255.0f, 180.0f / 255.0f, 1.0f);
@@ -70,6 +72,7 @@ namespace Prototype.NetworkLobby
         public override void OnStartAuthority()
         {
             base.OnStartAuthority();
+            LobbyManager.s_Singleton.SetRoomInfo(roomInfo); // set infos only when loading own player
 
             //if we return from a game, color of text can still be the one for "Ready"
             readyButton.transform.GetChild(0).GetComponent<Text>().color = Color.white;
@@ -108,8 +111,7 @@ namespace Prototype.NetworkLobby
 
             CheckRemoveButton();
 
-            if (playerColor == Color.white)
-                CmdColorChange();
+            CmdColorChange(); // Force saving color in use and not have twice the same color
 
             ChangeReadyButtonColor(JoinColor);
 
