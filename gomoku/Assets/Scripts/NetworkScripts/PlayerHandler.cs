@@ -7,6 +7,9 @@ using UnityEngine.Networking;
 public class PlayerHandler : NetworkBehaviour {
 
 	[HideInInspector] public int wins = 0;
+	[SyncVar]
+	public Color color = Color.black;
+	[HideInInspector] public string pName = "";
 	[HideInInspector] public GameObject menuPanel;
 
 	private MatchManager gameManager = null; // Only used by Server
