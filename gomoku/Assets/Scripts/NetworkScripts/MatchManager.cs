@@ -1831,35 +1831,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		RpcChangePlayerScore(1 - currentPlayerIndex, playerScores[1 - currentPlayerIndex]);
 		RpcChangePlayerHiglight(currentPlayerIndex);
 
-		//OpeningRules RULES UNDO
-		// TODO: not sure it is usefull anymore, except for the SetForbiddenMove()
 		nbrOfMoves = nbrOfMoves - 1;
-		if  (HANDICAP == 4 && nbrOfMoves == 2 || HANDICAP == 5 && nbrOfMoves == 4) {
-			playersStones[0].color = p1Color;
-			playersStones[1].color = p2Color;
-			playersStones[0].sprite = (p1Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
-			playersStones[1].sprite = (p2Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
-		}
-		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
-			if (HANDICAP == 3)
-				SetForbiddenMove(7, 12);
-			else if (HANDICAP == 2)
-				SetForbiddenMove(5, 14);
-		}
-		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
-			playersStones[0].color = (p1Color == Color.black) ? Color.white : p1Color;
-			playersStones[1].color = (p2Color == Color.black) ? Color.white : p2Color;
-			playersStones[0].sprite = (p1Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
-			playersStones[1].sprite = (p2Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
-			playedTwoMoreStones = false;
-			swapPlayers.SetActive(true);
-			swappedColors = false;
-		}
-		else if (HANDICAP == 5 && nbrOfMoves == 2) {
-			chooseSwapOptions.SetActive(true);
-			swappedColors = false;
-		}
-
 		backupStates.RemoveAt(0);
 	}
 #endregion
