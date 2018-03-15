@@ -10,13 +10,7 @@ namespace Prototype.NetworkLobby
     // then add it to the lobby prefab
     public abstract class LobbyHook : MonoBehaviour
     {
-        public virtual void OnLobbyServerSceneLoadedForPlayer(NetworkManager manager, GameObject lobbyPlayer, GameObject gamePlayer) {
-            LobbyPlayer lobbyScript = lobbyPlayer.GetComponent<LobbyPlayer>();
-            PlayerHandler playerScript = gamePlayer.GetComponent<PlayerHandler>();
-
-            playerScript.color = lobbyScript.playerColor;
-            Debug.Log("Color: " + lobbyScript.playerColor);
-        }
+        public virtual void OnLobbyServerSceneLoadedForPlayer(NetworkManager manager, GameObject lobbyPlayer, GameObject gamePlayer) {}
     }
 
 }

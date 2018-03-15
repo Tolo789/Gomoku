@@ -158,8 +158,7 @@ namespace Prototype.NetworkLobby
 
         public void SetServerInfo(string status, string host)
         {
-            Debug.Log("Status: " + status + ", host:" + host);
-            // roomName.text = host;
+            // Debug.Log("Status: " + status + ", host:" + host);
             // statusInfo.text = status;
             // hostInfo.text = host;
         }
