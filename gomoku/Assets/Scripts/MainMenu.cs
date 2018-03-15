@@ -14,9 +14,10 @@ public class MainMenu : MonoBehaviour {
     public ToggleGroup openingRules;
 
     public GameObject settingsPanel;
+    public GameObject errorMessage;
 
-    
     void Start() {
+        Screen.SetResolution(1620, 1240, false);
 		if (PlayerPrefs.HasKey(CommonDefines.IS_P1_IA)) {
             Toggle[] listOfToggle = is_P1_IA.GetComponentsInChildren<Toggle>(); 
             listOfToggle[0].isOn = (PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) ? true : false;
@@ -52,10 +53,17 @@ public class MainMenu : MonoBehaviour {
         Application.Quit();
     }
     public void GoClick(GameObject playSettings) {
+        string isP1IA_versus = is_P1_IA.ActiveToggles().FirstOrDefault().name;
+        string isP2IA_versus = is_P2_IA.ActiveToggles().FirstOrDefault().name;
+        string checkOpeningRules = openingRules.ActiveToggles().FirstOrDefault().name;
+
+        if ((isP1IA_versus == "ToggleIA" || isP2IA_versus == "ToggleIA") && (checkOpeningRules == "Swap" || checkOpeningRules == "Swap2")) {
+            errorMessage.SetActive(true);
+            return ;
+        }
+
         GetSettingsGameInfo();
-        // playSettings.SetActive(false);
         SceneManager.LoadScene("Game");
-        // SceneManager.LoadScene("Lobby");
     }
      public void GoBack(GameObject playSettings) {
        playSettings.SetActive(false);
@@ -80,6 +88,7 @@ public class MainMenu : MonoBehaviour {
             return 5;
         return -1;
     }
+
     public void GetSettingsGameInfo() {
         string isP1IA_versus = is_P1_IA.ActiveToggles().FirstOrDefault().name;
         string isP2IA_versus = is_P2_IA.ActiveToggles().FirstOrDefault().name;
