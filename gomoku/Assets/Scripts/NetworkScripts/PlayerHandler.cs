@@ -11,7 +11,9 @@ public class PlayerHandler : NetworkBehaviour {
 	[SyncVar]
 	public string playerName = "";
 	[SyncVar]
-	private bool hasRegistered = false; // try registering until this is false
+	private bool lobbyInfoRetrieved = false; // tells if has infos from lobby has been retrieved
+	[SyncVar]
+	private bool hasRegistered = false; // tells if has been registered to server
 
 	[HideInInspector] public GameObject menuPanel;
 
@@ -27,6 +29,7 @@ public class PlayerHandler : NetworkBehaviour {
     }
 
 	private IEnumerator RegisterToMatchManager() {
+		yield return new WaitUntil(() => lobbyInfoRetrieved);
 		while (!hasRegistered) {
 			CmdRegisterSelf(netId, playerName, playerColor, isServer);
 			yield return new WaitForSeconds(0.2f);
@@ -43,6 +46,10 @@ public class PlayerHandler : NetworkBehaviour {
 			gameManager = go.GetComponent<MatchManager>();
 		}
 		gameManager.CmdRegisterPlayer(playerNetId, pName, pColor, serverPlayer);
+	}
+
+	public void LobbyInfoRetrieved() {
+		lobbyInfoRetrieved = true;
 	}
 
 	public void HasBeenRegistered() {

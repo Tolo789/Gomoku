@@ -1951,8 +1951,8 @@ public class MatchManager : AbstractPlayerInteractable {
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = (playerIndex == 0) ? p1Color : p2Color;
-		newColor = (newColor == Color.black) ? Color.white : newColor;
 		buttonImage.sprite = (newColor == Color.black) ? blackStoneSprite : whiteStoneSprite;
+		newColor = (newColor == Color.black) ? Color.white : newColor;
 		newColor.a = 1;
 		buttonImage.color = newColor;
 		buttonsMap[yCoord, xCoord].isEmpty = false;
@@ -1965,8 +1965,8 @@ public class MatchManager : AbstractPlayerInteractable {
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = (playerIndex == 0) ? p1Color : p2Color;
-		newColor = (newColor == Color.black) ? Color.white : newColor;
 		buttonImage.sprite = (newColor == Color.black) ? blackStoneSprite : whiteStoneSprite;
+		newColor = (newColor == Color.black) ? Color.white : newColor;
 		newColor.a = 0.7f;
 		buttonImage.color = newColor;
 		button.transform.GetChild(0).gameObject.SetActive(true);
