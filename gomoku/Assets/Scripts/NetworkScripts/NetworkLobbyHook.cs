@@ -10,5 +10,6 @@ public class NetworkLobbyHook : Prototype.NetworkLobby.LobbyHook {
 
 		playerScript.playerColor = lobbyScript.playerColor;
 		playerScript.playerName = lobbyScript.playerName;
+		playerScript.LobbyInfoRetrieved();
 	}
 }

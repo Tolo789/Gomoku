@@ -725,6 +725,13 @@ public class MatchManager : AbstractPlayerInteractable {
 			}
 		}
 
+		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
+		alignmentHasBeenDone = false;
+		if (IsWinByAlignment(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, playerScores[1 - currentPlayerIndex], ref alignmentHasBeenDone)) {
+			RpcDisplayWinner(currentPlayerIndex);
+			return;
+		}
+
 		// End turn, next player to play
 		currentPlayerIndex = 1 - currentPlayerIndex;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
@@ -762,17 +769,9 @@ public class MatchManager : AbstractPlayerInteractable {
 		SwapPlayerTextColor();
 		OpeningRules();
 
-		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
-		alignmentHasBeenDone = false;
-		if (IsWinByAlignment(boardMap, yCoord, xCoord, otherPlayerVal, currentPlayerVal, playerScores[currentPlayerIndex], ref alignmentHasBeenDone)) {
-			RpcDisplayWinner(1 - currentPlayerIndex);
-			return;
-		}
-
 		// Update last move tracker
 		if (lastMove.x != -1) {
 			RpcClearMoveTracker(lastMove.y, lastMove.x);
-			buttonsMap[lastMove.y, lastMove.x].transform.GetChild(0).gameObject.SetActive(false);
 		}
 		lastMove.y = yCoord;
 		lastMove.x = xCoord;
@@ -827,12 +826,28 @@ public class MatchManager : AbstractPlayerInteractable {
 			}
 		}
 
+		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
+		state.alignementDone = false;
+		if (state.myVal == state.rootVal) {
+			if (IsWinByAlignment(state.map, yCoord, xCoord, state.myVal, state.enemyVal, state.otherPlayerScore, ref state.alignementDone)) {
+				state.winner = 1;
+				return;
+			}
+		}
+		else {
+			if (IsWinByAlignment(state.map, yCoord, xCoord, state.myVal, state.enemyVal, state.rootPlayerScore, ref state.alignementDone)) {
+				state.winner = 1;
+				return;
+			}
+		}
+
 		// End turn, next player to play
 		int tmp = state.myVal;
 		state.myVal = state.enemyVal;
 		state.enemyVal = tmp;
 
 		// update allowed movements in map
+		bool thereIsAvailableMove = false;
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
 				if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
@@ -842,22 +857,21 @@ public class MatchManager : AbstractPlayerInteractable {
 					if (SELF_CAPTURE_RULE)
 						UpdateSelfCapture(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
 				}
+
+				//Chef if it's a draw
+				if (currentPlayerIndex == 0 && (boardMap[y, x] == EMPTY_VALUE || boardMap[y, x] == DT_P2_VALUE || boardMap[y, x] == NA_P2_VALUE)) {
+					thereIsAvailableMove = true;
+				}
+				if (currentPlayerIndex == 1 && (boardMap[y, x] == EMPTY_VALUE || boardMap[y, x] == DT_P2_VALUE || boardMap[y, x] == NA_P2_VALUE)) {
+					thereIsAvailableMove = true;
+				}
 			}
 		}
 
-		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
-		state.alignementDone = false;
-		if (state.myVal == state.rootVal) {
-			if (IsWinByAlignment(state.map, yCoord, xCoord, state.enemyVal, state.myVal, state.rootPlayerScore, ref state.alignementDone)) {
-				state.winner = 2;
-				return;
-			}
-		}
-		else {
-			if (IsWinByAlignment(state.map, yCoord, xCoord, state.enemyVal, state.myVal, state.otherPlayerScore, ref state.alignementDone)) {
-				state.winner = 1;
-				return;
-			}
+
+		if (!thereIsAvailableMove) {
+			state.winner = -1;
+			return;
 		}
 	}
 
@@ -1831,35 +1845,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		RpcChangePlayerScore(1 - currentPlayerIndex, playerScores[1 - currentPlayerIndex]);
 		RpcChangePlayerHiglight(currentPlayerIndex);
 
-		//OpeningRules RULES UNDO
-		// TODO: not sure it is usefull anymore, except for the SetForbiddenMove()
 		nbrOfMoves = nbrOfMoves - 1;
-		if  (HANDICAP == 4 && nbrOfMoves == 2 || HANDICAP == 5 && nbrOfMoves == 4) {
-			playersStones[0].color = p1Color;
-			playersStones[1].color = p2Color;
-			playersStones[0].sprite = (p1Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
-			playersStones[1].sprite = (p2Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
-		}
-		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
-			if (HANDICAP == 3)
-				SetForbiddenMove(7, 12);
-			else if (HANDICAP == 2)
-				SetForbiddenMove(5, 14);
-		}
-		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
-			playersStones[0].color = (p1Color == Color.black) ? Color.white : p1Color;
-			playersStones[1].color = (p2Color == Color.black) ? Color.white : p2Color;
-			playersStones[0].sprite = (p1Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
-			playersStones[1].sprite = (p2Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
-			playedTwoMoreStones = false;
-			swapPlayers.SetActive(true);
-			swappedColors = false;
-		}
-		else if (HANDICAP == 5 && nbrOfMoves == 2) {
-			chooseSwapOptions.SetActive(true);
-			swappedColors = false;
-		}
-
 		backupStates.RemoveAt(0);
 	}
 #endregion
@@ -1951,8 +1937,8 @@ public class MatchManager : AbstractPlayerInteractable {
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = (playerIndex == 0) ? p1Color : p2Color;
-		newColor = (newColor == Color.black) ? Color.white : newColor;
 		buttonImage.sprite = (newColor == Color.black) ? blackStoneSprite : whiteStoneSprite;
+		newColor = (newColor == Color.black) ? Color.white : newColor;
 		newColor.a = 1;
 		buttonImage.color = newColor;
 		buttonsMap[yCoord, xCoord].isEmpty = false;
@@ -1965,8 +1951,8 @@ public class MatchManager : AbstractPlayerInteractable {
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
 		Color newColor = (playerIndex == 0) ? p1Color : p2Color;
-		newColor = (newColor == Color.black) ? Color.white : newColor;
 		buttonImage.sprite = (newColor == Color.black) ? blackStoneSprite : whiteStoneSprite;
+		newColor = (newColor == Color.black) ? Color.white : newColor;
 		newColor.a = 0.7f;
 		buttonImage.color = newColor;
 		button.transform.GetChild(0).gameObject.SetActive(true);
