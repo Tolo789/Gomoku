@@ -12843,18 +12843,18 @@ MonoBehaviour:
   gameEndedPanel: {fileID: 297544483}
   swapPlayers: {fileID: 1583576943}
   chooseSwapOptions: {fileID: 15460115}
-  player1: {fileID: 1960544238}
-  player2: {fileID: 606631934}
   dialoguePanel: {fileID: 57359210}
   canvas: {fileID: 961423302}
-  listPlayers:
+  playersNames:
   - {fileID: 734981128}
   - {fileID: 27761295}
+  playersStones:
+  - {fileID: 1813271553}
+  - {fileID: 51913656}
   AiTimer: {fileID: 564232487}
   displayWinner: {fileID: 351874437}
-  stoneSprites:
-  - {fileID: 21300000, guid: 3e69d418f5c5e4bda9a17261644df740, type: 3}
-  - {fileID: 21300000, guid: 0a61c71689d864cfca925cd939b7bd3f, type: 3}
+  whiteStoneSprite: {fileID: 21300000, guid: 0a61c71689d864cfca925cd939b7bd3f, type: 3}
+  blackStoneSprite: {fileID: 21300000, guid: 3e69d418f5c5e4bda9a17261644df740, type: 3}
   notAllowedSprite: {fileID: 21300000, guid: 008aae56ae4744c13813361e158118e7, type: 3}
   doubleThreeSprite: {fileID: 21300000, guid: 7b7108aec150848a980da36770316671, type: 3}
   sqTopLeft: {fileID: 21300000, guid: fcd4887d5fa4a4096ba5dcada57d8c64, type: 3}
@@ -46873,7 +46873,7 @@ MonoBehaviour:
       m_Calls: []
     m_TypeName: UnityEngine.UI.MaskableGraphic+CullStateChangedEvent, UnityEngine.UI,
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-  m_Sprite: {fileID: 21300000, guid: 3e69d418f5c5e4bda9a17261644df740, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 0a61c71689d864cfca925cd939b7bd3f, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1

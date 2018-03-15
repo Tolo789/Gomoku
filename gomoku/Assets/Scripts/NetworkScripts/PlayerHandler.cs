@@ -6,10 +6,13 @@ using UnityEngine.Networking;
 
 public class PlayerHandler : NetworkBehaviour {
 
-	[HideInInspector] public int wins = 0;
 	[SyncVar]
-	public Color color = Color.black;
-	[HideInInspector] public string pName = "";
+	public Color playerColor = Color.black;
+	[SyncVar]
+	public string playerName = "";
+	[SyncVar]
+	private bool hasRegistered = false; // try registering until this is false
+
 	[HideInInspector] public GameObject menuPanel;
 
 	private MatchManager gameManager = null; // Only used by Server
@@ -20,28 +23,31 @@ public class PlayerHandler : NetworkBehaviour {
 		base.OnStartLocalPlayer();
 
 		// Tell server that Client player is ready
-		CmdRegisterSelf(netId);
+		StartCoroutine(RegisterToMatchManager());
     }
 
-	[Command]
-	private void CmdRegisterSelf(NetworkInstanceId playerNetId) {
-		StartCoroutine(RegisterToMatchManager(playerNetId));
-		// if (gameManager == null)
-		// 	gameManager = GameObject.Find("MatchManager").GetComponent<MatchManager>();
-		// gameManager.CmdRegisterPlayer(playerNetId);
-	}
-
-	private IEnumerator RegisterToMatchManager(NetworkInstanceId playerNetId) {
-		while (gameManager == null) {
-			GameObject obj = GameObject.Find("MatchManager");
-			if (obj != null)
-				gameManager = obj.GetComponent<MatchManager>();
-			yield return new WaitForFixedUpdate();
+	private IEnumerator RegisterToMatchManager() {
+		while (!hasRegistered) {
+			CmdRegisterSelf(netId, playerName, playerColor, isServer);
+			yield return new WaitForSeconds(0.2f);
 		}
 
-		gameManager.CmdRegisterPlayer(playerNetId);
 	}
 
+	[Command]
+	private void CmdRegisterSelf(NetworkInstanceId playerNetId, string pName, Color pColor, bool serverPlayer) {
+		if (gameManager == null) {
+			GameObject go = GameObject.Find("MatchManager");
+			if (go == null)
+				return;
+			gameManager = go.GetComponent<MatchManager>();
+		}
+		gameManager.CmdRegisterPlayer(playerNetId, pName, pColor, serverPlayer);
+	}
+
+	public void HasBeenRegistered() {
+		hasRegistered = true;
+	}
 
 	// Try put stone
 	public void TryPutStone(int y, int x) {

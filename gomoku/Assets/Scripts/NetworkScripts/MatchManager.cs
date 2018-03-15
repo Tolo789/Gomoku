@@ -71,14 +71,14 @@ public class MatchManager : AbstractPlayerInteractable {
 	public GameObject swapPlayers;
 
 	public GameObject chooseSwapOptions;
-	public GameObject player1;
-	public GameObject player2;
 	public GameObject dialoguePanel;
 	public Canvas canvas;
-	public Text[] listPlayers;
+	public Text[] playersNames;
+	public Image[] playersStones;
 	public Text AiTimer;
 	public Text displayWinner;
-	public Sprite[] stoneSprites;
+	public Sprite whiteStoneSprite;
+	public Sprite blackStoneSprite;
 	public Sprite notAllowedSprite;
 	public Sprite doubleThreeSprite;
 
@@ -156,6 +156,10 @@ public class MatchManager : AbstractPlayerInteractable {
 
 
 	// [Client] Vars
+	string p1Name;
+	string p2Name;
+	Color p1Color;
+	Color p2Color;
 	private BoardButton[,] buttonsMap;
 	private bool swappedColors = false;
 
@@ -692,12 +696,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		int captures = CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
 		if (captures > 0) {
 			playerScores[currentPlayerIndex] += captures;
-			if (swappedColors) {
-				RpcChangePlayerScore(currentPlayerIndex, "Player" + otherPlayerVal + ": " + playerScores[currentPlayerIndex]);
-			}
-			else {
-				RpcChangePlayerScore(currentPlayerIndex, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
-			}
+			RpcChangePlayerScore(currentPlayerIndex, playerScores[currentPlayerIndex]);
 			if (playerScores[currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
 				RpcDisplayWinner(currentPlayerIndex);
 				return;
@@ -1570,16 +1569,10 @@ public class MatchManager : AbstractPlayerInteractable {
 		else if (nbrOfMoves == 2 && HANDICAP == 2)
 			SetForbiddenMove(5, 14);
 		else if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
-			// TODO: handle online
 			ShowSwapChoice();
-			// isGamePaused = true;
-			// swapPlayers.SetActive(true);
 		}
 		else if (HANDICAP == 5 && nbrOfMoves == 3) {
-			// TODO: handle online
 			ShowSwap2Choice();
-			// isGamePaused = true;
-			// chooseSwapOptions.SetActive(true);
 		}
 	}
 
@@ -1592,31 +1585,6 @@ public class MatchManager : AbstractPlayerInteractable {
 				}
 			}
 		}
-	}
-
-	public void YesToggle(GameObject panel) {
-		// TODO: must be a command
-		player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
-		player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-		listPlayers[1 - currentPlayerIndex].color = Color.cyan;
-		listPlayers[currentPlayerIndex].color = Color.white;
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		isGamePaused = false;
-		swappedColors = true;
-		panel.SetActive(false);
-	}
-
-	public void PlayTwoStones(GameObject panel) {
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		playedTwoMoreStones = true;
-		isGamePaused = false;
-		panel.SetActive(false);
-	}
-
-	public void NoToggle(GameObject panel) {
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		isGamePaused = false;
-		panel.SetActive(false);
 	}
 
 	[Command]
@@ -1632,17 +1600,26 @@ public class MatchManager : AbstractPlayerInteractable {
 
 #region Commands functions
 	[Command]
-	public void CmdRegisterPlayer(NetworkInstanceId playerNetId) {
-		Debug.Log("Registering playerId: " + playerNetId);
-		if (p1NetId == NetworkInstanceId.Invalid) {
+	public void CmdRegisterPlayer(NetworkInstanceId playerNetId, string pName, Color pColor, bool serverPlayer) {
+		Debug.Log("Registering.. playerId: " + playerNetId + ", player name: '" + pName + "', color: " + pColor + ", serverPlayer: " + serverPlayer);
+		if (playerNetId == NetworkInstanceId.Invalid || playerNetId == p1NetId || playerNetId == p2NetId) // just to be sure
+			return;
+		if (p1NetId == NetworkInstanceId.Invalid && serverPlayer) {
 			p1NetId = playerNetId;
+			RpcSetP1Info(pName, pColor);
+			NetworkServer.objects[playerNetId].GetComponent<PlayerHandler>().HasBeenRegistered();
+
 			// TODO: handle offline match ?
 			// CmdStart(firstStart: true);
 		}
-		else if (p2NetId == NetworkInstanceId.Invalid) {
+		else if (p2NetId == NetworkInstanceId.Invalid && !serverPlayer) {
 			p2NetId = playerNetId;
-			CmdStart(firstStart: true);
+			RpcSetP2Info(pName, pColor);
+			NetworkServer.objects[playerNetId].GetComponent<PlayerHandler>().HasBeenRegistered();
 		}
+
+		if (p1NetId != NetworkInstanceId.Invalid && p2NetId != NetworkInstanceId.Invalid)
+			CmdStart(firstStart: true);
 
 		// TODO: handle spectators ??
 	}
@@ -1730,8 +1707,8 @@ public class MatchManager : AbstractPlayerInteractable {
 
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
-		RpcChangePlayerScore(currentPlayerIndex, "Player" + currentPlayerVal + ": 0");
-		RpcChangePlayerScore(1 - currentPlayerIndex, "Player" + otherPlayerVal + ": 0");
+		RpcChangePlayerScore(currentPlayerIndex, 0);
+		RpcChangePlayerScore(1 - currentPlayerIndex, 0);
 		RpcChangePlayerHiglight(currentPlayerIndex);
 
 		if (firstStart) {
@@ -1850,15 +1827,18 @@ public class MatchManager : AbstractPlayerInteractable {
 		}
 
 		// Change UI
-		RpcChangePlayerScore(currentPlayerIndex, "Player" + currentPlayerVal + ": " + playerScores[currentPlayerIndex]);
-		RpcChangePlayerScore(1 - currentPlayerIndex, "Player" + otherPlayerVal + ": " + playerScores[1 - currentPlayerIndex]);
+		RpcChangePlayerScore(currentPlayerIndex, playerScores[currentPlayerIndex]);
+		RpcChangePlayerScore(1 - currentPlayerIndex, playerScores[1 - currentPlayerIndex]);
 		RpcChangePlayerHiglight(currentPlayerIndex);
 
 		//OpeningRules RULES UNDO
+		// TODO: not sure it is usefull anymore, except for the SetForbiddenMove()
 		nbrOfMoves = nbrOfMoves - 1;
 		if  (HANDICAP == 4 && nbrOfMoves == 2 || HANDICAP == 5 && nbrOfMoves == 4) {
-			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+			playersStones[0].color = p1Color;
+			playersStones[1].color = p2Color;
+			playersStones[0].sprite = (p1Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
+			playersStones[1].sprite = (p2Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
 		}
 		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
 			if (HANDICAP == 3)
@@ -1867,8 +1847,10 @@ public class MatchManager : AbstractPlayerInteractable {
 				SetForbiddenMove(5, 14);
 		}
 		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
-			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+			playersStones[0].color = (p1Color == Color.black) ? Color.white : p1Color;
+			playersStones[1].color = (p2Color == Color.black) ? Color.white : p2Color;
+			playersStones[0].sprite = (p1Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
+			playersStones[1].sprite = (p2Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
 			playedTwoMoreStones = false;
 			swapPlayers.SetActive(true);
 			swappedColors = false;
@@ -1883,6 +1865,25 @@ public class MatchManager : AbstractPlayerInteractable {
 #endregion
 
 #region RpcFunctions
+
+	[ClientRpc]
+	public void RpcSetP1Info(string pName, Color pColor) {
+		p1Name = pName;
+		p1Color = pColor;
+		playersNames[0].text = pName + ": 0";
+		playersStones[0].color = (p1Color == Color.black) ? Color.white : pColor;
+		playersStones[0].sprite = (p1Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
+	}
+
+	[ClientRpc]
+	public void RpcSetP2Info(string pName, Color pColor) {
+		p2Name = pName;
+		p2Color = pColor;
+		playersNames[1].text = pName + ": 0";
+		playersStones[1].color = (p2Color == Color.black) ? Color.white : pColor;
+		playersStones[1].sprite = (p2Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
+	}
+
 	[ClientRpc]
 	public void RpcLoadBoard() {
 		buttonsMap = new BoardButton[size, size];
@@ -1922,9 +1923,6 @@ public class MatchManager : AbstractPlayerInteractable {
 
 				x++;
 				tmpPos.x += step;
-
-				// spawn the button on the clients
-				// NetworkServer.Spawn(newButton);
 			}
 			y++;
 			tmpPos.y -= step;
@@ -1939,7 +1937,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		}
 		button.transform.localScale = new Vector3(1, 1, 1);
 		Image buttonImage = button.GetComponent<Image>();
-		Color newColor = buttonImage.color;
+		Color newColor = Color.white;
 		newColor.a = 0;
 		buttonImage.color = newColor;
 		buttonImage.sprite = null;
@@ -1952,10 +1950,11 @@ public class MatchManager : AbstractPlayerInteractable {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
-		Color newColor = buttonImage.color;
+		Color newColor = (playerIndex == 0) ? p1Color : p2Color;
+		newColor = (newColor == Color.black) ? Color.white : newColor;
+		buttonImage.sprite = (newColor == Color.black) ? blackStoneSprite : whiteStoneSprite;
 		newColor.a = 1;
 		buttonImage.color = newColor;
-		buttonImage.sprite = stoneSprites[playerIndex];
 		buttonsMap[yCoord, xCoord].isEmpty = false;
 		button.transform.GetChild(0).gameObject.SetActive(true);
 	}
@@ -1965,10 +1964,11 @@ public class MatchManager : AbstractPlayerInteractable {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
-		Color newColor = buttonImage.color;
+		Color newColor = (playerIndex == 0) ? p1Color : p2Color;
+		newColor = (newColor == Color.black) ? Color.white : newColor;
+		buttonImage.sprite = (newColor == Color.black) ? blackStoneSprite : whiteStoneSprite;
 		newColor.a = 0.7f;
 		buttonImage.color = newColor;
-		buttonImage.sprite = stoneSprites[playerIndex];
 		button.transform.GetChild(0).gameObject.SetActive(true);
 	}
 
@@ -1977,7 +1977,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
-		Color newColor = buttonImage.color;
+		Color newColor = Color.white;
 		newColor.a = 1;
 		buttonImage.color = newColor;
 		buttonImage.sprite = doubleThreeSprite;
@@ -1990,7 +1990,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Image buttonImage = button.GetComponent<Image>();
-		Color newColor = buttonImage.color;
+		Color newColor = Color.white;
 		newColor.a = 1;
 		buttonImage.color = newColor;
 		buttonImage.sprite = notAllowedSprite;
@@ -2003,9 +2003,8 @@ public class MatchManager : AbstractPlayerInteractable {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.transform.localScale = new Vector3(1, 1, 1);
 		Image buttonImage = button.GetComponent<Image>();
-		Color newColor = buttonImage.color;
+		Color newColor = Color.white;
 		newColor.a = 1;
-		buttonImage.color = newColor;
 
 		if (yCoord == min && xCoord == min)
 			buttonImage.sprite = sqTopLeft;
@@ -2022,8 +2021,8 @@ public class MatchManager : AbstractPlayerInteractable {
 		else {
 			buttonImage.sprite = null;
 			newColor.a = 0;
-			buttonImage.color = newColor;
 		}
+		buttonImage.color = newColor;
 
 		buttonsMap[yCoord, xCoord].isEmpty = false;
 		button.transform.GetChild(0).gameObject.SetActive(false);
@@ -2041,10 +2040,10 @@ public class MatchManager : AbstractPlayerInteractable {
 			displayWinner.text = "Draw !";
 		}
 		else {
-			int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
+			string winner = (winnerIndex == 0) ? p1Name : p2Name;
 			if (swappedColors)
-				winner = (winnerIndex == 0) ? P2_VALUE : P1_VALUE;
-			displayWinner.text = "Player " + winner + " won !";
+				winner = (winnerIndex == 0) ? p2Name : p1Name;
+			displayWinner.text = winner + " won !";
 		}
 		gameEndedPanel.SetActive(true);
 		if(isServer)
@@ -2054,21 +2053,22 @@ public class MatchManager : AbstractPlayerInteractable {
 	[ClientRpc]
 	private void RpcChangePlayerHiglight(int playerIndex) {
 		if (swappedColors) {
-			listPlayers[1 - playerIndex].color = Color.cyan;
-			listPlayers[playerIndex].color = Color.white;
+			playersNames[1 - playerIndex].color = Color.cyan;
+			playersNames[playerIndex].color = Color.white;
 		}
 		else {
-			listPlayers[playerIndex].color = Color.cyan;
-			listPlayers[1 - playerIndex].color = Color.white;
+			playersNames[playerIndex].color = Color.cyan;
+			playersNames[1 - playerIndex].color = Color.white;
 		}
 	}
 
 	[ClientRpc]
-	private void RpcChangePlayerScore(int playerIndex, string newText) {
-		if (swappedColors)
-			listPlayers[1 - playerIndex].text = newText;
-		else
-			listPlayers[playerIndex].text = newText;
+	private void RpcChangePlayerScore(int playerIndex, int score) {
+		string pName;
+		playerIndex = (swappedColors) ? 1 - playerIndex : playerIndex;
+		pName = (playerIndex == 0) ? p1Name : p2Name;
+
+		playersNames[playerIndex].text = pName + ": " + score;
 	}
 
 	[ClientRpc]
@@ -2084,12 +2084,16 @@ public class MatchManager : AbstractPlayerInteractable {
 	private void RpcHasSwappedColors(bool hasSwapped) {
 		swappedColors = hasSwapped;
 		if (swappedColors) {
-			player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
-			player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+			playersStones[0].color = (p2Color == Color.black) ? Color.white : p2Color;
+			playersStones[1].color = (p1Color == Color.black) ? Color.white : p1Color;
+			playersStones[0].sprite = (p2Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
+			playersStones[1].sprite = (p1Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
 		}
 		else {
-			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+			playersStones[0].color = (p1Color == Color.black) ? Color.white : p1Color;
+			playersStones[1].color = (p2Color == Color.black) ? Color.white : p2Color;
+			playersStones[0].sprite = (p1Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
+			playersStones[1].sprite = (p2Color == Color.black) ? blackStoneSprite : whiteStoneSprite;
 		}
 	}
 #endregion
