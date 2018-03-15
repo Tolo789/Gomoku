@@ -402,18 +402,37 @@ public class GameManager : MonoBehaviour {
 		score += HEURISTIC_CAPTURE_COEFF * captures;
 
 		// Increase move value based on neighbours influence
-		score += GetStoneInfluence(state, yCoord, xCoord);
+		captures += GetStoneInfluence(state, yCoord, xCoord);
+		if (captures == Int32.MaxValue)
+			return captures;
+		score += captures;
 
 		return score;
 	}
 
 	private int GetStoneInfluence(State state, int yCoord, int xCoord) {
 		int influence = 0;
+		int tmpScore = 0;
 
-		influence = GetRadialStoneInfluence(state, yCoord, xCoord, 0, 1);
-		influence += GetRadialStoneInfluence(state, yCoord, xCoord, 1, 0);
-		influence += GetRadialStoneInfluence(state, yCoord, xCoord, 1, 1);
-		influence += GetRadialStoneInfluence(state, yCoord, xCoord, -1, 1);
+		tmpScore = GetRadialStoneInfluence(state, yCoord, xCoord, 0, 1);
+		if (tmpScore == Int32.MaxValue)
+			return tmpScore;
+		influence += tmpScore;
+
+		tmpScore = GetRadialStoneInfluence(state, yCoord, xCoord, 1, 0);
+		if (tmpScore == Int32.MaxValue)
+			return tmpScore;
+		influence += tmpScore;
+
+		tmpScore = GetRadialStoneInfluence(state, yCoord, xCoord, 1, 1);
+		if (tmpScore == Int32.MaxValue)
+			return tmpScore;
+		influence += tmpScore;
+
+		tmpScore = GetRadialStoneInfluence(state, yCoord, xCoord, -1, 1);
+		if (tmpScore == Int32.MaxValue)
+			return tmpScore;
+		influence += tmpScore;
 
 		return influence;
 	}
@@ -473,7 +492,6 @@ public class GameManager : MonoBehaviour {
 			else if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
 				break;
 			}
-
 			// Detect change color
 			else if (secondNeighbourVal == 0) {
 				secondNeighbourVal = state.map[y, x];
@@ -501,6 +519,15 @@ public class GameManager : MonoBehaviour {
 			neighbours_2 = 0;
 			neighbours_2_jumped = 0;
 		}
+
+		// Force detection of winning aligns, always send intMax because with intMin it would not check the move
+		if (neighbours_1 >= 5) {
+			return Int32.MaxValue;
+		}
+		if (neighbours_2 >= 5) {
+			return Int32.MaxValue;
+		}
+
 
 		// Workout score
 		if (neighbours_1 > 0)
@@ -587,15 +614,13 @@ public class GameManager : MonoBehaviour {
 			return 0;
 		}
 
-		int stateScore = 0;
+		int stateScore = GetScoreOfAligns(state);
 
 		// TODO: Consider scores with non linear func because the closer is to 10 the closer is to win
 		if (state.rootPlayerScore > 0)
 			stateScore += HEURISTIC_CAPTURE_COEFF * state.rootPlayerScore;
 		if (state.otherPlayerScore > 0)
 			stateScore -= (HEURISTIC_CAPTURE_COEFF * state.otherPlayerScore);
-
-		stateScore += GetScoreOfAligns(state);
 
 		return stateScore;
 	}
@@ -665,6 +690,9 @@ public class GameManager : MonoBehaviour {
 			y += yCoeff;
 			x += xCoeff;
 		}
+
+		if (nbrStone >= 5 || (nbrStone == 4 && !frontBlocked && !backBlocked))
+			return (state.map[yCoord, xCoord] == state.rootVal) ? Int32.MaxValue / 2 : Int32.MinValue / 2; // Divide bcause not sure that it is a win/loss
 
 		// TODO: If depth is uneven number, then we may under-estimate enemy alignements
 		// TODO: If depth is even number, then we may under-estimate our alignements
