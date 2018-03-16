@@ -943,7 +943,7 @@ public class GameManager : MonoBehaviour {
 		}
 		else {
 			if (IsWinByAlignment(state.map, yCoord, xCoord, state.myVal, state.enemyVal, state.rootPlayerScore, ref state.alignementDone, ref state.captureMoves)) {
-				state.winner = 1;
+				state.winner = 2;
 				return;
 			}
 		}

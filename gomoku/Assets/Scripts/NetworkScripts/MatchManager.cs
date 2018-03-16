@@ -698,7 +698,7 @@ public class MatchManager : AbstractPlayerInteractable {
 			playerScores[currentPlayerIndex] += captures;
 			RpcChangePlayerScore(currentPlayerIndex, playerScores[currentPlayerIndex]);
 			if (playerScores[currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
-				RpcDisplayWinner(currentPlayerIndex);
+				RpcDisplayWinner(currentPlayerIndex, true);
 				return;
 			}
 		}
@@ -720,7 +720,7 @@ public class MatchManager : AbstractPlayerInteractable {
 					counterMoves.Clear();
 			}
 			else {
-				RpcDisplayWinner(1 - currentPlayerIndex);
+				RpcDisplayWinner(1 - currentPlayerIndex, false);
 				return;
 			}
 		}
@@ -728,7 +728,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
 		alignmentHasBeenDone = false;
 		if (IsWinByAlignment(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, playerScores[1 - currentPlayerIndex], ref alignmentHasBeenDone)) {
-			RpcDisplayWinner(currentPlayerIndex);
+			RpcDisplayWinner(currentPlayerIndex, false);
 			return;
 		}
 
@@ -762,7 +762,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		}
 		// If no move available, display draw
 		if (!thereIsAvailableMoves) {
-			RpcDisplayWinner(-1);
+			RpcDisplayWinner(-1, false);
 			return;
 		}
 
@@ -836,7 +836,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		}
 		else {
 			if (IsWinByAlignment(state.map, yCoord, xCoord, state.myVal, state.enemyVal, state.rootPlayerScore, ref state.alignementDone)) {
-				state.winner = 1;
+				state.winner = 2;
 				return;
 			}
 		}
@@ -2026,7 +2026,7 @@ public class MatchManager : AbstractPlayerInteractable {
 	}
 
 	[ClientRpc]
-	private void RpcDisplayWinner(int winnerIndex) {
+	private void RpcDisplayWinner(int winnerIndex, bool byCapture) {
 		if (winnerIndex == -1) {
 			displayWinner.text = "Draw !";
 		}
@@ -2034,7 +2034,10 @@ public class MatchManager : AbstractPlayerInteractable {
 			string winner = (winnerIndex == 0) ? p1Name : p2Name;
 			if (swappedColors)
 				winner = (winnerIndex == 0) ? p2Name : p1Name;
-			displayWinner.text = winner + " won !";
+			if (byCapture)
+				displayWinner.text = winner + " won by capture !";
+			else
+				displayWinner.text = winner + " won by alignment!";
 		}
 		gameEndedPanel.SetActive(true);
 		if(isServer)
