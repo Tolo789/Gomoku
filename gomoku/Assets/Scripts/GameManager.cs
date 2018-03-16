@@ -814,7 +814,7 @@ public class GameManager : MonoBehaviour {
 			listPlayers[currentPlayerIndex].text = "Player " + currentPlayerVal + ": " + playerScores[currentPlayerIndex];
 		}
 		if (playerScores[currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
-			DisplayWinner(currentPlayerIndex);
+			DisplayWinner(currentPlayerIndex, true);
 			return;
 		}
 
@@ -831,7 +831,7 @@ public class GameManager : MonoBehaviour {
 				}
 			}
 			if (!hasCountered) {
-				DisplayWinner(1 - currentPlayerIndex);
+				DisplayWinner(1 - currentPlayerIndex, false);
 				return;
 			}
 		}
@@ -840,7 +840,7 @@ public class GameManager : MonoBehaviour {
 		counterMoves.Clear();
 		alignmentHasBeenDone = false;
 		if (IsWinByAlignment(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, playerScores[1 - currentPlayerIndex], ref alignmentHasBeenDone, ref counterMoves)) {
-			DisplayWinner(currentPlayerIndex);
+			DisplayWinner(currentPlayerIndex, false);
 			return;
 		}
 
@@ -876,7 +876,7 @@ public class GameManager : MonoBehaviour {
 		OpeningRules();
 
 		if (!thereIsAvailableMoves) {
-			DisplayWinner(-1);
+			DisplayWinner(-1, false);
 			return;
 		}
 
@@ -1168,7 +1168,7 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-	private void DisplayWinner(int winnerIndex) {
+	private void DisplayWinner(int winnerIndex, bool byCapture) {
 		// TODO: display winner and stop playing
 		int winner = (winnerIndex == 0) ? P1_VALUE : P2_VALUE;
 		if (swappedColors) {
@@ -1179,7 +1179,10 @@ public class GameManager : MonoBehaviour {
 			displayWinner.text = "Draw !";
 		}
 		else {
-			displayWinner.text = "Player " + winner + " won !";
+			if (byCapture)
+				displayWinner.text = "Player " + winner + " won by capture !";
+			else
+				displayWinner.text = "Player " + winner + " won by alignment!";
 		}
 		isGameEnded = true;
 	}
