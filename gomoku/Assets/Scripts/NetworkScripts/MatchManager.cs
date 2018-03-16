@@ -514,11 +514,10 @@ public class MatchManager : AbstractPlayerInteractable {
 
 		int stateScore = 0;
 
-		// TODO: Consider scores with non linear func because the closer is to 10 the closer is to win
 		if (state.rootPlayerScore > 0)
-			stateScore += HEURISTIC_CAPTURE_COEFF * state.rootPlayerScore;
+			stateScore += HEURISTIC_CAPTURE_COEFF * state.rootPlayerScore + (int)Mathf.Pow(2, state.rootPlayerScore);
 		if (state.otherPlayerScore > 0)
-			stateScore -= (HEURISTIC_CAPTURE_COEFF * state.otherPlayerScore) + HEURISTIC_CAPTURE_COEFF;
+			stateScore -= (HEURISTIC_CAPTURE_COEFF * state.otherPlayerScore) + (int)Mathf.Pow(2, state.otherPlayerScore);
 
 		stateScore += GetScoreOfAligns(state);
 

@@ -398,6 +398,7 @@ public class GameManager : MonoBehaviour {
 			return Int32.MaxValue;
 		}
 		score += HEURISTIC_CAPTURE_COEFF * captures;
+
 		captures = CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
 		if ((state.enemyVal == state.rootPlayerScore && captures + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN)
 			 || (captures + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN)) {
@@ -620,11 +621,10 @@ public class GameManager : MonoBehaviour {
 
 		int stateScore = GetScoreOfAligns(state);
 
-		// TODO: Consider scores with non linear func because the closer is to 10 the closer is to win
 		if (state.rootPlayerScore > 0)
-			stateScore += HEURISTIC_CAPTURE_COEFF * state.rootPlayerScore;
+			stateScore += HEURISTIC_CAPTURE_COEFF * state.rootPlayerScore + (int)Mathf.Pow(2, state.rootPlayerScore);
 		if (state.otherPlayerScore > 0)
-			stateScore -= (HEURISTIC_CAPTURE_COEFF * state.otherPlayerScore);
+			stateScore -= (HEURISTIC_CAPTURE_COEFF * state.otherPlayerScore) + (int)Mathf.Pow(2, state.otherPlayerScore);
 
 		return stateScore;
 	}
