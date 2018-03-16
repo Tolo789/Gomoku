@@ -248,6 +248,8 @@ public class GameManager : MonoBehaviour {
 	}
 	
 	void Update () {
+		if (Screen.fullScreen == true)
+	        Screen.SetResolution(1024, 768, false);
 		if (!isGameEnded && !isHumanPlayer[currentPlayerIndex] && !isGamePaused) {
 			if (!isAIPlaying) {
 				isAIPlaying = true;
@@ -828,17 +830,14 @@ public class GameManager : MonoBehaviour {
 					}
 				}
 			}
-			if (hasCountered) {
-				if (counterMoves.Count != 0)
-					counterMoves.Clear();
-			}
-			else {
+			if (!hasCountered) {
 				DisplayWinner(1 - currentPlayerIndex);
 				return;
 			}
 		}
 
 		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
+		counterMoves.Clear();
 		alignmentHasBeenDone = false;
 		if (IsWinByAlignment(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, playerScores[1 - currentPlayerIndex], ref alignmentHasBeenDone, ref counterMoves)) {
 			DisplayWinner(currentPlayerIndex);
@@ -922,11 +921,7 @@ public class GameManager : MonoBehaviour {
 					}
 				}
 			}
-			if (hasCountered) {
-				if (state.captureMoves.Count != 0)
-					state.captureMoves.Clear();
-			}
-			else {
+			if (!hasCountered) {
 				if (state.myVal == state.rootVal) {
 					state.winner = 2;
 				}
@@ -938,6 +933,7 @@ public class GameManager : MonoBehaviour {
 		}
 
 		// check if a winning allignement has been done in current PutStone and if there is a possible countermove
+		state.captureMoves.Clear();
 		state.alignementDone = false;
 		if (state.myVal == state.rootVal) {
 			if (IsWinByAlignment(state.map, yCoord, xCoord, state.myVal, state.enemyVal, state.otherPlayerScore, ref state.alignementDone, ref state.captureMoves)) {
