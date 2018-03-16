@@ -17,7 +17,7 @@ public class MainMenu : MonoBehaviour {
     public GameObject errorMessage;
 
     void Start() {
-        Screen.SetResolution(1620, 1240, false);
+        Screen.SetResolution(1024, 768, false);
 		if (PlayerPrefs.HasKey(CommonDefines.IS_P1_IA)) {
             Toggle[] listOfToggle = is_P1_IA.GetComponentsInChildren<Toggle>(); 
             listOfToggle[0].isOn = (PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) ? true : false;

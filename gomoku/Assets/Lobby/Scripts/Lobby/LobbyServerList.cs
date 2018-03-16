@@ -86,7 +86,7 @@ namespace Prototype.NetworkLobby
                 roomName = roomNameField.text;
             previousPage = currentPage;
             currentPage = page;
-			lobbyManager.matchMaker.ListMatches(page, 6, roomName, true, 0, 0, OnGUIMatchList);
+			lobbyManager.matchMaker.ListMatches(page, 4, roomName, true, 0, 0, OnGUIMatchList);
 			//lobbyManager.matchMaker.ListMatches(page, 6, roomName, false, 0, 0, OnGUIMatchList); // TODO: need this if you want to implement password
 		}
     }

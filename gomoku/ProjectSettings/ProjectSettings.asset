@@ -41,8 +41,8 @@ PlayerSettings:
   m_SplashScreenLogos: []
   m_VirtualRealitySplashScreen: {fileID: 0}
   m_HolographicTrackingLossScreen: {fileID: 0}
-  defaultScreenWidth: 1920
-  defaultScreenHeight: 1080
+  defaultScreenWidth: 1024
+  defaultScreenHeight: 768
   defaultScreenWidthWeb: 960
   defaultScreenHeightWeb: 600
   m_StereoRenderingPath: 0
@@ -66,7 +66,7 @@ PlayerSettings:
   androidBlitType: 0
   defaultIsFullScreen: 0
   defaultIsNativeResolution: 1
-  macRetinaSupport: 0
+  macRetinaSupport: 1
   runInBackground: 1
   captureSingleScreen: 0
   muteOtherAudioSources: 0
@@ -121,7 +121,7 @@ PlayerSettings:
   wiiUAllowScreenCapture: 1
   wiiUControllerCount: 0
   m_SupportedAspectRatios:
-    4:3: 0
+    4:3: 1
     5:4: 0
     16:10: 0
     16:9: 0

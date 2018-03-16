@@ -215,7 +215,7 @@ public class GameManager : MonoBehaviour {
 		listPlayers[1 - currentPlayerIndex].color = Color.white;
 
 		// init board with hidden buttons
-		float width = startBoard.GetComponent<RectTransform>().rect.width ;
+		float width = startBoard.GetComponent<RectTransform>().rect.width;
 		float height = startBoard.GetComponent<RectTransform>().rect.height;
 		Vector3 startPos = startBoard.transform.position;
 		startPos.x -= width * canvas.transform.localScale.x / 2;

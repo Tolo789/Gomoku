@@ -11,15 +11,19 @@ namespace Prototype.NetworkLobby
     {
         public Text serverInfoText;
         public Text slotInfo;
+        public Text pingInfo;
         public Button joinButton;
 
 		public void Populate(MatchInfoSnapshot match, LobbyManager lobbyManager, Color c)
 		{
             serverInfoText.text = match.name;
 
-            slotInfo.text = match.currentSize.ToString() + "/" + match.maxSize.ToString(); ;
+            slotInfo.text = match.currentSize.ToString() + "/" + match.maxSize.ToString();
 
             NetworkID networkID = match.networkId;
+
+            // if (Network.connections[0] != null)
+                // pingInfo.text = Network.GetAveragePing(Network.connections[0]) + "ms";
 
             joinButton.onClick.RemoveAllListeners();
             joinButton.onClick.AddListener(() => { JoinMatch(networkID, lobbyManager); });

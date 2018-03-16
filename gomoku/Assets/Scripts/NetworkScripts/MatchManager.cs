@@ -1620,20 +1620,25 @@ public class MatchManager : AbstractPlayerInteractable {
 			return;
 		if (p1NetId == NetworkInstanceId.Invalid && serverPlayer) {
 			p1NetId = playerNetId;
-			RpcSetP1Info(pName, pColor);
 			NetworkServer.objects[playerNetId].GetComponent<PlayerHandler>().HasBeenRegistered();
+			p1Name = pName;
+			p1Color = pColor;
 
 			// TODO: handle offline match ?
 			// CmdStart(firstStart: true);
 		}
 		else if (p2NetId == NetworkInstanceId.Invalid && !serverPlayer) {
 			p2NetId = playerNetId;
-			RpcSetP2Info(pName, pColor);
 			NetworkServer.objects[playerNetId].GetComponent<PlayerHandler>().HasBeenRegistered();
+			p2Name = pName;
+			p2Color = pColor;
 		}
 
-		if (p1NetId != NetworkInstanceId.Invalid && p2NetId != NetworkInstanceId.Invalid)
+		if (p1NetId != NetworkInstanceId.Invalid && p2NetId != NetworkInstanceId.Invalid) {
+			RpcSetP1Info(p1Name, p1Color);
+			RpcSetP2Info(p2Name, p2Color);
 			CmdStart(firstStart: true);
+		}
 
 		// TODO: handle spectators ??
 	}
