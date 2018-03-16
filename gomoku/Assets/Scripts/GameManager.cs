@@ -393,12 +393,14 @@ public class GameManager : MonoBehaviour {
 
 		// Increase move value for each capture that can be done
 		captures = CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
-		if (captures + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN || captures + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+		if ((state.myVal == state.rootPlayerScore && captures + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN)
+			 || (captures + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN)) {
 			return Int32.MaxValue;
 		}
 		score += HEURISTIC_CAPTURE_COEFF * captures;
 		captures = CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
-		if (captures + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN || captures + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+		if ((state.enemyVal == state.rootPlayerScore && captures + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN)
+			 || (captures + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN)) {
 			return Int32.MaxValue;
 		}
 		score += HEURISTIC_CAPTURE_COEFF * captures;
@@ -693,8 +695,9 @@ public class GameManager : MonoBehaviour {
 			x += xCoeff;
 		}
 
-		if (nbrStone >= 5 || (nbrStone == 4 && !frontBlocked && !backBlocked))
-			return (state.map[yCoord, xCoord] == state.rootVal) ? Int32.MaxValue / 30 : Int32.MinValue / 10; // Divide because not 100% sure that it is a win/loss
+		// TODO: delete me ?
+		// if (nbrStone >= 5 || (nbrStone == 4 && !frontBlocked && !backBlocked))
+		// 	return (state.map[yCoord, xCoord] == state.rootVal) ? Int32.MaxValue / 30 : Int32.MinValue / 10; // Divide because not 100% sure that it is a win/loss
 
 		// TODO: If depth is uneven number, then we may under-estimate enemy alignements
 		// TODO: If depth is even number, then we may under-estimate our alignements

@@ -301,6 +301,7 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	private int GetMoveHeuristic(State state, int yCoord, int xCoord) {
 		int score = 0;
+		int captures = 0;
 
 		int middle = size / 2;
 		// Score based on board position
@@ -312,16 +313,18 @@ public class MatchManager : AbstractPlayerInteractable {
 		}
 
 		// Increase move value for each capture that can be done
-		middle = CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
-		if (middle + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN || middle + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+		captures = CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
+		if ((state.myVal == state.rootPlayerScore && captures + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN)
+			 || (captures + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN)) {
 			return Int32.MaxValue;
 		}
-		score += HEURISTIC_CAPTURE_COEFF * middle;
-		middle = CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
-		if (middle + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN || middle + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN) {
+		score += HEURISTIC_CAPTURE_COEFF * captures;
+		captures = CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
+		if ((state.enemyVal == state.rootPlayerScore && captures + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN)
+			 || (captures + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN)) {
 			return Int32.MaxValue;
 		}
-		score += HEURISTIC_CAPTURE_COEFF * middle;
+		score += HEURISTIC_CAPTURE_COEFF * captures;
 
 		// Increase move value based on neighbours influence
 		score += GetStoneInfluence(state, yCoord, xCoord);
