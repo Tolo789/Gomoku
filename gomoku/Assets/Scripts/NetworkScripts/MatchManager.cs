@@ -20,6 +20,7 @@ public struct NetworkState {
 	public int depth;
 	public bool alignementDone;
 	public List<Vector2Int> captureMoves;
+	public List<Vector2Int> lastStones;
 
 	public NetworkState(NetworkState state) {
 		this.map = new int[GameManager.size, GameManager.size];
@@ -32,6 +33,7 @@ public struct NetworkState {
 		this.depth = state.depth;
 		this.alignementDone = state.alignementDone;
 		this.captureMoves = new List<Vector2Int>();
+		this.lastStones = new List<Vector2Int>();
 
 		for (int y = 0; y < GameManager.size; y++) {
 			for (int x = 0; x < GameManager.size; x++) {
@@ -41,6 +43,10 @@ public struct NetworkState {
 
 		foreach (Vector2Int move in state.captureMoves) {
 			this.captureMoves.Add(move);
+		}
+
+		for (int i = 0; i < state.lastStones.Count; i++) {
+			this.lastStones.Insert(i, state.lastStones[i]);
 		}
 	}
 }
@@ -54,7 +60,7 @@ public struct NetworkBackupState {
 
 	public bool alignmentHasBeenDone;
 	public List<Vector2Int> counterMoves;
-	public Vector2Int lastMove;
+	public List<Vector2Int> lastMoves;
 
 	public bool swapped;
 	public bool putTwoMoreStones;
@@ -137,10 +143,10 @@ public class MatchManager : AbstractPlayerInteractable {
 	private bool isAIPlaying;
 	private float startSearchTime;
 	private float searchTime;
+	private Vector3Int bestMove;
 	private List<Vector2Int> counterMoves; // Moves that can break a winning align
 	private List<Vector3Int> studiedMoves; // Used as debug to see AI studied moves
-	private Vector3Int bestMove;
-	private Vector2Int lastMove;
+	private List<Vector2Int> lastMoves;
 	private Vector2Int highlightedMove;
 	private bool moveIsReady = false;
 	private bool simulatingMove = false;
@@ -236,8 +242,17 @@ public class MatchManager : AbstractPlayerInteractable {
 		state.otherPlayerScore = playerScores[1 - currentPlayerIndex];
 		state.depth = 0;
 		state.winner = 0;
-		state.alignementDone = false;
+		state.alignementDone = alignmentHasBeenDone;
+
 		state.captureMoves = new List<Vector2Int>();
+		for (int i = 0; i < counterMoves.Count; i++) {
+			state.captureMoves.Insert(i, counterMoves[i]);
+		}
+
+		state.lastStones = new List<Vector2Int>();
+		for (int i = 0; i < lastMoves.Count; i++) {
+			state.lastStones.Insert(i, lastMoves[i]);
+		}
 
 		Debug.Log("Start state value: " + GetStateHeuristic(state));
 
@@ -292,7 +307,7 @@ public class MatchManager : AbstractPlayerInteractable {
 
 		int maxSearches = AI_MAX_SEARCHES_PER_DEPTH;
 		if (nbrOfMoves == 0 && state.depth == 0)
-			maxSearches = 1;
+			maxSearches = Mathf.Min(10, maxSearches);
 		else if ((nbrOfMoves == 1 && state.depth == 0) || (nbrOfMoves == 0 && state.depth == 1))
 			maxSearches = Mathf.Min(20, maxSearches);
 		allowedMoves = allowedMoves.OrderByDescending(move => move.z).Take(maxSearches).ToList();
@@ -310,6 +325,15 @@ public class MatchManager : AbstractPlayerInteractable {
 				score += middle - i;
 				break;
 			}
+		}
+
+		// Increase value if its near last moves
+		int nearBonus = state.lastStones.Count;
+		for (int i = 0; i < state.lastStones.Count; i += 2) { // Only check for moves of the enemy
+			if ((xCoord >= (state.lastStones[i].x - 1) && xCoord <= (state.lastStones[i].x + 1)) && (yCoord >= (state.lastStones[i].y - 1) && yCoord <= (state.lastStones[i].y + 1))) {
+				score += nearBonus;
+			}
+			nearBonus -= 2;
 		}
 
 		// Increase move value for each capture that can be done
@@ -679,15 +703,32 @@ public class MatchManager : AbstractPlayerInteractable {
 			newBackup.currentPlayerIndex = currentPlayerIndex;
 			newBackup.currentNetId = currentPlayerNetId;
 			newBackup.alignmentHasBeenDone = alignmentHasBeenDone;
-			newBackup.counterMoves = counterMoves;
-			newBackup.lastMove = lastMove;
 			newBackup.swapped = swappedColors;
 			newBackup.putTwoMoreStones = playedTwoMoreStones;
+
+			newBackup.counterMoves = new List<Vector2Int>();
+			for (int i = 0; i < counterMoves.Count; i++) {
+				newBackup.counterMoves.Insert(i, counterMoves[i]);
+			}
+
+			newBackup.lastMoves = new List<Vector2Int>();
+			for (int i = 0; i < lastMoves.Count; i++) {
+				newBackup.lastMoves.Insert(i, lastMoves[i]);
+			}
+
 			backupStates.Insert(0, newBackup);
 		}
 
 		// If any, clear highligted stone
 		ClearHighligtedStone();
+
+		// Update last move tracker
+		if (lastMoves.Count > 0) {
+			RpcClearMoveTracker(lastMoves[0].y, lastMoves[0].x);
+		}
+		lastMoves.Insert(0, new Vector2Int(xCoord, yCoord));
+		if (lastMoves.Count > 3)
+			lastMoves.RemoveAt(3);
 
 		// Actually put the stone
 		boardMap[yCoord, xCoord] = currentPlayerVal;
@@ -770,13 +811,6 @@ public class MatchManager : AbstractPlayerInteractable {
 
 		SwapPlayerTextColor();
 		OpeningRules();
-
-		// Update last move tracker
-		if (lastMove.x != -1) {
-			RpcClearMoveTracker(lastMove.y, lastMove.x);
-		}
-		lastMove.y = yCoord;
-		lastMove.x = xCoord;
 		
 		// DispalyBoard(boardMap);
 	}
@@ -1683,7 +1717,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		counterMoves = new List<Vector2Int>();
 		studiedMoves = new List<Vector3Int>();
 		bestMove = new Vector3Int();
-		lastMove = new Vector2Int(-1, -1);
+		lastMoves = new List<Vector2Int>();
 		highlightedMove = new Vector2Int(-1, -1);
 		isAIPlaying = false;
 		moveIsReady = false;
@@ -1798,10 +1832,19 @@ public class MatchManager : AbstractPlayerInteractable {
 		playerScores[0] = oldState.playerScores[0];
 		playerScores[1] = oldState.playerScores[1];
 		alignmentHasBeenDone = oldState.alignmentHasBeenDone;
-		counterMoves = oldState.counterMoves;
-		lastMove = oldState.lastMove;
-		RpcHasSwappedColors(oldState.swapped);
 		playedTwoMoreStones = oldState.putTwoMoreStones;
+		RpcHasSwappedColors(oldState.swapped);
+
+		counterMoves.Clear();
+		for (int i = 0; i < oldState.counterMoves.Count; i++) {
+			counterMoves.Insert(i, oldState.counterMoves[i]);
+		}
+
+		lastMoves.Clear();
+		for (int i = 0; i < oldState.lastMoves.Count; i++) {
+			lastMoves.Insert(i, oldState.lastMoves[i]);
+		}
+
 		// Player playing logic
 		currentPlayerIndex = oldState.currentPlayerIndex;
 		currentPlayerNetId = oldState.currentNetId;
@@ -1826,7 +1869,7 @@ public class MatchManager : AbstractPlayerInteractable {
 					RpcPutStone(playerIndex, y, x);
 
 					// Deselect last move indicator if is not last move
-					if (lastMove.y != y || lastMove.x != x) {
+					if (lastMoves[0].y != y || lastMoves[0].x != x) {
 						RpcClearMoveTracker(y, x);
 					}
 

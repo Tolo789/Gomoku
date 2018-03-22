@@ -19,6 +19,7 @@ public struct State {
 	public int depth;
 	public bool alignementDone;
 	public List<Vector2Int> captureMoves;
+	public List<Vector2Int> lastStones;
 
 	public State(State state) {
 		this.map = new int[GameManager.size, GameManager.size];
@@ -31,6 +32,7 @@ public struct State {
 		this.depth = state.depth;
 		this.alignementDone = state.alignementDone;
 		this.captureMoves = new List<Vector2Int>();
+		this.lastStones = new List<Vector2Int>();
 
 		for (int y = 0; y < GameManager.size; y++) {
 			for (int x = 0; x < GameManager.size; x++) {
@@ -40,6 +42,10 @@ public struct State {
 
 		foreach (Vector2Int move in state.captureMoves) {
 			this.captureMoves.Add(move);
+		}
+
+		for (int i = 0; i < state.lastStones.Count; i++) {
+			this.lastStones.Insert(i, state.lastStones[i]);
 		}
 	}
 }
@@ -51,7 +57,7 @@ public struct BackupState {
 
 	public bool alignmentHasBeenDone;
 	public List<Vector2Int> counterMoves;
-	public Vector2Int lastMove;
+	public List<Vector2Int> lastMoves;
 }
 
 public class GameManager : MonoBehaviour {
@@ -120,10 +126,10 @@ public class GameManager : MonoBehaviour {
 	private int[] playerScores;
 	private bool[] isHumanPlayer;
 	private bool isAIPlaying;
+	private Vector3Int bestMove;
 	private List<Vector2Int> counterMoves; // Moves that can break a winning align
 	private List<Vector3Int> studiedMoves; // Used as debug to see AI studied moves
-	private Vector3Int bestMove;
-	private Vector2Int lastMove;
+	private List<Vector2Int> lastMoves;
 	private Vector2Int highlightedMove;
 	private bool moveIsReady = false;
 	private bool simulatingMove = false;
@@ -171,7 +177,7 @@ public class GameManager : MonoBehaviour {
 		counterMoves = new List<Vector2Int>();
 		studiedMoves = new List<Vector3Int>();
 		bestMove = new Vector3Int();
-		lastMove = new Vector2Int(-1, -1);
+		lastMoves = new List<Vector2Int>();
 		highlightedMove = new Vector2Int(-1, -1);
 		moveIsReady = false;
 		simulatingMove = false;
@@ -317,8 +323,17 @@ public class GameManager : MonoBehaviour {
 		state.otherPlayerScore = playerScores[1 - currentPlayerIndex];
 		state.depth = 0;
 		state.winner = 0;
-		state.alignementDone = false;
+		state.alignementDone = alignmentHasBeenDone;
+
 		state.captureMoves = new List<Vector2Int>();
+		for (int i = 0; i < counterMoves.Count; i++) {
+			state.captureMoves.Insert(i, counterMoves[i]);
+		}
+
+		state.lastStones = new List<Vector2Int>();
+		for (int i = 0; i < lastMoves.Count; i++) {
+			state.lastStones.Insert(i, lastMoves[i]);
+		}
 
 		Debug.Log("Start state value: " + GetStateHeuristic(state));
 
@@ -371,7 +386,7 @@ public class GameManager : MonoBehaviour {
 
 		int maxSearches = AI_MAX_SEARCHES_PER_DEPTH;
 		if (nbrOfMoves == 0 && state.depth == 0)
-			maxSearches = 1;
+			maxSearches = Mathf.Min(10, maxSearches);
 		else if (nbrOfMoves == 1 && state.depth == 0)
 			maxSearches = Mathf.Min(20, maxSearches);
 		allowedMoves = allowedMoves.OrderByDescending(move => move.z).Take(maxSearches).ToList();
@@ -389,6 +404,15 @@ public class GameManager : MonoBehaviour {
 				score += middle - i;
 				break;
 			}
+		}
+
+		// Increase value if its near last moves
+		int nearBonus = state.lastStones.Count;
+		for (int i = 0; i < state.lastStones.Count; i += 2) { // Only check for moves of the enemy
+			if ((xCoord >= (state.lastStones[i].x - 1) && xCoord <= (state.lastStones[i].x + 1)) && (yCoord >= (state.lastStones[i].y - 1) && yCoord <= (state.lastStones[i].y + 1))) {
+				score += nearBonus;
+			}
+			nearBonus -= 2;
 		}
 
 		// Increase move value for each capture that can be done
@@ -787,13 +811,30 @@ public class GameManager : MonoBehaviour {
 			newBackup.playerScores[1] = playerScores[1];
 			newBackup.currentPlayerIndex = currentPlayerIndex;
 			newBackup.alignmentHasBeenDone = alignmentHasBeenDone;
-			newBackup.counterMoves = counterMoves;
-			newBackup.lastMove = lastMove;
+
+			newBackup.counterMoves = new List<Vector2Int>();
+			for (int i = 0; i < counterMoves.Count; i++) {
+				newBackup.counterMoves.Insert(i, counterMoves[i]);
+			}
+
+			newBackup.lastMoves = new List<Vector2Int>();
+			for (int i = 0; i < lastMoves.Count; i++) {
+				newBackup.lastMoves.Insert(i, lastMoves[i]);
+			}
+
 			backupStates.Insert(0, newBackup);
 		}
 
 		// If any, clear highligted stone
 		ClearHighligtedStone();
+
+		// Update last move tracker
+		if (lastMoves.Count > 0) {
+			buttonsMap[lastMoves[0].y, lastMoves[0].x].transform.GetChild(0).gameObject.SetActive(false);
+		}
+		lastMoves.Insert(0, new Vector2Int(xCoord, yCoord));
+		if (lastMoves.Count > 3)
+			lastMoves.RemoveAt(3);
 
 		// Actually put the stone
 		boardMap[yCoord, xCoord] = currentPlayerVal;
@@ -882,13 +923,6 @@ public class GameManager : MonoBehaviour {
 			DisplayWinner(-1, false);
 			return;
 		}
-
-		// Update last move tracker
-		if (lastMove.x != -1) {
-			buttonsMap[lastMove.y, lastMove.x].transform.GetChild(0).gameObject.SetActive(false);
-		}
-		lastMove.y = yCoord;
-		lastMove.x = xCoord;
 		
 		// DispalyBoard(boardMap);
 	}
@@ -1018,8 +1052,12 @@ public class GameManager : MonoBehaviour {
 			// Timing stuff
 			Debug.Log("Search time: " + searchTime);
 			AiTimer.text = "AI Timer: " + searchTime.ToString();
-			if (searchTime > AI_SEARCH_TIME)
+			if (searchTime > AI_SEARCH_TIME) {
 				Debug.LogWarning("Ai didnt find a move in time");
+				AiTimer.color = Color.red;
+			}
+			else
+				AiTimer.color = Color.white;
 
 			// Save highlighted stone position
 			ClearHighligtedStone();
@@ -1059,8 +1097,17 @@ public class GameManager : MonoBehaviour {
 		playerScores[0] = oldState.playerScores[0];
 		playerScores[1] = oldState.playerScores[1];
 		alignmentHasBeenDone = oldState.alignmentHasBeenDone;
-		counterMoves = oldState.counterMoves;
-		lastMove = oldState.lastMove;
+
+		counterMoves.Clear();
+		for (int i = 0; i < oldState.counterMoves.Count; i++) {
+			counterMoves.Insert(i, oldState.counterMoves[i]);
+		}
+
+		lastMoves.Clear();
+		for (int i = 0; i < oldState.lastMoves.Count; i++) {
+			lastMoves.Insert(i, oldState.lastMoves[i]);
+		}
+
 		// Player playing logic
 		currentPlayerIndex = oldState.currentPlayerIndex;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
@@ -1090,7 +1137,7 @@ public class GameManager : MonoBehaviour {
 					button.GetComponent<Image>().color = buttonColor;
 					button.GetComponent<PutStone>().isEmpty = false;
 
-					if (lastMove.y == y && lastMove.x == x) {
+					if (lastMoves[0].y == y && lastMoves[0].x == x) {
 						button.transform.GetChild(0).gameObject.SetActive(true); // highlight it
 					}
 					else {
