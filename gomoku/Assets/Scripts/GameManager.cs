@@ -945,6 +945,11 @@ public class GameManager : MonoBehaviour {
 		// DispalyBoard(boardMap);
 	}
 	public void FakePutStone(ref State state, int yCoord, int xCoord) {
+		// Update last moves
+		state.lastStones.Insert(0, new Vector2Int(xCoord, yCoord));
+		if (state.lastStones.Count > 3)
+			state.lastStones.RemoveAt(3);
+
 		// Actually put the stone
 		state.map[yCoord, xCoord] = state.myVal;
 
