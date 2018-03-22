@@ -631,20 +631,33 @@ public class GameManager : MonoBehaviour {
 
 	private int GetScoreOfAligns(State state) {
 		int score = 0;
+		int isPartOfAlign = 0;
+
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
 				if (state.map[y, x] == P1_VALUE || state.map[y, x] == P2_VALUE) {
-					score += RadialAlignScore(state, y, x, 0, 1);
-					score += RadialAlignScore(state, y, x, 1, 0);
-					score += RadialAlignScore(state, y, x, 1, 1);
-					score += RadialAlignScore(state, y, x, 1, -1);
+					isPartOfAlign = 0;
+					score += RadialAlignScore(state, y, x, 0, 1, ref isPartOfAlign);
+					score += RadialAlignScore(state, y, x, 1, 0, ref isPartOfAlign);
+					score += RadialAlignScore(state, y, x, 1, 1, ref isPartOfAlign);
+					score += RadialAlignScore(state, y, x, 1, -1, ref isPartOfAlign);
+					if (isPartOfAlign >= 2) {
+						if (state.map[y, x] == state.rootVal)
+							score += isPartOfAlign * 5;
+						else
+							score -= isPartOfAlign * 5;
+					}
+				}
+				else if (state.map[y, x] == EMPTY_VALUE) {
+					score += (HEURISTIC_CAPTURE_COEFF / 5) * CheckCaptures(state.map, y, x, state.myVal, state.enemyVal, false, false);
+					score -= (HEURISTIC_CAPTURE_COEFF / 5) * CheckCaptures(state.map, y, x, state.enemyVal, state.myVal, false, false);;
 				}
 			}
 		}
 		return score;
 	}
 
-	private int RadialAlignScore(State state, int yCoord, int xCoord, int yCoeff, int xCoeff) {
+	private int RadialAlignScore(State state, int yCoord, int xCoord, int yCoeff, int xCoeff, ref int isPartOfAlign) {
 		int score = 0;
 		bool backBlocked = false;
 		bool frontBlocked = false;
@@ -656,8 +669,10 @@ public class GameManager : MonoBehaviour {
 		int y = yCoord - yCoeff;
 		int x = xCoord - xCoeff;
 		if (x >= 0 && x < size && y >= 0 && y < size) {
-			if (state.map[y, x] == state.map[yCoord, xCoord]) // Exit if is part of an align we have already evaluated
+			if (state.map[y, x] == state.map[yCoord, xCoord]) {// Exit if is part of an align we have already evaluated
+				isPartOfAlign++;
 				return 0;
+			}
 			if (!allowedSpaces.Contains(state.map[y, x]))
 				backBlocked = true;
 		}
@@ -694,6 +709,9 @@ public class GameManager : MonoBehaviour {
 			y += yCoeff;
 			x += xCoeff;
 		}
+
+		if (nbrSideStone > 0)
+			isPartOfAlign++;
 
 		// TODO: delete me ?
 		// if (nbrStone >= 5 || (nbrStone == 4 && !frontBlocked && !backBlocked))
