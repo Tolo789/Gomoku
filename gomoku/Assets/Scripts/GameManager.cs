@@ -100,7 +100,7 @@ public class GameManager : MonoBehaviour {
 	private bool SELF_CAPTURE_RULE = false;
 	private int CAPTURES_NEEDED_TO_WIN = 10;
 	private int HEURISTIC_ALIGN_COEFF = 5;
-	private int HEURISTIC_CAPTURE_COEFF = 50;
+	private int HEURISTIC_CAPTURE_COEFF = 67;
 	private int HANDICAP = 1;
 
 	// Map values
@@ -387,8 +387,8 @@ public class GameManager : MonoBehaviour {
 		int maxSearches = AI_MAX_SEARCHES_PER_DEPTH;
 		if (nbrOfMoves == 0 && state.depth == 0)
 			maxSearches = Mathf.Min(10, maxSearches);
-		else if (nbrOfMoves == 1 && state.depth == 0)
-			maxSearches = Mathf.Min(20, maxSearches);
+		else if ((nbrOfMoves == 1 && state.depth == 0) || (nbrOfMoves == 0 && state.depth == 1))
+			maxSearches = Mathf.Min(16, maxSearches);
 		allowedMoves = allowedMoves.OrderByDescending(move => move.z).Take(maxSearches).ToList();
 		return allowedMoves;
 	}
@@ -648,7 +648,7 @@ public class GameManager : MonoBehaviour {
 		if (state.rootPlayerScore > 0)
 			stateScore += HEURISTIC_CAPTURE_COEFF * state.rootPlayerScore + (int)Mathf.Pow(2, state.rootPlayerScore);
 		if (state.otherPlayerScore > 0)
-			stateScore -= (HEURISTIC_CAPTURE_COEFF * state.otherPlayerScore) + (int)Mathf.Pow(2, state.otherPlayerScore);
+			stateScore -= HEURISTIC_CAPTURE_COEFF * state.otherPlayerScore + (int)Mathf.Pow(2, state.otherPlayerScore);
 
 		return stateScore;
 	}
@@ -656,6 +656,8 @@ public class GameManager : MonoBehaviour {
 	private int GetScoreOfAligns(State state) {
 		int score = 0;
 		int isPartOfAlign = 0;
+		int tmpVal = 0;
+		int otherVal = (state.rootVal == P1_VALUE) ? P2_VALUE : P1_VALUE;
 
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
@@ -667,14 +669,20 @@ public class GameManager : MonoBehaviour {
 					score += RadialAlignScore(state, y, x, 1, -1, ref isPartOfAlign);
 					if (isPartOfAlign >= 2) {
 						if (state.map[y, x] == state.rootVal)
-							score += isPartOfAlign * 5;
+							score += isPartOfAlign;
 						else
-							score -= isPartOfAlign * 5;
+							score -= isPartOfAlign;
 					}
 				}
 				else if (state.map[y, x] == EMPTY_VALUE) {
-					score += (HEURISTIC_CAPTURE_COEFF / 5) * CheckCaptures(state.map, y, x, state.myVal, state.enemyVal, false, false);
-					score -= (HEURISTIC_CAPTURE_COEFF / 5) * CheckCaptures(state.map, y, x, state.enemyVal, state.myVal, false, false);;
+					tmpVal = CheckCaptures(state.map, y, x, state.rootVal, otherVal, doCapture: false, isAiSimulation: true);
+					if (tmpVal > 0) {
+						score += (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.rootPlayerScore)) / 2;
+					}
+					tmpVal = CheckCaptures(state.map, y, x, otherVal, state.rootVal, doCapture: false, isAiSimulation: true);
+					if (tmpVal > 0) {
+						score += (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.otherPlayerScore)) / 2;
+					}
 				}
 			}
 		}
@@ -904,6 +912,14 @@ public class GameManager : MonoBehaviour {
 		if (IsWinByAlignment(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, playerScores[1 - currentPlayerIndex], ref alignmentHasBeenDone, ref counterMoves)) {
 			DisplayWinner(currentPlayerIndex, false);
 			return;
+		}
+		if (alignmentHasBeenDone && counterMoves.Count == 0)
+			Debug.LogError("Impossible to defend..!");
+		else if (alignmentHasBeenDone) {
+			Debug.Log("- Counter moves");
+			foreach (Vector2Int move in counterMoves) {
+				Debug.Log(move);
+			}
 		}
 
 		// End turn, next player to play
@@ -1731,7 +1747,6 @@ public class GameManager : MonoBehaviour {
 #region WinningAlignemts
 
 	private bool IsWinByAlignment(int[,] map, int yCoord, int xCoord, int myVal, int enemyVal, int enemyScore, ref bool alignementDone, ref List<Vector2Int> refCaptureMoves) {
-		// TODO: find all winning alignements, if any is found check if there is any counter-move available
 		bool canWinWithCapture = CanWinWithCapture(map, enemyVal, myVal, enemyScore);
 
 		// Horizontal check
@@ -1800,7 +1815,6 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private bool CanCounterMove(int[,] map, int yCoord, int xCoord, int yCoeff, int xCoeff, int myVal, int enemyVal, ref List<Vector2Int> refCaptureMoves) {
-		// TODO
 		// 1) Find all possible counterMoves for an alignement
 		// Only check if can capture central stones: to counter a 5-alignement any capture is good, for a 6-align only middle 4 captures, for 7-align only middle 3, and so on
 
