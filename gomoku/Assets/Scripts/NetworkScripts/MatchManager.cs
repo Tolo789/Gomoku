@@ -109,7 +109,7 @@ public class MatchManager : AbstractPlayerInteractable {
 	private bool SELF_CAPTURE_RULE = false;
 	private int CAPTURES_NEEDED_TO_WIN = 10;
 	private int HEURISTIC_ALIGN_COEFF = 5;
-	private int HEURISTIC_CAPTURE_COEFF = 50;
+	private int HEURISTIC_CAPTURE_COEFF = 67;
 	private int HANDICAP = 1;
 
 	// Map values
@@ -309,7 +309,7 @@ public class MatchManager : AbstractPlayerInteractable {
 		if (nbrOfMoves == 0 && state.depth == 0)
 			maxSearches = Mathf.Min(10, maxSearches);
 		else if ((nbrOfMoves == 1 && state.depth == 0) || (nbrOfMoves == 0 && state.depth == 1))
-			maxSearches = Mathf.Min(20, maxSearches);
+			maxSearches = Mathf.Min(16, maxSearches);
 		allowedMoves = allowedMoves.OrderByDescending(move => move.z).Take(maxSearches).ToList();
 		return allowedMoves;
 	}
@@ -551,6 +551,8 @@ public class MatchManager : AbstractPlayerInteractable {
 	private int GetScoreOfAligns(State state) {
 		int score = 0;
 		int isPartOfAlign = 0;
+		int tmpVal = 0;
+		int otherVal = (state.rootVal == P1_VALUE) ? P2_VALUE : P1_VALUE;
 
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
@@ -562,14 +564,20 @@ public class MatchManager : AbstractPlayerInteractable {
 					score += RadialAlignScore(state, y, x, 1, -1, ref isPartOfAlign);
 					if (isPartOfAlign >= 2) {
 						if (state.map[y, x] == state.rootVal)
-							score += isPartOfAlign * 5;
+							score += isPartOfAlign;
 						else
-							score -= isPartOfAlign * 5;
+							score -= isPartOfAlign;
 					}
 				}
-				else if (state.map[y, x] == EMPTY_VALUE) {
-					score += (HEURISTIC_CAPTURE_COEFF / 5) * CheckCaptures(state.map, y, x, state.myVal, state.enemyVal, false, false);
-					score -= (HEURISTIC_CAPTURE_COEFF / 5) * CheckCaptures(state.map, y, x, state.enemyVal, state.myVal, false, false);
+				else if (state.map[y, x] == EMPTY_VALUE) { // TODO use allowedSpaces
+					tmpVal = CheckCaptures(state.map, y, x, state.rootVal, otherVal, doCapture: false, isAiSimulation: true);
+					if (tmpVal > 0) {
+						score += (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.rootPlayerScore)) / 2;
+					}
+					tmpVal = CheckCaptures(state.map, y, x, otherVal, state.rootVal, doCapture: false, isAiSimulation: true);
+					if (tmpVal > 0) {
+						score += (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.otherPlayerScore)) / 2;
+					}
 				}
 			}
 		}
@@ -1472,10 +1480,13 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	private bool CanWinWithCapture(int[,] map, int myVal, int enemyVal, int myScore) {
 		// Check if Enemy can counterMove by capture
+		List<int> goodSpaces = (myVal == P1_VALUE) ? allowedSpacesP1 : allowedSpacesP2;
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
-				if (myScore + CheckCaptures(map, y, x, myVal, enemyVal, doCapture: false, isAiSimulation: true) >= CAPTURES_NEEDED_TO_WIN) {
-					return true;
+				if (goodSpaces.Contains(map[y, x])) {
+					if (myScore + CheckCaptures(map, y, x, myVal, enemyVal, doCapture: false, isAiSimulation: true) >= CAPTURES_NEEDED_TO_WIN) {
+						return true;
+					}
 				}
 			}
 		}

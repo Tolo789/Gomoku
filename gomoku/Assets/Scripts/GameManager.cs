@@ -674,7 +674,7 @@ public class GameManager : MonoBehaviour {
 							score -= isPartOfAlign;
 					}
 				}
-				else if (state.map[y, x] == EMPTY_VALUE) {
+				else if (state.map[y, x] == EMPTY_VALUE) { // TODO use allowedSpaces
 					tmpVal = CheckCaptures(state.map, y, x, state.rootVal, otherVal, doCapture: false, isAiSimulation: true);
 					if (tmpVal > 0) {
 						score += (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.rootPlayerScore)) / 2;
@@ -912,14 +912,6 @@ public class GameManager : MonoBehaviour {
 		if (IsWinByAlignment(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, playerScores[1 - currentPlayerIndex], ref alignmentHasBeenDone, ref counterMoves)) {
 			DisplayWinner(currentPlayerIndex, false);
 			return;
-		}
-		if (alignmentHasBeenDone && counterMoves.Count == 0)
-			Debug.LogError("Impossible to defend..!");
-		else if (alignmentHasBeenDone) {
-			Debug.Log("- Counter moves");
-			foreach (Vector2Int move in counterMoves) {
-				Debug.Log(move);
-			}
 		}
 
 		// End turn, next player to play
@@ -1780,10 +1772,13 @@ public class GameManager : MonoBehaviour {
 
 	private bool CanWinWithCapture(int[,] map, int myVal, int enemyVal, int myScore) {
 		// Check if Enemy can counterMove by capture
+		List<int> goodSpaces = (myVal == P1_VALUE) ? allowedSpacesP1 : allowedSpacesP2;
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
-				if (myScore + CheckCaptures(map, y, x, myVal, enemyVal, doCapture: false, isAiSimulation: true) >= CAPTURES_NEEDED_TO_WIN) {
-					return true;
+				if (goodSpaces.Contains(map[y, x])) {
+					if (myScore + CheckCaptures(map, y, x, myVal, enemyVal, doCapture: false, isAiSimulation: true) >= CAPTURES_NEEDED_TO_WIN) {
+						return true;
+					}
 				}
 			}
 		}
