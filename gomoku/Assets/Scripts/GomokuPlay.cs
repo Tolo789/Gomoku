@@ -584,10 +584,10 @@ public class GomokuPlay : MonoBehaviour  {
 	}
 
 	public void GoBack() {
-		isGameLoaded = false;
 
 		if (backupStates.Count == 0 || isAIPlaying || (!isHumanPlayer[currentPlayerIndex] && !isGameEnded))
 			return ;
+		isGameLoaded = false;
 		if (isGameEnded) {
 			isGameEnded = false;
 		}
