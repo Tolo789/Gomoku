@@ -200,7 +200,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1925162076}
+      - m_Target: {fileID: 0}
         m_MethodName: GoBack
         m_Mode: 2
         m_Arguments:
@@ -507,7 +507,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1925162076}
+      - m_Target: {fileID: 0}
         m_MethodName: GoBack
         m_Mode: 2
         m_Arguments:
@@ -3702,7 +3702,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1925162076}
+      - m_Target: {fileID: 0}
         m_MethodName: GoBack
         m_Mode: 2
         m_Arguments:
@@ -3965,6 +3965,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed0379a31dc7e4680a68a35245de241b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gomoku: {fileID: 1925162076}
   stoneSprites:
   - {fileID: 21300000, guid: 3e69d418f5c5e4bda9a17261644df740, type: 3}
   - {fileID: 21300000, guid: 0a61c71689d864cfca925cd939b7bd3f, type: 3}
@@ -4011,17 +4012,11 @@ MonoBehaviour:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1925162069}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7aaf4fcce935b4fa0a71d911bc9c7fe3, type: 3}
+  m_Script: {fileID: 11500000, guid: a3c332e10e52041d5b8acfdd88a45090, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  is_P1_IA: {fileID: 0}
-  is_P2_IA: {fileID: 0}
-  firstPlayer: {fileID: 0}
-  openingRules: {fileID: 0}
-  settingsPanel: {fileID: 0}
-  errorMessage: {fileID: 0}
 --- !u!1 &1960544238
 GameObject:
   m_ObjectHideFlags: 0
@@ -4221,7 +4216,7 @@ Prefab:
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1925162076}
+      objectReference: {fileID: 0}
     - target: {fileID: 114402704428258764, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName

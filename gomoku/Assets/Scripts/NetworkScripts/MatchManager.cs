@@ -23,7 +23,7 @@ public struct NetworkState {
 	public List<Vector2Int> lastStones;
 
 	public NetworkState(NetworkState state) {
-		this.map = new int[GameManager.size, GameManager.size];
+		this.map = new int[GomokuPlay.SIZE, GomokuPlay.SIZE];
 		this.rootPlayerScore = state.rootPlayerScore;
 		this.otherPlayerScore = state.otherPlayerScore;
 		this.myVal = state.myVal;
@@ -35,8 +35,8 @@ public struct NetworkState {
 		this.captureMoves = new List<Vector2Int>();
 		this.lastStones = new List<Vector2Int>();
 
-		for (int y = 0; y < GameManager.size; y++) {
-			for (int x = 0; x < GameManager.size; x++) {
+		for (int y = 0; y < GomokuPlay.SIZE; y++) {
+			for (int x = 0; x < GomokuPlay.SIZE; x++) {
 				this.map[y,x] = state.map[y,x];
 			}
 		}
@@ -51,22 +51,8 @@ public struct NetworkState {
 	}
 }
 
-public struct NetworkBackupState {
-	public int[,] map;
-	public int[] playerScores;
-
-	public int currentPlayerIndex;
-	public NetworkInstanceId currentNetId;
-
-	public bool alignmentHasBeenDone;
-	public List<Vector2Int> counterMoves;
-	public List<Vector2Int> lastMoves;
-
-	public bool swapped;
-	public bool putTwoMoreStones;
-}
-
 public class MatchManager : AbstractPlayerInteractable {
+	public GomokuPlay gomoku;
 	public static int size = 19;
 
 	// Prefabs and UI
@@ -130,19 +116,19 @@ public class MatchManager : AbstractPlayerInteractable {
 	private NetworkInstanceId p2NetId = NetworkInstanceId.Invalid;
 	private NetworkInstanceId dialogAnswerId = NetworkInstanceId.Invalid;
 	private DialogueSubject ongoingSubject = DialogueSubject.None;
+	private NetworkInstanceId currentPlayerNetId = NetworkInstanceId.Invalid;
 
 
 	// [Server] Game logic vars
+	private float startSearchTime;
+	private float searchTime;
 	private int currentPlayerIndex = 0;
-	private NetworkInstanceId currentPlayerNetId = NetworkInstanceId.Invalid;
 	private int currentPlayerVal = P1_VALUE;
 	private int otherPlayerVal = P2_VALUE;
 	private int[,] boardMap;
 	private int[] playerScores;
 	private bool[] isHumanPlayer;
 	private bool isAIPlaying;
-	private float startSearchTime;
-	private float searchTime;
 	private Vector3Int bestMove;
 	private List<Vector2Int> counterMoves; // Moves that can break a winning align
 	private List<Vector3Int> studiedMoves; // Used as debug to see AI studied moves
@@ -156,7 +142,7 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	private int nbrOfMoves = 0;
 
-	private List<NetworkBackupState> backupStates;
+	public List<NetworkBackupState> backupStates;
 	private List<int> allowedSpacesP1;
 	private List<int> allowedSpacesP2;
 
@@ -718,6 +704,87 @@ public class MatchManager : AbstractPlayerInteractable {
 #endregion
 
 #region MainFunctions
+	public void CreateBackup() {
+		// Backup moves only if it is a human move
+		if (gomoku.isHumanPlayer[gomoku.currentPlayerIndex]) {
+			NetworkBackupState newBackup = new NetworkBackupState();
+			newBackup.map = gomoku.CopyMap(gomoku.boardMap);
+			newBackup.playerScores = new int[2];
+			newBackup.playerScores[0] = gomoku.playerScores[0];
+			newBackup.playerScores[1] = gomoku.playerScores[1];
+			newBackup.currentPlayerIndex = gomoku.currentPlayerIndex;
+			newBackup.alignmentHasBeenDone = gomoku.alignmentHasBeenDone;
+
+			newBackup.counterMoves = new List<Vector2Int>();
+			for (int i = 0; i < gomoku.counterMoves.Count; i++) {
+				newBackup.counterMoves.Insert(i, gomoku.counterMoves[i]);
+			}
+
+			newBackup.lastMoves = new List<Vector2Int>();
+			for (int i = 0; i < gomoku.lastMoves.Count; i++) {
+				newBackup.lastMoves.Insert(i, gomoku.lastMoves[i]);
+			}
+
+			backupStates.Insert(0, newBackup);
+		}
+	}
+
+	public void ToggleStoneHighlight(int yCoord, int xCoord, bool newState) {
+			RpcClearMoveTracker(yCoord, xCoord);
+	}
+
+	public void PutStoneUI(int yCoord, int xCoord) {
+		RpcPutStone(gomoku.currentPlayerIndex, yCoord, xCoord);
+	}
+
+	public void UpdateScore(int playerIndex, int score) {
+		RpcChangePlayerScore(playerIndex, score);
+	}
+
+	public void DisplayWinner(int winnerIndex, bool byCapture) {
+		RpcDisplayWinner(winnerIndex, byCapture);
+	}
+
+	public void DeleteStone(int yCoord, int xCoord) {
+		RpcClearButton(yCoord, xCoord);
+	}
+
+	public void SwapPlayerTextColor() {
+		if ((HANDICAP == 4 || HANDICAP == 5) && nbrOfMoves < 3) {
+			return ;
+		}
+		else if (HANDICAP == 5 && nbrOfMoves < 5 && playedTwoMoreStones) {
+			return ;
+		}
+		else if (HANDICAP == 5 && nbrOfMoves == 5 && playedTwoMoreStones) {
+			RpcChangePlayerHiglight(1 - currentPlayerIndex);
+		}
+		else {
+			RpcChangePlayerHiglight(currentPlayerIndex);
+		}
+		currentPlayerNetId = (currentPlayerNetId == p1NetId) ? p2NetId : p1NetId;
+	}
+
+	public void PutDoubleTree(int yCoord, int xCoord) {
+		RpcPutDT(yCoord, xCoord);
+	}
+
+	public void PutSelfCapture(int yCoord, int xCoord) {
+		RpcPutNA(yCoord, xCoord);
+	}
+
+	public void PutHighlightedStone(int yCoord, int xCoord) {
+		RpcHighlightStone(gomoku.currentPlayerIndex, yCoord, xCoord);
+		
+	}
+
+	public void UpdateTimer() {
+		Debug.Log("Search time: " + gomoku.searchTime);
+		RpcChangeAiTimer(gomoku.searchTime, gomoku.AI_SEARCH_TIME);
+		if (gomoku.searchTime > gomoku.AI_SEARCH_TIME)
+			Debug.LogWarning("Ai didnt find a move in time");
+	}
+
 	private void PutStone(int yCoord, int xCoord) {
 		// Backup moves only if it is a human move
 		if (isHumanPlayer[currentPlayerIndex]) {
@@ -750,7 +817,6 @@ public class MatchManager : AbstractPlayerInteractable {
 
 		// Update last move tracker
 		if (lastMoves.Count > 0) {
-			RpcClearMoveTracker(lastMoves[0].y, lastMoves[0].x);
 		}
 		lastMoves.Insert(0, new Vector2Int(xCoord, yCoord));
 		if (lastMoves.Count > 3)
@@ -942,13 +1008,6 @@ public class MatchManager : AbstractPlayerInteractable {
 		}
 	}
 
-	private void DeleteStone(int[,] map, int yCoord, int xCoord, bool isAiSimulation = false) {
-		map[yCoord, xCoord] = EMPTY_VALUE;
-		if (isAiSimulation)
-			return;
-		RpcClearButton(yCoord, xCoord);
-	}
-
 
 	public bool PlayerCanPutStone(NetworkInstanceId playerNetId) {
 		if (!IsHumanTurn() || isGameEnded || simulatingMove || ongoingSubject != DialogueSubject.None || currentPlayerNetId != playerNetId)
@@ -962,22 +1021,6 @@ public class MatchManager : AbstractPlayerInteractable {
 			highlightedMove.y = -1;
 			highlightedMove.x = -1;
 		}
-	}
-
-	private void SwapPlayerTextColor() {
-		if ((HANDICAP == 4 || HANDICAP == 5) && nbrOfMoves < 3) {
-			return ;
-		}
-		else if (HANDICAP == 5 && nbrOfMoves < 5 && playedTwoMoreStones) {
-			return ;
-		}
-		else if (HANDICAP == 5 && nbrOfMoves == 5 && playedTwoMoreStones) {
-			RpcChangePlayerHiglight(1 - currentPlayerIndex);
-		}
-		else {
-			RpcChangePlayerHiglight(currentPlayerIndex);
-		}
-		currentPlayerNetId = (currentPlayerNetId == p1NetId) ? p2NetId : p1NetId;
 	}
 	#endregion
 
@@ -1646,16 +1689,16 @@ public class MatchManager : AbstractPlayerInteractable {
 	#endregion
 
 #region OpeningRules
-	private void OpeningRules() {
+	public void OpeningRules() {
 		if (nbrOfMoves == 2 && HANDICAP == 3) {
 			SetForbiddenMove(7, 12);
 		}
-		else if (nbrOfMoves == 2 && HANDICAP == 2)
+		else if (gomoku.nbrOfMoves == 2 && gomoku.HANDICAP == 2)
 			SetForbiddenMove(5, 14);
-		else if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
+		else if ((gomoku.HANDICAP == 4 && gomoku.nbrOfMoves == 3) || (gomoku.playedTwoMoreStones && gomoku.nbrOfMoves == 5)) {
 			ShowSwapChoice();
 		}
-		else if (HANDICAP == 5 && nbrOfMoves == 3) {
+		else if (gomoku.HANDICAP == 5 && gomoku.nbrOfMoves == 3) {
 			ShowSwap2Choice();
 		}
 	}
@@ -1761,7 +1804,6 @@ public class MatchManager : AbstractPlayerInteractable {
 		RpcHasSwappedColors(false);
 		playedTwoMoreStones = false;
 		nbrOfMoves = 0;
-		backupStates = new List<NetworkBackupState>();
 		allowedSpacesP1 = new List<int>();
 		allowedSpacesP1.Add(EMPTY_VALUE);
 		allowedSpacesP1.Add(DT_P2_VALUE);
@@ -1832,6 +1874,7 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	[Command]
 	public void CmdSimulateAiMove() {
+		// TODO: call the GomokuPlay func
 		simulatingMove = true;
 		StartMinMax();
 
@@ -1854,13 +1897,13 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	[Command]
 	public void CmdGoBack() {
-		// TODO: interaction with multi
+		// TODO: call the GomokuPlay func
 		if (backupStates.Count == 0 || isAIPlaying || (!isHumanPlayer[currentPlayerIndex] && !isGameEnded))
 			return ;
 		if (isGameEnded) {
 			isGameEnded = false;
 		}
-		NetworkBackupState oldState = backupStates[0];
+		BackupState oldState = gomoku.backupStates[0];
 
 		boardMap = CopyMap(oldState.map);
 		playerScores[0] = oldState.playerScores[0];
