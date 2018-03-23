@@ -1437,6 +1437,7 @@ GameObject:
   - component: {fileID: 548388404}
   - component: {fileID: 548388403}
   - component: {fileID: 548388402}
+  - component: {fileID: 548388405}
   m_Layer: 0
   m_Name: MatchManager
   m_TagString: Untagged
@@ -1455,6 +1456,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 515a73d8e49ba4f91a3d891195ea590c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gomoku: {fileID: 548388405}
   emptyButton: {fileID: 1762701836386610, guid: 104324ee6de6c464c977b58db84a40df,
     type: 2}
   startBoard: {fileID: 1586330387}
@@ -1527,6 +1529,52 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &548388405
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 548388401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3c332e10e52041d5b8acfdd88a45090, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  offlineManager: {fileID: 0}
+  onlineManager: {fileID: 548388402}
+  AI_DEPTH: 3
+  AI_SEARCH_TIME: 0.5
+  AI_MAX_SEARCHES_PER_DEPTH: 30
+  DOUBLE_THREE_RULE: 1
+  SELF_CAPTURE_RULE: 0
+  CAPTURES_NEEDED_TO_WIN: 10
+  HEURISTIC_ALIGN_COEFF: 5
+  HEURISTIC_CAPTURE_COEFF: 67
+  HANDICAP: 1
+  isGameLoaded: 0
+  isGameEnded: 0
+  isGamePaused: 0
+  startSearchTime: 0
+  searchTime: 0
+  currentPlayerIndex: 0
+  currentPlayerVal: 1
+  otherPlayerVal: 2
+  playerScores: 
+  isHumanPlayer: 
+  isAIPlaying: 0
+  bestMove: {x: 0, y: 0, z: 0}
+  counterMoves: []
+  studiedMoves: []
+  lastMoves: []
+  highlightedMove: {x: 0, y: 0}
+  moveIsReady: 0
+  simulatingMove: 0
+  alignmentHasBeenDone: 0
+  swappedColors: 0
+  playedTwoMoreStones: 0
+  nbrOfMoves: 0
+  allowedSpacesP1: 
+  allowedSpacesP2: 
 --- !u!1 &564232485
 GameObject:
   m_ObjectHideFlags: 0

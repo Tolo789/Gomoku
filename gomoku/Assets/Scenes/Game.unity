@@ -200,7 +200,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 1925162077}
         m_MethodName: GoBack
         m_Mode: 2
         m_Arguments:
@@ -507,7 +507,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 1925162077}
         m_MethodName: GoBack
         m_Mode: 2
         m_Arguments:
@@ -3702,7 +3702,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 1925162077}
         m_MethodName: GoBack
         m_Mode: 2
         m_Arguments:
@@ -3884,6 +3884,7 @@ GameObject:
   - component: {fileID: 1925162074}
   - component: {fileID: 1925162075}
   - component: {fileID: 1925162076}
+  - component: {fileID: 1925162077}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -3991,8 +3992,6 @@ MonoBehaviour:
   sqBotLeft: {fileID: 21300000, guid: 73047cf4b6313467bbd3f416639e4a26, type: 3}
   sqHorizontal: {fileID: 21300000, guid: 3e653380816be426db362373d56856a6, type: 3}
   sqVertical: {fileID: 21300000, guid: 1b4972de181fa4bb491ad09080b5aa17, type: 3}
-  isGameEnded: 0
-  isGamePaused: 0
 --- !u!114 &1925162075
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4017,6 +4016,58 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3c332e10e52041d5b8acfdd88a45090, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  offlineManager: {fileID: 1925162074}
+  onlineManager: {fileID: 0}
+  AI_DEPTH: 3
+  AI_SEARCH_TIME: 0.5
+  AI_MAX_SEARCHES_PER_DEPTH: 30
+  DOUBLE_THREE_RULE: 1
+  SELF_CAPTURE_RULE: 0
+  CAPTURES_NEEDED_TO_WIN: 10
+  HEURISTIC_ALIGN_COEFF: 5
+  HEURISTIC_CAPTURE_COEFF: 67
+  HANDICAP: 1
+  isGameLoaded: 0
+  isGameEnded: 0
+  isGamePaused: 0
+  startSearchTime: 0
+  searchTime: 0
+  currentPlayerIndex: 0
+  currentPlayerVal: 1
+  otherPlayerVal: 2
+  playerScores: 
+  isHumanPlayer: 
+  isAIPlaying: 0
+  bestMove: {x: 0, y: 0, z: 0}
+  counterMoves: []
+  studiedMoves: []
+  lastMoves: []
+  highlightedMove: {x: 0, y: 0}
+  moveIsReady: 0
+  simulatingMove: 0
+  alignmentHasBeenDone: 0
+  swappedColors: 0
+  playedTwoMoreStones: 0
+  nbrOfMoves: 0
+  allowedSpacesP1: 
+  allowedSpacesP2: 
+--- !u!114 &1925162077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1925162069}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7aaf4fcce935b4fa0a71d911bc9c7fe3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  is_P1_IA: {fileID: 0}
+  is_P2_IA: {fileID: 0}
+  firstPlayer: {fileID: 0}
+  openingRules: {fileID: 0}
+  settingsPanel: {fileID: 0}
+  errorMessage: {fileID: 0}
 --- !u!1 &1960544238
 GameObject:
   m_ObjectHideFlags: 0
@@ -4216,7 +4267,7 @@ Prefab:
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1925162077}
     - target: {fileID: 114402704428258764, guid: 31e9e4f2b28424d80843c08cf17da0ca,
         type: 2}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName

@@ -98,11 +98,15 @@ public class GomokuPlay : MonoBehaviour  {
 	public const int HANDICAP_CANT_PlAY = -7;
 
 	// Game logic vars
+	[HideInInspector] public bool isGameLoaded = false;
 	[HideInInspector] public bool isGameEnded = false;
 	[HideInInspector] public bool isGamePaused = false;
 	[HideInInspector] public float startSearchTime;
 	[HideInInspector] public float searchTime;
 	[HideInInspector] public int currentPlayerIndex = 0;
+	[HideInInspector] public NetworkInstanceId currentPlayerNetId = NetworkInstanceId.Invalid;
+	[HideInInspector] public NetworkInstanceId p1NetId = NetworkInstanceId.Invalid;
+	[HideInInspector] public NetworkInstanceId p2NetId = NetworkInstanceId.Invalid;
 	[HideInInspector] public int currentPlayerVal = P1_VALUE;
 	[HideInInspector] public int otherPlayerVal = P2_VALUE;
 	[HideInInspector] public int[,] boardMap;
@@ -130,6 +134,10 @@ public class GomokuPlay : MonoBehaviour  {
 
 #region MainFunctions
 	public void Init() {
+		isGameLoaded = false;
+		isGameEnded = false;
+		isGamePaused = false;
+
 		// Retrieve game rules
 		if (PlayerPrefs.HasKey(CommonDefines.AI_DEPTH_SETTING)) {
 			AI_DEPTH = PlayerPrefs.GetInt(CommonDefines.AI_DEPTH_SETTING);
@@ -159,6 +167,7 @@ public class GomokuPlay : MonoBehaviour  {
 		}
 		isHumanPlayer = new bool[2];
 		isHumanPlayer[0] = true;
+		isHumanPlayer[1] = true;
 		isAIPlaying = false;
 		counterMoves = new List<Vector2Int>();
 		studiedMoves = new List<Vector3Int>();
@@ -168,6 +177,7 @@ public class GomokuPlay : MonoBehaviour  {
 		moveIsReady = false;
 		simulatingMove = false;
 		alignmentHasBeenDone = false;
+		swappedColors = false;
 		allowedSpacesP1 = new List<int>();
 		allowedSpacesP1.Add(GomokuPlay.EMPTY_VALUE);
 		allowedSpacesP1.Add(GomokuPlay.DT_P2_VALUE);
@@ -177,22 +187,17 @@ public class GomokuPlay : MonoBehaviour  {
 		allowedSpacesP2.Add(GomokuPlay.DT_P1_VALUE);
 		allowedSpacesP2.Add(GomokuPlay.NA_P1_VALUE);
 
+		// Can play against AI only in offline
+		if (offlineManager != null) {
+			if (PlayerPrefs.HasKey(CommonDefines.IS_P1_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) {
+				isHumanPlayer[0] = false;
+			}
+			if (PlayerPrefs.HasKey(CommonDefines.IS_P2_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P2_IA) == 1) {
+				isHumanPlayer[1] = false;
+			}
+		}
 
 		// Handle who starts first
-		if (PlayerPrefs.HasKey(CommonDefines.IS_P1_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P1_IA) == 1) {
-			isHumanPlayer[0] = false;
-		}
-		else {
-			isHumanPlayer[0] = true;
-		}
-
-		if (PlayerPrefs.HasKey(CommonDefines.IS_P2_IA) && PlayerPrefs.GetInt(CommonDefines.IS_P2_IA) == 1) {
-			isHumanPlayer[1] = false;
-		}
-		else {
-			isHumanPlayer[1] = true;
-		}
-
 		if (PlayerPrefs.HasKey(CommonDefines.FIRST_PLAYER_PLAYING)) {
 			currentPlayerIndex = PlayerPrefs.GetInt(CommonDefines.FIRST_PLAYER_PLAYING);
 			if (currentPlayerIndex == 2) {
@@ -202,6 +207,20 @@ public class GomokuPlay : MonoBehaviour  {
 
 		currentPlayerVal = (currentPlayerIndex == 0) ? GomokuPlay.P1_VALUE : GomokuPlay.P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
+		currentPlayerNetId = (currentPlayerIndex == 0) ? p1NetId : p2NetId;
+
+		// Update scores
+		if (offlineManager != null) {
+			offlineManager.UpdateScore(0, playerScores[0]);
+			offlineManager.UpdateScore(1, playerScores[1]);
+			offlineManager.UpdateActivePlayer(currentPlayerIndex);
+		}
+		else if (onlineManager != null) {
+			onlineManager.UpdateHasSwapped(false);
+			onlineManager.UpdateScore(0, playerScores[0]);
+			onlineManager.UpdateScore(1, playerScores[1]);
+			onlineManager.UpdateActivePlayer(currentPlayerIndex);
+		}
 
 	}
 
@@ -227,10 +246,6 @@ public class GomokuPlay : MonoBehaviour  {
 		return newMap;
 	}
 
-	public bool IsHumanTurn() {
-		return isHumanPlayer[currentPlayerIndex];
-	}
-
 	public void ClearHighligtedStone() {
 		if (highlightedMove.y != -1 && highlightedMove.x != -1) {
 			if (offlineManager != null)
@@ -253,8 +268,15 @@ public class GomokuPlay : MonoBehaviour  {
 			onlineManager.DeleteStone(yCoord, xCoord);
 	}
 
+	public bool IsAiTurn() {
+		if (isGameLoaded && !isGameEnded && !isGamePaused && !isAIPlaying && !isHumanPlayer[currentPlayerIndex])
+			return true;
+		return false;
+
+	}
+
 	public bool PlayerCanPutStone() {
-		if (!IsHumanTurn() || isGameEnded || simulatingMove || isGamePaused)
+		if (!isGameLoaded || isGameEnded || isGamePaused || simulatingMove || !isHumanPlayer[currentPlayerIndex])
 			return false;
 		return true;
 	}
@@ -264,10 +286,29 @@ public class GomokuPlay : MonoBehaviour  {
 	public void PutStone(int yCoord, int xCoord) {
 		// Backup moves only if it is a human move
 		if (isHumanPlayer[currentPlayerIndex]) {
-			if (offlineManager != null)
-				offlineManager.CreateBackup();
-			else if (onlineManager != null)
-				onlineManager.CreateBackup();
+			BackupState newBackup = new BackupState();
+			newBackup.map = CopyMap(boardMap);
+			newBackup.playerScores = new int[2];
+			newBackup.playerScores[0] = playerScores[0];
+			newBackup.playerScores[1] = playerScores[1];
+			newBackup.currentPlayerIndex = currentPlayerIndex;
+			newBackup.alignmentHasBeenDone = alignmentHasBeenDone;
+			newBackup.putTwoMoreStones = playedTwoMoreStones;
+			newBackup.swapped = swappedColors;
+
+			newBackup.counterMoves = new List<Vector2Int>();
+			for (int i = 0; i < counterMoves.Count; i++) {
+				newBackup.counterMoves.Insert(i, counterMoves[i]);
+			}
+
+			newBackup.lastMoves = new List<Vector2Int>();
+			for (int i = 0; i < lastMoves.Count; i++) {
+				newBackup.lastMoves.Insert(i, lastMoves[i]);
+			}
+
+			newBackup.currentNetId = currentPlayerNetId;
+
+			backupStates.Insert(0, newBackup);
 		}
 
 		// If any, clear highligted stone
@@ -288,9 +329,9 @@ public class GomokuPlay : MonoBehaviour  {
 		boardMap[yCoord, xCoord] = currentPlayerVal;
 
 		if (offlineManager != null)
-			offlineManager.PutStoneUI(yCoord, xCoord);
+			offlineManager.PutStoneUI(currentPlayerIndex, yCoord, xCoord);
 		else if (onlineManager != null)
-			onlineManager.PutStoneUI(yCoord, xCoord);
+			onlineManager.PutStoneUI(currentPlayerIndex, yCoord, xCoord);
 
 		nbrOfMoves++;
 
@@ -387,14 +428,33 @@ public class GomokuPlay : MonoBehaviour  {
 			return;
 		}
 
-		if (offlineManager != null) {
-			offlineManager.SwapPlayerTextColor();
-			offlineManager.OpeningRules();
+		// Apply opening rules
+		OpeningRules();
+
+		// Swap highlight color
+		if ((HANDICAP == 4 || HANDICAP == 5) && nbrOfMoves < 3) {
+			return ;
 		}
-		else if (onlineManager != null) {
-			onlineManager.SwapPlayerTextColor();
-			onlineManager.OpeningRules();
+		else if (HANDICAP == 5 && nbrOfMoves < 5 && playedTwoMoreStones) {
+			return ;
 		}
+		else if (HANDICAP == 5 && nbrOfMoves == 5 && playedTwoMoreStones) {
+			if (offlineManager != null) {
+				offlineManager.UpdateActivePlayer(1 - currentPlayerIndex);
+			}
+			else if (onlineManager != null) {
+				onlineManager.UpdateActivePlayer(1 - currentPlayerIndex);
+			}
+		}
+		else {
+			if (offlineManager != null) {
+				offlineManager.UpdateActivePlayer(currentPlayerIndex);
+			}
+			else if (onlineManager != null) {
+				onlineManager.UpdateActivePlayer(currentPlayerIndex);
+			}
+		}
+		currentPlayerNetId = (currentPlayerNetId == p1NetId) ? p2NetId : p1NetId;
 		
 		// DispalyBoard(boardMap);
 	}
@@ -514,11 +574,9 @@ public class GomokuPlay : MonoBehaviour  {
 
 			if (offlineManager != null) {
 				offlineManager.PutHighlightedStone(highlightedMove.y, highlightedMove.x);
-				offlineManager.UpdateTimer();
 			}
 			else if (onlineManager != null) {
 				onlineManager.PutHighlightedStone(highlightedMove.y, highlightedMove.x);
-				onlineManager.UpdateTimer();
 			}
 
 			simulatingMove = false;
@@ -526,7 +584,8 @@ public class GomokuPlay : MonoBehaviour  {
 	}
 
 	public void GoBack() {
-		// TODO: make UI call directly the GomokuPlay
+		isGameLoaded = false;
+
 		if (backupStates.Count == 0 || isAIPlaying || (!isHumanPlayer[currentPlayerIndex] && !isGameEnded))
 			return ;
 		if (isGameEnded) {
@@ -538,6 +597,11 @@ public class GomokuPlay : MonoBehaviour  {
 		playerScores[0] = oldState.playerScores[0];
 		playerScores[1] = oldState.playerScores[1];
 		alignmentHasBeenDone = oldState.alignmentHasBeenDone;
+		playedTwoMoreStones = oldState.putTwoMoreStones;
+		swappedColors = oldState.swapped;
+		// Send swap state to all multi clients
+		if (onlineManager != null)
+			onlineManager.UpdateHasSwapped(swappedColors);
 
 		counterMoves.Clear();
 		for (int i = 0; i < oldState.counterMoves.Count; i++) {
@@ -551,6 +615,7 @@ public class GomokuPlay : MonoBehaviour  {
 
 		// Player playing logic
 		currentPlayerIndex = oldState.currentPlayerIndex;
+		currentPlayerNetId = oldState.currentNetId;
 		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
 		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
 		
@@ -571,16 +636,21 @@ public class GomokuPlay : MonoBehaviour  {
 
 				if (playerIndex >= 0) {
 					if (offlineManager != null)
-						offlineManager.PutStoneUI(y, x);
+						offlineManager.PutStoneUI(playerIndex, y, x);
 					else if (onlineManager != null)
-						onlineManager.PutStoneUI(y, x);
+						onlineManager.PutStoneUI(playerIndex, y, x);
 
 					if (lastMoves[0].y == y && lastMoves[0].x == x) {
 						if (offlineManager != null)
-							offlineManager.ToggleStoneHighlight(lastMoves[0].y, lastMoves[0].x, false);
+							offlineManager.ToggleStoneHighlight(y, x, true);
+						else if (onlineManager != null)
+							onlineManager.ToggleStoneHighlight(y, x, true);
 					}
 					else {
-						button.transform.GetChild(0).gameObject.SetActive(false);
+						if (offlineManager != null)
+							offlineManager.ToggleStoneHighlight(y, x, false);
+						else if (onlineManager != null)
+							onlineManager.ToggleStoneHighlight(y, x, false);
 					}
 
 					boardMap[y,x] = tmpVal;
@@ -601,38 +671,29 @@ public class GomokuPlay : MonoBehaviour  {
 		}
 
 		// Change UI
-		listPlayers[0].text = "Player 1" + ": " + playerScores[0];
-		listPlayers[1].text = "Player 2" + ": " + playerScores[1];
+		if (offlineManager != null) {
+			offlineManager.UpdateScore(0, playerScores[0]);
+			offlineManager.UpdateScore(1, playerScores[1]);
+			offlineManager.UpdateActivePlayer(currentPlayerIndex);
+		}
+		else if (onlineManager != null) {
+			onlineManager.UpdateScore(0, playerScores[0]);
+			onlineManager.UpdateScore(1, playerScores[1]);
+			onlineManager.UpdateActivePlayer(currentPlayerIndex);
+		}
 
+		nbrOfMoves = nbrOfMoves - 1;
 
-
+		// Third iteration to add Handicaps
+		if (nbrOfMoves == 2 && HANDICAP == 3) {
+			SetForbiddenMove(7, 12);
+		}
+		else if (nbrOfMoves == 2 && HANDICAP == 2) {
+			SetForbiddenMove(5, 14);
+		}
 
 		backupStates.RemoveAt(0);
-
-		//OpeningRules RULES UNDO
-		nbrOfMoves = nbrOfMoves - 1;
-		if  (HANDICAP == 4 && nbrOfMoves == 2 || HANDICAP == 5 && nbrOfMoves == 4) {
-			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
-		}
-		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
-			if (HANDICAP == 3)
-				SetForbiddenMove(7, 12);
-			else if (HANDICAP == 2)
-				SetForbiddenMove(5, 14);
-		}
-		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
-			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
-			playedTwoMoreStones = false;
-			swapPlayers.SetActive(true);
-			swappedColors = false;
-		}
-		else if (HANDICAP == 5 && nbrOfMoves == 2) {
-			chooseSwapOptions.SetActive(true);
-			swappedColors = false;
-		}
-
+		isGameLoaded = true;
 	}
 #endregion
 
@@ -686,6 +747,13 @@ public class GomokuPlay : MonoBehaviour  {
 
 		// Save searchTime
 		searchTime = Time.realtimeSinceStartup - startSearchTime;
+
+		if (offlineManager != null) {
+			offlineManager.UpdateTimer();
+		}
+		else if (onlineManager != null) {
+			onlineManager.UpdateTimer();
+		}
 	}
 
 	private List<Vector3Int> GetAllowedMoves(State state) {
@@ -711,7 +779,7 @@ public class GomokuPlay : MonoBehaviour  {
 
 		int maxSearches = AI_MAX_SEARCHES_PER_DEPTH;
 		if (nbrOfMoves == 0 && state.depth == 0)
-			maxSearches = Mathf.Min(10, maxSearches);
+			maxSearches = Mathf.Min(9, maxSearches);
 		else if ((nbrOfMoves == 1 && state.depth == 0) || (nbrOfMoves == 0 && state.depth == 1))
 			maxSearches = Mathf.Min(16, maxSearches);
 		allowedMoves = allowedMoves.OrderByDescending(move => move.z).Take(maxSearches).ToList();
@@ -758,7 +826,7 @@ public class GomokuPlay : MonoBehaviour  {
 		// Increase move value based on neighbours influence
 		captures += GetStoneInfluence(state, yCoord, xCoord);
 		if (captures == Int32.MaxValue)
-			return captures;
+			return captures - 1;
 		score += captures;
 
 		return score;
@@ -767,6 +835,8 @@ public class GomokuPlay : MonoBehaviour  {
 	private int GetStoneInfluence(State state, int yCoord, int xCoord) {
 		int influence = 0;
 		int tmpScore = 0;
+
+		// TODO: may not be so good to receive int max, maybe a lesser value ?
 
 		tmpScore = GetRadialStoneInfluence(state, yCoord, xCoord, 0, 1);
 		if (tmpScore == Int32.MaxValue)
@@ -1685,4 +1755,60 @@ public class GomokuPlay : MonoBehaviour  {
 	}
 #endregion
 
+#region Opening Rules
+	public void OpeningRules() {
+		if (nbrOfMoves == 2 && HANDICAP == 3) {
+			SetForbiddenMove(7, 12);
+		}
+		else if (nbrOfMoves == 2 && HANDICAP == 2) {
+			SetForbiddenMove(5, 14);
+		}
+		else if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
+			isGamePaused = true;
+
+			if (offlineManager != null)
+				offlineManager.ShowSwapChoice();
+			else if (onlineManager != null)
+				onlineManager.ShowSwapChoice();
+		}
+		else if (HANDICAP == 5 && nbrOfMoves == 3) {
+			isGamePaused = true;
+			
+			if (offlineManager != null)
+				offlineManager.ShowSwap2Choice();
+			else if (onlineManager != null)
+				onlineManager.ShowSwap2Choice();
+		}
+	}
+
+	private void SetForbiddenMove(int min, int max) {
+		for (int y = min; y < max; y++) {
+			for (int x = min; x < max; x++) {
+				if (boardMap[y, x] == EMPTY_VALUE) {
+					boardMap[y,x] = HANDICAP_CANT_PlAY;
+
+					if (offlineManager)
+						offlineManager.PutHandicap(min, max, y, x);
+					else if (onlineManager)
+						onlineManager.PutHandicap(min, max, y, x);
+				}
+			}
+		}
+	}
+
+	public void DoSwap() {
+		swappedColors = true;
+		if (onlineManager != null)
+			onlineManager.UpdateHasSwapped(true);
+
+		if (playedTwoMoreStones)
+			return;
+
+		currentPlayerNetId = (currentPlayerNetId == p1NetId) ? p2NetId : p1NetId;
+		if (offlineManager != null)
+			offlineManager.UpdateActivePlayer(currentPlayerIndex);
+		else if (onlineManager != null)
+			onlineManager.UpdateActivePlayer(currentPlayerIndex);
+	}
+#endregion
 }

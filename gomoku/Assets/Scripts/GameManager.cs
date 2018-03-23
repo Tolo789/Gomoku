@@ -42,8 +42,6 @@ public class GameManager : MonoBehaviour {
 	void Start () {
 		gomoku.Init();
 		buttonsMap = new PutStone[GomokuPlay.SIZE, GomokuPlay.SIZE];
-		listPlayers[gomoku.currentPlayerIndex].color = Color.cyan;
-		listPlayers[1 - gomoku.currentPlayerIndex].color = Color.white;
 
 		// init board with hidden buttons
 		float width = startBoard.GetComponent<RectTransform>().rect.width;
@@ -75,6 +73,8 @@ public class GameManager : MonoBehaviour {
 			y++;
 			tmpPos.y -= step;
 		}
+
+		gomoku.isGameLoaded = true;
 	}
 	
 	void Update () {
@@ -87,15 +87,6 @@ public class GameManager : MonoBehaviour {
 				// start AI decision making
 				gomoku.StartMinMax();
 
-				// Play move
-				Debug.Log("Search time: " + gomoku.searchTime);
-				AiTimer.text = "AI Timer: " + gomoku.searchTime.ToString();
-				if (gomoku.searchTime >= gomoku.AI_SEARCH_TIME) {
-					AiTimer.color = Color.red;
-					Debug.LogWarning("Ai didnt find a move in time");
-				}
-				else
-					AiTimer.color = Color.white;
 				gomoku.moveIsReady = true;
 			}
 		}
@@ -111,7 +102,7 @@ public class GameManager : MonoBehaviour {
 	}
 #endregion
 
-#region PutStone sub-functions
+#region MainFunctions
 	public void ToggleStudiedHighlight(bool newState) {
 		if (gomoku.studiedMoves.Count > 0) {
 			foreach (Vector3Int move in gomoku.studiedMoves) {
@@ -121,38 +112,13 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-	public void CreateBackup() {
-		// Backup moves only if it is a human move
-		if (gomoku.isHumanPlayer[gomoku.currentPlayerIndex]) {
-			BackupState newBackup = new BackupState();
-			newBackup.map = gomoku.CopyMap(gomoku.boardMap);
-			newBackup.playerScores = new int[2];
-			newBackup.playerScores[0] = gomoku.playerScores[0];
-			newBackup.playerScores[1] = gomoku.playerScores[1];
-			newBackup.currentPlayerIndex = gomoku.currentPlayerIndex;
-			newBackup.alignmentHasBeenDone = gomoku.alignmentHasBeenDone;
-
-			newBackup.counterMoves = new List<Vector2Int>();
-			for (int i = 0; i < gomoku.counterMoves.Count; i++) {
-				newBackup.counterMoves.Insert(i, gomoku.counterMoves[i]);
-			}
-
-			newBackup.lastMoves = new List<Vector2Int>();
-			for (int i = 0; i < gomoku.lastMoves.Count; i++) {
-				newBackup.lastMoves.Insert(i, gomoku.lastMoves[i]);
-			}
-
-			backupStates.Insert(0, newBackup);
-		}
-	}
-
 	public void ToggleStoneHighlight(int yCoord, int xCoord, bool newState) {
 		buttonsMap[yCoord, xCoord].transform.GetChild(0).gameObject.SetActive(newState);
 	}
 
-	public void PutStoneUI(int yCoord, int xCoord) {
+	public void PutStoneUI(int playerIndex, int yCoord, int xCoord) {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
-		button.GetComponent<Image>().sprite = stoneSprites[gomoku.currentPlayerIndex];
+		button.GetComponent<Image>().sprite = stoneSprites[playerIndex];
 		button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
 		Color buttonColor = button.GetComponent<Image>().color;
 		buttonColor.a = 1;
@@ -198,28 +164,6 @@ public class GameManager : MonoBehaviour {
 		button.transform.GetChild(0).gameObject.SetActive(false);
 	}
 
-	public void SwapPlayerTextColor() {
-		if ((gomoku.HANDICAP == 4 || gomoku.HANDICAP == 5) && (gomoku.nbrOfMoves < 3 || (gomoku.nbrOfMoves < 5 && gomoku.playedTwoMoreStones))) {
-			return ;
-		}
-		else {
-			if (gomoku.HANDICAP < 4) {
-					listPlayers[gomoku.currentPlayerIndex].color = Color.cyan;
-					listPlayers[1 - gomoku.currentPlayerIndex].color = Color.white;
-			}
-			else {
-				if (gomoku.nbrOfMoves > 3 && gomoku.swappedColors) {
-					listPlayers[1 - gomoku.currentPlayerIndex].color = Color.cyan;
-					listPlayers[gomoku.currentPlayerIndex].color = Color.white;
-				}
-				else {
-					listPlayers[gomoku.currentPlayerIndex].color = Color.cyan;
-					listPlayers[1 - gomoku.currentPlayerIndex].color = Color.white;
-				}
-			}
-		}
-	}
-
 	public void PutDoubleTree(int yCoord, int xCoord) {
 		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
 		button.GetComponent<Image>().sprite = doubleThreeSprite;
@@ -251,8 +195,36 @@ public class GameManager : MonoBehaviour {
 		button.transform.GetChild(0).gameObject.SetActive(true);
 	}
 
+	public void PutHandicap(int min, int max, int yCoord, int xCoord) {
+		GameObject button = buttonsMap[yCoord, xCoord].gameObject;
+		button.transform.localScale = new Vector3(1, 1, 1);
+		Image buttonImage = button.GetComponent<Image>();
+		Color newColor = Color.white;
+		newColor.a = 1;
+
+		if (yCoord == min && xCoord == min)
+			buttonImage.sprite = sqTopLeft;
+		else if (yCoord == min && xCoord == max - 1)
+			buttonImage.sprite = sqTopRight;
+		else if (yCoord == max -1  && xCoord == max -1)
+			buttonImage.sprite = sqBotRight;
+		else if (yCoord == max -1  && xCoord == min)
+			buttonImage.sprite = sqBotLeft;
+		else if (yCoord == min || yCoord == max - 1)
+			buttonImage.sprite = sqHorizontal;
+		else if (xCoord == min || xCoord == max - 1)
+			buttonImage.sprite = sqVertical;
+		else {
+			buttonImage.sprite = null;
+			newColor.a = 0;
+		}
+		buttonImage.color = newColor;
+
+		buttonsMap[yCoord, xCoord].isEmpty = false;
+		button.transform.GetChild(0).gameObject.SetActive(false);
+	}
+
 	public void UpdateTimer() {
-		// Timing stuff
 		Debug.Log("Search time: " + gomoku.searchTime);
 		AiTimer.text = "AI Timer: " + gomoku.searchTime.ToString();
 		if (gomoku.searchTime > gomoku.AI_SEARCH_TIME) {
@@ -262,9 +234,29 @@ public class GameManager : MonoBehaviour {
 		else
 			AiTimer.color = Color.white;
 	}
+
+	public void UpdateActivePlayer(int playerIndex) {
+		if (gomoku.swappedColors) {
+			listPlayers[1 - playerIndex].color = Color.cyan;
+			listPlayers[playerIndex].color = Color.white;
+		}
+		else {
+			listPlayers[playerIndex].color = Color.cyan;
+			listPlayers[1 - playerIndex].color = Color.white;
+		}
+	}
+
+	public void ShowSwapChoice() {
+		swapPlayers.SetActive(true);
+	}	
+
+	public void ShowSwap2Choice() {
+		chooseSwapOptions.SetActive(true);
+	}
 #endregion
 
 #region UI triggered Func
+	// TODO: make UI call directly the GomokuPlay for all (at least most) of the followin func
 
 	public bool PlayerCanPutStone() {
 		return gomoku.PlayerCanPutStone();
@@ -283,116 +275,64 @@ public class GameManager : MonoBehaviour {
 
 	public void GoBack() {
 		// TODO: make UI call directly the GomokuPlay
-		if (backupStates.Count == 0 || isAIPlaying || (!isHumanPlayer[currentPlayerIndex] && !isGameEnded))
-			return ;
-		if (isGameEnded) {
-			isGameEnded = false;
-		}
-		BackupState oldState = backupStates[0];
-
-		boardMap = CopyMap(oldState.map);
-		playerScores[0] = oldState.playerScores[0];
-		playerScores[1] = oldState.playerScores[1];
-		alignmentHasBeenDone = oldState.alignmentHasBeenDone;
-
-		counterMoves.Clear();
-		for (int i = 0; i < oldState.counterMoves.Count; i++) {
-			counterMoves.Insert(i, oldState.counterMoves[i]);
-		}
-
-		lastMoves.Clear();
-		for (int i = 0; i < oldState.lastMoves.Count; i++) {
-			lastMoves.Insert(i, oldState.lastMoves[i]);
-		}
-
-		// Player playing logic
-		currentPlayerIndex = oldState.currentPlayerIndex;
-		currentPlayerVal = (currentPlayerIndex == 0) ? P1_VALUE : P2_VALUE;
-		otherPlayerVal = (currentPlayerIndex == 0) ? P2_VALUE : P1_VALUE;
-		
-
-		// first reset everything and put stones back
-		int playerIndex = -1;
-		int tmpVal = EMPTY_VALUE;
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
-				tmpVal = boardMap[y, x];
-				DeleteStone(boardMap, y, x);
-
-				playerIndex = -1;
-				if (tmpVal == P1_VALUE)
-					playerIndex = 0;
-				else if (tmpVal == P2_VALUE)
-					playerIndex = 1;
-
-				if (playerIndex >= 0) {
-					GameObject button = buttonsMap[y, x].gameObject;
-					button.GetComponent<Image>().sprite = stoneSprites[playerIndex];
-					button.transform.localScale = new Vector3(0.9f, 0.9f, 1);
-					Color buttonColor = button.GetComponent<Image>().color;
-					buttonColor.a = 1;
-					button.GetComponent<Image>().color = buttonColor;
-					button.GetComponent<PutStone>().isEmpty = false;
-
-					if (lastMoves[0].y == y && lastMoves[0].x == x) {
-						button.transform.GetChild(0).gameObject.SetActive(true); // highlight it
-					}
-					else {
-						button.transform.GetChild(0).gameObject.SetActive(false);
-					}
-
-					boardMap[y,x] = tmpVal;
-				}
-			}
-		}
-
-		// second iteration to update allowed moves
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
-				if (boardMap[y, x] != P1_VALUE && boardMap[y, x] != P2_VALUE) {
-					if (DOUBLE_THREE_RULE)
-						UpdateDoubleThree(boardMap, y, x, currentPlayerVal, otherPlayerVal);
-					if (SELF_CAPTURE_RULE)
-						UpdateSelfCapture(boardMap, y, x, currentPlayerVal, otherPlayerVal);
-				}
-			}
-		}
-
-		// Change UI
-		listPlayers[0].text = "Player 1" + ": " + playerScores[0];
-		listPlayers[1].text = "Player 2" + ": " + playerScores[1];
-
-
-
-
-		backupStates.RemoveAt(0);
-
-		//OpeningRules RULES UNDO
-		nbrOfMoves = nbrOfMoves - 1;
-		if  (HANDICAP == 4 && nbrOfMoves == 2 || HANDICAP == 5 && nbrOfMoves == 4) {
-			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
-		}
-		if (nbrOfMoves == 2 && (HANDICAP == 3 || HANDICAP == 2)) {
-			if (HANDICAP == 3)
-				SetForbiddenMove(7, 12);
-			else if (HANDICAP == 2)
-				SetForbiddenMove(5, 14);
-		}
-		if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
-			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
-			playedTwoMoreStones = false;
-			swapPlayers.SetActive(true);
-			swappedColors = false;
-		}
-		else if (HANDICAP == 5 && nbrOfMoves == 2) {
-			chooseSwapOptions.SetActive(true);
-			swappedColors = false;
-		}
-
+		gomoku.GoBack();
 	}
-	#endregion
+
+	public void ButtonPlayClick(GameObject playSettings) {
+		gomoku.isGamePaused = true;
+        playSettings.SetActive(true);
+    }
+
+	public void ButtonGoBack(GameObject playSettings) {
+		gomoku.isGamePaused = false;
+		Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		playSettings.SetActive(false);
+    }
+
+	public void SwapColorChoice() {
+		player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+		player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+		UpdateActivePlayer(1 - gomoku.currentPlayerIndex);
+		gomoku.swappedColors = true;
+	}
+
+	public void YesToggle(GameObject panel) {
+		SwapColorChoice();
+		gomoku.isGamePaused = false;
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		panel.SetActive(false);
+	}
+
+	public void PlayTwoStones(GameObject panel) {
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		gomoku.playedTwoMoreStones = true;
+		gomoku.isGamePaused = false;
+		panel.SetActive(false);
+	}
+	public void NoToggle(GameObject panel) {
+		Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		gomoku.isGamePaused = false;
+		panel.SetActive(false);
+	}
+
+	public void chooseWhite(GameObject panel) {
+		if (gomoku.currentPlayerIndex == 0) {
+			SwapColorChoice();
+		}
+		gomoku.isGamePaused = false;
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		panel.SetActive(false);
+	}
+
+	public void chooseBlack(GameObject panel) {
+		if (gomoku.currentPlayerIndex == 1) {
+			SwapColorChoice();
+		}
+		gomoku.isGamePaused = false;
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+		panel.SetActive(false);
+	}
+#endregion
 
 #region oldAI
 /*
@@ -520,113 +460,6 @@ public class GameManager : MonoBehaviour {
 	}
 */
 	#endregion
-
-	//Handle UI
-	public void ButtonPlayClick(GameObject playSettings) {
-		isGamePaused = true;
-        playSettings.SetActive(true);
-    }
-
-	public void ButtonGoBack(GameObject playSettings) {
-		isGamePaused = false;
-		Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		playSettings.SetActive(false);
-    }
-
-	private void SetForbiddenMove(int min, int max) {
-		for (int y = min; y < max; y++) {
-			for (int x = min; x < max; x++) {
-				if (boardMap[y, x] == EMPTY_VALUE) {
-						GameObject button = buttonsMap[y, x].gameObject;
-						button.transform.localScale = new Vector3(1, 1, 1);
-						Color buttonColor = button.GetComponent<Image>().color;
-						buttonColor.a = 255;
-						button.GetComponent<Image>().color = buttonColor;
-						button.GetComponent<PutStone>().isEmpty = false;
-						if (y == min && x == min)
-							button.GetComponent<Image>().sprite = sqTopLeft;
-						else if (y == min && x == max - 1)
-							button.GetComponent<Image>().sprite = sqTopRight;
-						else if (y == max -1  && x == max -1)
-							button.GetComponent<Image>().sprite = sqBotRight;
-						else if (y == max -1  && x == min)
-							button.GetComponent<Image>().sprite = sqBotLeft;
-						else if (y == min || y == max - 1)
-							button.GetComponent<Image>().sprite = sqHorizontal;
-						else if (x == min || x == max - 1)
-							button.GetComponent<Image>().sprite = sqVertical;
-						else {
-							buttonColor.a = 0;
-							button.GetComponent<Image>().color = buttonColor;
-						}
-					boardMap[y, x] = HANDICAP_CANT_PlAY;
-				}
-			}
-		}
-	}
-
-	//OPENING RULES
-	public void OpeningRules() {
-		if (gomoku.nbrOfMoves == 2 && (gomoku.HANDICAP == 3 || gomoku.HANDICAP == 2)) {
-			if (gomoku.HANDICAP == 3)
-				SetForbiddenMove(7, 12);
-			else if (gomoku.HANDICAP == 2)
-				SetForbiddenMove(5, 14);
-		}
-		if ((gomoku.HANDICAP == 4 && gomoku.nbrOfMoves == 3) || (gomoku.playedTwoMoreStones && gomoku.nbrOfMoves == 5)) {
-			isGamePaused = true;
-			swapPlayers.SetActive(true);
-		}
-		else if (gomoku.HANDICAP == 5 && gomoku.nbrOfMoves == 3) {
-			isGamePaused = true;
-			chooseSwapOptions.SetActive(true);
-		}
-	}
-
-	public void SwapColorChoice() {
-		player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
-		player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-		listPlayers[1 - currentPlayerIndex].color = Color.cyan;
-		listPlayers[currentPlayerIndex].color = Color.white;
-		swappedColors = true;
-	}
-
-	public void YesToggle(GameObject panel) {
-		SwapColorChoice();
-		isGamePaused = false;
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		panel.SetActive(false);
-	}
-
-	public void PlayTwoStones(GameObject panel) {
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		playedTwoMoreStones = true;
-		isGamePaused = false;
-		panel.SetActive(false);
-	}
-	public void NoToggle(GameObject panel) {
-		Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		isGamePaused = false;
-		panel.SetActive(false);
-	}
-
-	public void chooseWhite(GameObject panel) {
-		if (currentPlayerIndex == 0) {
-			SwapColorChoice();
-		}
-		isGamePaused = false;
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		panel.SetActive(false);
-	}
-
-	public void chooseBlack(GameObject panel) {
-		if (currentPlayerIndex == 1) {
-			SwapColorChoice();
-		}
-		isGamePaused = false;
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-		panel.SetActive(false);
-	}
 
 }
 
