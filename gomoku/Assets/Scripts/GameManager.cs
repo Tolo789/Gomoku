@@ -883,6 +883,14 @@ public class GameManager : MonoBehaviour {
 			playerScores[currentPlayerIndex] += CheckCaptures(boardMap, yCoord, xCoord, currentPlayerVal, otherPlayerVal, doCapture: true);
 			listPlayers[currentPlayerIndex].text = "Player " + currentPlayerVal + ": " + playerScores[currentPlayerIndex];
 		}
+		// if colors has been swapped
+		if (swappedColors) {
+			if (playerScores[1 - currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
+				DisplayWinner(currentPlayerIndex, true);
+				return;
+			}
+		}
+
 		if (playerScores[currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
 			DisplayWinner(currentPlayerIndex, true);
 			return;

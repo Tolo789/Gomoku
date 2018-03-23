@@ -766,6 +766,14 @@ public class MatchManager : AbstractPlayerInteractable {
 		if (captures > 0) {
 			playerScores[currentPlayerIndex] += captures;
 			RpcChangePlayerScore(currentPlayerIndex, playerScores[currentPlayerIndex]);
+
+			// if colors has been swapped
+			if (swappedColors) {
+				if (playerScores[1 - currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
+					RpcDisplayWinner(currentPlayerIndex, true);
+					return;
+				}
+			}
 			if (playerScores[currentPlayerIndex] == CAPTURES_NEEDED_TO_WIN) {
 				RpcDisplayWinner(currentPlayerIndex, true);
 				return;
