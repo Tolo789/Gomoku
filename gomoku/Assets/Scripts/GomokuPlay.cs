@@ -186,6 +186,7 @@ public class GomokuPlay : MonoBehaviour  {
 		allowedSpacesP2.Add(GomokuPlay.EMPTY_VALUE);
 		allowedSpacesP2.Add(GomokuPlay.DT_P1_VALUE);
 		allowedSpacesP2.Add(GomokuPlay.NA_P1_VALUE);
+		nbrOfMoves = 0;
 
 		// Can play against AI only in offline
 		if (offlineManager != null) {
