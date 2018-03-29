@@ -1142,14 +1142,42 @@ public class GomokuPlay : MonoBehaviour  {
 							score -= isPartOfAlign;
 					}
 				}
-				else if (state.map[y, x] == EMPTY_VALUE) { // TODO use allowedSpaces
+				else if (state.map[y, x] == EMPTY_VALUE) { // Easy case
 					tmpVal = CheckCaptures(state.map, y, x, state.rootVal, otherVal, doCapture: false, isAiSimulation: true);
 					if (tmpVal > 0) {
 						score += (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.rootPlayerScore)) / 2;
 					}
 					tmpVal = CheckCaptures(state.map, y, x, otherVal, state.rootVal, doCapture: false, isAiSimulation: true);
 					if (tmpVal > 0) {
-						score += (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.otherPlayerScore)) / 2;
+						score -= (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.otherPlayerScore)) / 2;
+					}
+				}
+				else if (allowedSpacesP1.Contains(state.map[y, x])) { // Case for P1
+					if (state.rootVal == P1_VALUE) {
+						tmpVal = CheckCaptures(state.map, y, x, state.rootVal, otherVal, doCapture: false, isAiSimulation: true);
+						if (tmpVal > 0) {
+							score += (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.rootPlayerScore)) / 2;
+						}
+					}
+					else {
+						tmpVal = CheckCaptures(state.map, y, x, otherVal, state.rootVal, doCapture: false, isAiSimulation: true);
+						if (tmpVal > 0) {
+							score -= (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.otherPlayerScore)) / 2;
+						}
+					}
+				}
+				else if (allowedSpacesP2.Contains(state.map[y, x])) { // Case for P2
+					if (state.rootVal == P2_VALUE) {
+						tmpVal = CheckCaptures(state.map, y, x, state.rootVal, otherVal, doCapture: false, isAiSimulation: true);
+						if (tmpVal > 0) {
+							score += (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.rootPlayerScore)) / 2;
+						}
+					}
+					else {
+						tmpVal = CheckCaptures(state.map, y, x, otherVal, state.rootVal, doCapture: false, isAiSimulation: true);
+						if (tmpVal > 0) {
+							score -= (HEURISTIC_CAPTURE_COEFF * tmpVal + (int)Mathf.Pow(2, state.otherPlayerScore)) / 2;
+						}
 					}
 				}
 			}
