@@ -633,11 +633,11 @@ public class MatchManager : AbstractPlayerInteractable {
 		}
 
 		if (playerNetId == gomoku.p1NetId) {
-			playerName = "Player" + GomokuPlay.P1_VALUE;
+			playerName = p1Name;
 			dialogAnswerId = gomoku.p2NetId;
 		}
 		else if (playerNetId == gomoku.p2NetId) {
-			playerName = "Player" + GomokuPlay.P2_VALUE;
+			playerName = p2Name;
 			dialogAnswerId = gomoku.p1NetId;
 		}
 
