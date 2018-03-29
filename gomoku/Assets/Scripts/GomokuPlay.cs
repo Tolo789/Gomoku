@@ -1438,7 +1438,7 @@ public class GomokuPlay : MonoBehaviour  {
 		// check when coord is start of free-tree
 		else if (y < SIZE && y >= 0 && x < SIZE && x >= 0) {
 			x = 0;
-			x = 0;
+			y = 0;
 			int allyStones = 0;
 			while (x <= 3 && x >= -3 && y <= 3 && y >= -3) {
 				if (map[yCoord + y, xCoord + x] == enemyVal)
