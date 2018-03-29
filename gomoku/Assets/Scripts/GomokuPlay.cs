@@ -907,29 +907,11 @@ public class GomokuPlay : MonoBehaviour  {
 
 	private int GetStoneInfluence(State state, int yCoord, int xCoord) {
 		int influence = 0;
-		int tmpScore = 0;
 
-		// TODO: may not be so good to receive int max, maybe a lesser value ?
-
-		tmpScore = GetRadialStoneInfluence(state, yCoord, xCoord, 0, 1);
-		if (tmpScore == Int32.MaxValue)
-			return tmpScore;
-		influence += tmpScore;
-
-		tmpScore = GetRadialStoneInfluence(state, yCoord, xCoord, 1, 0);
-		if (tmpScore == Int32.MaxValue)
-			return tmpScore;
-		influence += tmpScore;
-
-		tmpScore = GetRadialStoneInfluence(state, yCoord, xCoord, 1, 1);
-		if (tmpScore == Int32.MaxValue)
-			return tmpScore;
-		influence += tmpScore;
-
-		tmpScore = GetRadialStoneInfluence(state, yCoord, xCoord, -1, 1);
-		if (tmpScore == Int32.MaxValue)
-			return tmpScore;
-		influence += tmpScore;
+		influence = GetRadialStoneInfluence(state, yCoord, xCoord, 0, 1);
+		influence += GetRadialStoneInfluence(state, yCoord, xCoord, 1, 0);
+		influence += GetRadialStoneInfluence(state, yCoord, xCoord, 1, 1);
+		influence += GetRadialStoneInfluence(state, yCoord, xCoord, -1, 1);
 
 		return influence;
 	}
@@ -1016,15 +998,6 @@ public class GomokuPlay : MonoBehaviour  {
 			neighbours_2 = 0;
 			neighbours_2_jumped = 0;
 		}
-
-		// Force detection of winning aligns, always send intMax because with intMin it would not check the move
-		if (neighbours_1 >= 4) {
-			return Int32.MaxValue;
-		}
-		if (neighbours_2 >= 4) {
-			return Int32.MaxValue;
-		}
-
 
 		// Workout score
 		if (neighbours_1 > 0)
@@ -1241,12 +1214,6 @@ public class GomokuPlay : MonoBehaviour  {
 		if (nbrSideStone > 0)
 			isPartOfAlign++;
 
-		// TODO: delete me ?
-		// if (nbrStone >= 5 || (nbrStone == 4 && !frontBlocked && !backBlocked))
-		// 	return (state.map[yCoord, xCoord] == state.rootVal) ? Int32.MaxValue / 30 : Int32.MinValue / 10; // Divide because not 100% sure that it is a win/loss
-
-		// TODO: If depth is uneven number, then we may under-estimate enemy alignements
-		// TODO: If depth is even number, then we may under-estimate our alignements
 		if ((state.depth % 2 == 0 && state.map[yCoord, xCoord] == state.rootVal) ||
 			(state.depth % 2 == 1 && state.map[yCoord, xCoord] != state.rootVal)) {
 			if (nbrSideStone > 0) {
@@ -1302,8 +1269,7 @@ public class GomokuPlay : MonoBehaviour  {
 		// Choose if is advantagious alignment
 		if (state.map[yCoord, xCoord] == state.rootVal)
 			return score;
-		return -score; // TODO: test this return
-		// return (score > 0) ? -score - 1: 0; // stones alone will always give 0
+		return -score;
 	}
 
 	private State ResultOfMove(State state, Vector3Int move) {
@@ -1639,7 +1605,6 @@ public class GomokuPlay : MonoBehaviour  {
 			}
 		}
 		else if (otherProhibited) {
-			// TODO: what if this is double-tree for current player ??
 			map[yCoord, xCoord] = (myVal == P1_VALUE) ? NA_P2_VALUE : NA_P1_VALUE;
 			if (!isAiSimulation)
 				Debug.Log("Other player can't play in " + yCoord + " " + xCoord);
