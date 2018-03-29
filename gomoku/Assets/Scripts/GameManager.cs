@@ -80,15 +80,13 @@ public class GameManager : MonoBehaviour {
 	void Update () {
 		if (Screen.fullScreen == true)
 	        Screen.SetResolution(1024, 768, false);
-		if (!gomoku.isGameEnded && !gomoku.isHumanPlayer[gomoku.currentPlayerIndex] && !gomoku.isGamePaused) {
-			if (!gomoku.isAIPlaying) {
-				gomoku.isAIPlaying = true;
+		if (gomoku.IsAiTurn()) {
+			gomoku.isAIPlaying = true;
 
-				// start AI decision making
-				gomoku.StartMinMax();
+			// start AI decision making
+			gomoku.StartMinMax();
 
-				gomoku.moveIsReady = true;
-			}
+			gomoku.moveIsReady = true;
 		}
 	}
 

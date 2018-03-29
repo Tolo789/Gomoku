@@ -55,6 +55,8 @@ public class MatchManager : AbstractPlayerInteractable {
 	
 #region MonoFunctions
 	void Update () {
+		if (Screen.fullScreen == true)
+			Screen.SetResolution(1024, 768, false);
 		if (isServer && gomoku.IsAiTurn()) {
 			gomoku.isAIPlaying = true;
 
