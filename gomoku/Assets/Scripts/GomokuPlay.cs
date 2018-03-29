@@ -21,6 +21,10 @@ public struct State {
 	public bool alignementDone;
 	public List<Vector2Int> captureMoves;
 	public List<Vector2Int> lastStones;
+	public int uppestMove;
+	public int downestMove;
+	public int leftestMove;
+	public int rightestMove;
 
 	public State(State state) {
 		this.map = new int[GomokuPlay.SIZE, GomokuPlay.SIZE];
@@ -34,6 +38,10 @@ public struct State {
 		this.alignementDone = state.alignementDone;
 		this.captureMoves = new List<Vector2Int>();
 		this.lastStones = new List<Vector2Int>();
+		this.uppestMove = state.uppestMove;
+		this.downestMove = state.downestMove;
+		this.leftestMove = state.leftestMove;
+		this.rightestMove = state.rightestMove;
 
 		for (int y = 0; y < GomokuPlay.SIZE; y++) {
 			for (int x = 0; x < GomokuPlay.SIZE; x++) {
@@ -60,6 +68,10 @@ public struct BackupState {
 	public bool alignmentHasBeenDone;
 	public List<Vector2Int> counterMoves;
 	public List<Vector2Int> lastMoves;
+	public int uppestMove;
+	public int downestMove;
+	public int leftestMove;
+	public int rightestMove;
 
 	public bool swapped;
 	public bool putTwoMoreStones;
@@ -118,6 +130,10 @@ public class GomokuPlay : MonoBehaviour  {
 	[HideInInspector] public List<Vector3Int> studiedMoves; // Used as debug to see AI studied moves
 	[HideInInspector] public List<Vector2Int> lastMoves;
 	[HideInInspector] public Vector2Int highlightedMove;
+	[HideInInspector] public int mostUpMove;
+	[HideInInspector] public int mostDownMove;
+	[HideInInspector] public int mostLeftMove;
+	[HideInInspector] public int mostRightMove;
 	[HideInInspector] public bool moveIsReady = false;
 	[HideInInspector] public bool simulatingMove = false;
 	[HideInInspector] public bool alignmentHasBeenDone = false;
@@ -187,6 +203,7 @@ public class GomokuPlay : MonoBehaviour  {
 		allowedSpacesP2.Add(GomokuPlay.DT_P1_VALUE);
 		allowedSpacesP2.Add(GomokuPlay.NA_P1_VALUE);
 		nbrOfMoves = 0;
+		mostUpMove = -1; // Setting one to -1 will trigger the setting of all of them
 
 		// Can play against AI only in offline
 		if (offlineManager != null) {
@@ -297,6 +314,10 @@ public class GomokuPlay : MonoBehaviour  {
 			newBackup.alignmentHasBeenDone = alignmentHasBeenDone;
 			newBackup.putTwoMoreStones = playedTwoMoreStones;
 			newBackup.swapped = swappedColors;
+			newBackup.uppestMove = mostUpMove;
+			newBackup.downestMove = mostDownMove;
+			newBackup.leftestMove = mostLeftMove;
+			newBackup.rightestMove = mostRightMove;
 
 			newBackup.counterMoves = new List<Vector2Int>();
 			for (int i = 0; i < counterMoves.Count; i++) {
@@ -326,6 +347,24 @@ public class GomokuPlay : MonoBehaviour  {
 		lastMoves.Insert(0, new Vector2Int(xCoord, yCoord));
 		if (lastMoves.Count > 3)
 			lastMoves.RemoveAt(3);
+
+		// Update most Up/Down/Left/Right moves
+		if (mostUpMove == -1) {
+			mostUpMove = yCoord;
+			mostDownMove = yCoord;
+			mostLeftMove = xCoord;
+			mostRightMove = xCoord;
+		}
+		else {
+			if (xCoord > mostRightMove)
+				mostRightMove = xCoord;
+			if (xCoord < mostLeftMove)
+				mostLeftMove = xCoord;
+			if (yCoord < mostDownMove)
+				mostDownMove = yCoord;
+			if (yCoord > mostUpMove)
+				mostUpMove = yCoord;
+		}
 
 		// Actually put the stone
 		boardMap[yCoord, xCoord] = currentPlayerVal;
@@ -397,14 +436,17 @@ public class GomokuPlay : MonoBehaviour  {
 
 		// update allowed movements in map
 		bool thereIsAvailableMove = false;
+		bool isInCheckZone;
 		for (int y = 0; y < SIZE; y++) {
+			isInCheckZone = (y <= mostUpMove + 2) && (y >= mostDownMove - 2);
 			for (int x = 0; x < SIZE; x++) {
+				isInCheckZone = isInCheckZone && (x <= mostRightMove + 2) && (x >= mostLeftMove - 2);
 				if (boardMap[y, x] != P1_VALUE && boardMap[y, x] != P2_VALUE) {
 					DeleteStone(boardMap, y, x);
 
-					if (DOUBLE_THREE_RULE)
+					if (DOUBLE_THREE_RULE && isInCheckZone)
 						UpdateDoubleThree(boardMap, y, x, currentPlayerVal, otherPlayerVal);
-					if (SELF_CAPTURE_RULE)
+					if (SELF_CAPTURE_RULE && isInCheckZone)
 						UpdateSelfCapture(boardMap, y, x, currentPlayerVal, otherPlayerVal);
 				}
 
@@ -466,6 +508,24 @@ public class GomokuPlay : MonoBehaviour  {
 		state.lastStones.Insert(0, new Vector2Int(xCoord, yCoord));
 		if (state.lastStones.Count > 3)
 			state.lastStones.RemoveAt(3);
+
+		// Update most Up/Down/Left/Right moves
+		if (state.uppestMove == -1) {
+			state.uppestMove = yCoord;
+			state.downestMove = yCoord;
+			state.leftestMove = xCoord;
+			state.rightestMove = xCoord;
+		}
+		else {
+			if (xCoord > state.rightestMove)
+				state.rightestMove = xCoord;
+			if (xCoord < state.leftestMove)
+				state.leftestMove = xCoord;
+			if (yCoord < state.downestMove)
+				state.downestMove = yCoord;
+			if (yCoord > state.uppestMove)
+				state.uppestMove = yCoord;
+		}
 
 		// Actually put the stone
 		state.map[yCoord, xCoord] = state.myVal;
@@ -532,10 +592,14 @@ public class GomokuPlay : MonoBehaviour  {
 
 		// update allowed movements in map
 		bool thereIsAvailableMove = false;
+		bool isInCheckZone;
 		for (int y = 0; y < SIZE; y++) {
+			isInCheckZone = (y <= state.uppestMove + 2) && (y >= state.downestMove - 2);
 			for (int x = 0; x < SIZE; x++) {
-				if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
+				isInCheckZone = isInCheckZone && (x <= state.rightestMove + 2) && (x >= state.leftestMove - 2);
+				if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE && isInCheckZone) {
 					DeleteStone(state.map, y, x, isAiSimulation: true);
+
 					if (DOUBLE_THREE_RULE)
 						UpdateDoubleThree(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
 					if (SELF_CAPTURE_RULE)
@@ -598,6 +662,10 @@ public class GomokuPlay : MonoBehaviour  {
 		boardMap = CopyMap(oldState.map);
 		playerScores[0] = oldState.playerScores[0];
 		playerScores[1] = oldState.playerScores[1];
+		mostUpMove = oldState.uppestMove;
+		mostDownMove = oldState.downestMove;
+		mostLeftMove = oldState.leftestMove;
+		mostRightMove = oldState.rightestMove;
 		alignmentHasBeenDone = oldState.alignmentHasBeenDone;
 		playedTwoMoreStones = oldState.putTwoMoreStones;
 		swappedColors = oldState.swapped;
