@@ -1406,8 +1406,8 @@ public class GomokuPlay : MonoBehaviour  {
 			return false;
 
 		// common vars
-		int x = 0;
-		int y = 0;
+		int x = xCoord + xCoeff * 3;
+		int y = yCoord + yCoeff * 3;
 
 		// check when coord is middle of free-tree
 		if (map[yCoord - yCoeff, xCoord - xCoeff] == myVal) {
@@ -1436,7 +1436,7 @@ public class GomokuPlay : MonoBehaviour  {
 			} 
 		}
 		// check when coord is start of free-tree
-		else if (yCoord + yCoeff * 3 < SIZE && yCoord + yCoeff * 3 >= 0 && xCoord + xCoeff * 3 < SIZE && xCoord + xCoeff * 3 >= 0) {
+		else if (y < SIZE && y >= 0 && x < SIZE && x >= 0) {
 			x = 0;
 			x = 0;
 			int allyStones = 0;
@@ -1453,10 +1453,10 @@ public class GomokuPlay : MonoBehaviour  {
 				y += yCoeff;
 			}
 			if (allyStones == 2) {
-				x += xCoeff;
-				y += yCoeff;
-				if (xCoord + x >= 0 && xCoord + x < SIZE && yCoord + y >= 0 && yCoord + y < SIZE)
-					if (map[yCoord + y, xCoord + x] != enemyVal && map[yCoord + y, xCoord + x] != myVal) {
+				x += xCoord + xCoeff;
+				y += yCoord + yCoeff;
+				if (x >= 0 && x < SIZE && y >= 0 && y < SIZE)
+					if (map[y, x] != enemyVal && map[y, x] != myVal) {
 						// Debug.Log("Free tree type3 at " + yCoord + " " + xCoord + " coeff " + yCoeff + " " + xCoeff);
 						return true;
 					}
