@@ -436,11 +436,12 @@ public class GomokuPlay : MonoBehaviour  {
 
 		// update allowed movements in map
 		bool thereIsAvailableMove = false;
+		bool isInVerticalZone;
 		bool isInCheckZone;
 		for (int y = 0; y < SIZE; y++) {
-			isInCheckZone = (y <= mostUpMove + 2) && (y >= mostDownMove - 2);
+			isInVerticalZone = (y <= mostUpMove + 2) && (y >= mostDownMove - 2);
 			for (int x = 0; x < SIZE; x++) {
-				isInCheckZone = isInCheckZone && (x <= mostRightMove + 2) && (x >= mostLeftMove - 2);
+				isInCheckZone = isInVerticalZone && (x <= mostRightMove + 2) && (x >= mostLeftMove - 2);
 				if (boardMap[y, x] != P1_VALUE && boardMap[y, x] != P2_VALUE) {
 					DeleteStone(boardMap, y, x);
 
@@ -592,17 +593,18 @@ public class GomokuPlay : MonoBehaviour  {
 
 		// update allowed movements in map
 		bool thereIsAvailableMove = false;
+		bool isInVerticalZone;
 		bool isInCheckZone;
 		for (int y = 0; y < SIZE; y++) {
-			isInCheckZone = (y <= state.uppestMove + 2) && (y >= state.downestMove - 2);
+			isInVerticalZone = (y <= state.uppestMove + 2) && (y >= state.downestMove - 2);
 			for (int x = 0; x < SIZE; x++) {
-				isInCheckZone = isInCheckZone && (x <= state.rightestMove + 2) && (x >= state.leftestMove - 2);
-				if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE && isInCheckZone) {
+				isInCheckZone = isInVerticalZone && (x <= state.rightestMove + 2) && (x >= state.leftestMove - 2);
+				if (state.map[y, x] != P1_VALUE && state.map[y, x] != P2_VALUE) {
 					DeleteStone(state.map, y, x, isAiSimulation: true);
 
-					if (DOUBLE_THREE_RULE)
+					if (DOUBLE_THREE_RULE && isInCheckZone)
 						UpdateDoubleThree(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
-					if (SELF_CAPTURE_RULE)
+					if (SELF_CAPTURE_RULE && isInCheckZone)
 						UpdateSelfCapture(state.map, y, x, state.myVal, state.enemyVal, isAiSimulation: true);
 				}
 
