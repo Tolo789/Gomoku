@@ -218,9 +218,8 @@ public class GomokuPlay : MonoBehaviour  {
 		// Handle who starts first
 		if (PlayerPrefs.HasKey(CommonDefines.FIRST_PLAYER_PLAYING)) {
 			currentPlayerIndex = PlayerPrefs.GetInt(CommonDefines.FIRST_PLAYER_PLAYING);
-			if (currentPlayerIndex == 2) {
-				 currentPlayerIndex = UnityEngine.Random.Range(0, 1);
-			}
+			if (currentPlayerIndex == 2)
+				currentPlayerIndex = Mathf.RoundToInt(UnityEngine.Random.Range(0f, 1f));
 		}
 
 		currentPlayerVal = (currentPlayerIndex == 0) ? GomokuPlay.P1_VALUE : GomokuPlay.P2_VALUE;
