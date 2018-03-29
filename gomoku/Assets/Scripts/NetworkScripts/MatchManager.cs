@@ -45,7 +45,7 @@ public class MatchManager : AbstractPlayerInteractable {
 	Color p2Color;
 	private BoardButton[,] buttonsMap;
 	private bool swappedColors = false;
-	private bool isGamePaused = false; // Client dependent
+	// private bool isGamePaused = false; // Client dependent
 
 	// Override of base class
 	protected override void Init() {

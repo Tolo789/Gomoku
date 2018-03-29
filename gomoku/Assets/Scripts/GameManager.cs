@@ -108,6 +108,7 @@ public class GameManager : MonoBehaviour {
 			foreach (Vector3Int move in gomoku.studiedMoves) {
 				GameObject button = buttonsMap[move.y, move.x].gameObject;
 				button.transform.GetChild(0).gameObject.SetActive(newState);
+				// Debug.Log("Studied move: " + move.x + "-" + move.y + " ,score: " + move.y);
 			}
 		}
 	}

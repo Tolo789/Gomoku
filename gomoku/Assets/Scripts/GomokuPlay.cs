@@ -814,15 +814,15 @@ public class GomokuPlay : MonoBehaviour  {
 
 		// Increase move value for each capture that can be done
 		captures = CheckCaptures(state.map, yCoord, xCoord, state.myVal, state.enemyVal, doCapture:false, isAiSimulation: true);
-		if ((state.myVal == state.rootPlayerScore && captures + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN)
-			 || (captures + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN)) {
+		if ((state.myVal == state.rootVal && captures + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN)
+			 || (state.myVal != state.rootVal && captures + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN)) {
 			return Int32.MaxValue;
 		}
 		score += HEURISTIC_CAPTURE_COEFF * captures;
 
 		captures = CheckCaptures(state.map, yCoord, xCoord, state.enemyVal, state.myVal, doCapture:false, isAiSimulation: true);
-		if ((state.enemyVal == state.rootPlayerScore && captures + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN)
-			 || (captures + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN)) {
+		if ((state.enemyVal == state.rootVal && captures + state.rootPlayerScore >= CAPTURES_NEEDED_TO_WIN)
+			 || (state.myVal != state.rootVal && captures + state.otherPlayerScore >= CAPTURES_NEEDED_TO_WIN)) {
 			return Int32.MaxValue;
 		}
 		score += HEURISTIC_CAPTURE_COEFF * captures;
