@@ -212,6 +212,7 @@ public class GomokuPlay : MonoBehaviour  {
 
 		// Update scores
 		if (offlineManager != null) {
+			offlineManager.UpdateHasSwapped(false);
 			offlineManager.UpdateScore(0, playerScores[0]);
 			offlineManager.UpdateScore(1, playerScores[1]);
 			offlineManager.UpdateActivePlayer(currentPlayerIndex);
@@ -601,6 +602,8 @@ public class GomokuPlay : MonoBehaviour  {
 		playedTwoMoreStones = oldState.putTwoMoreStones;
 		swappedColors = oldState.swapped;
 		// Send swap state to all multi clients
+		if (offlineManager != null)
+			offlineManager.UpdateHasSwapped(swappedColors);
 		if (onlineManager != null)
 			onlineManager.UpdateHasSwapped(swappedColors);
 
@@ -1799,6 +1802,8 @@ public class GomokuPlay : MonoBehaviour  {
 
 	public void DoSwap() {
 		swappedColors = true;
+		if (offlineManager != null)
+			offlineManager.UpdateHasSwapped(true);
 		if (onlineManager != null)
 			onlineManager.UpdateHasSwapped(true);
 

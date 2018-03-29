@@ -235,6 +235,17 @@ public class GameManager : MonoBehaviour {
 			AiTimer.color = Color.white;
 	}
 
+	public void UpdateHasSwapped(bool hasSwapped) {
+		if (hasSwapped) {
+			player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+			player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+		}
+		else {
+			player1.GetComponentInChildren<Image>().sprite = stoneSprites[0];
+			player2.GetComponentInChildren<Image>().sprite = stoneSprites[1];
+		}
+	}
+
 	public void UpdateActivePlayer(int playerIndex) {
 		if (gomoku.swappedColors) {
 			listPlayers[1 - playerIndex].color = Color.cyan;
@@ -269,12 +280,10 @@ public class GameManager : MonoBehaviour {
 
 	// Receives click from UI
 	public void SimulateAiMove() {
-		// TODO: make UI call directly the GomokuPlay
 		gomoku.SimulateAiMove();
 	}
 
 	public void GoBack() {
-		// TODO: make UI call directly the GomokuPlay
 		gomoku.GoBack();
 	}
 
@@ -289,15 +298,8 @@ public class GameManager : MonoBehaviour {
 		playSettings.SetActive(false);
     }
 
-	public void SwapColorChoice() {
-		player1.GetComponentInChildren<Image>().sprite = stoneSprites[1];
-		player2.GetComponentInChildren<Image>().sprite = stoneSprites[0];
-		UpdateActivePlayer(1 - gomoku.currentPlayerIndex);
-		gomoku.swappedColors = true;
-	}
-
 	public void YesToggle(GameObject panel) {
-		SwapColorChoice();
+		gomoku.DoSwap();
 		gomoku.isGamePaused = false;
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 		panel.SetActive(false);
@@ -317,7 +319,7 @@ public class GameManager : MonoBehaviour {
 
 	public void chooseWhite(GameObject panel) {
 		if (gomoku.currentPlayerIndex == 0) {
-			SwapColorChoice();
+			gomoku.DoSwap();
 		}
 		gomoku.isGamePaused = false;
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
@@ -326,7 +328,7 @@ public class GameManager : MonoBehaviour {
 
 	public void chooseBlack(GameObject panel) {
 		if (gomoku.currentPlayerIndex == 1) {
-			SwapColorChoice();
+			gomoku.DoSwap();
 		}
 		gomoku.isGamePaused = false;
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
