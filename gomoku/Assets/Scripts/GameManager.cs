@@ -311,6 +311,9 @@ public class GameManager : MonoBehaviour {
 		panel.SetActive(false);
 	}
 	public void NoToggle(GameObject panel) {
+		if (gomoku.HANDICAP == 5) {
+			gomoku.offlineManager.UpdateActivePlayer(gomoku.currentPlayerIndex);
+		}
 		Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 		gomoku.isGamePaused = false;
 		panel.SetActive(false);
