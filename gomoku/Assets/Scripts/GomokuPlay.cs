@@ -764,6 +764,24 @@ public class GomokuPlay : MonoBehaviour  {
 		else if (nbrOfMoves == 2 && HANDICAP == 2) {
 			SetForbiddenMove(5, 14);
 		}
+		else if (nbrOfMoves == 1 && (HANDICAP == 4 || HANDICAP == 5)) {
+			// Force Change UI for swap rule
+			if (offlineManager != null) {
+				offlineManager.UpdateActivePlayer(1 - currentPlayerIndex);
+			}
+			else if (onlineManager != null) {
+				onlineManager.UpdateActivePlayer(1 - currentPlayerIndex);
+			}
+		}
+		else if (nbrOfMoves == 4 && HANDICAP == 5 && playedTwoMoreStones) {
+			// Force Change UI for swap2 rule when played two more stones
+			if (offlineManager != null) {
+				offlineManager.UpdateActivePlayer(1 - currentPlayerIndex);
+			}
+			else if (onlineManager != null) {
+				onlineManager.UpdateActivePlayer(1 - currentPlayerIndex);
+			}
+		}
 
 		backupStates.RemoveAt(0);
 		isGameLoaded = true;
