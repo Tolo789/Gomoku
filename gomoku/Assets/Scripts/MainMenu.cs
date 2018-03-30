@@ -66,7 +66,7 @@ public class MainMenu : MonoBehaviour {
         SceneManager.LoadScene("Game");
     }
      public void GoBack(GameObject playSettings) {
-       playSettings.SetActive(false);
+        playSettings.SetActive(false);
     }
 
 
