@@ -257,10 +257,12 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public void ShowSwapChoice() {
+		gomoku.isGamePaused = true;
 		swapPlayers.SetActive(true);
 	}	
 
 	public void ShowSwap2Choice() {
+		gomoku.isGamePaused = true;
 		chooseSwapOptions.SetActive(true);
 	}
 #endregion

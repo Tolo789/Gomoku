@@ -1848,16 +1848,12 @@ public class GomokuPlay : MonoBehaviour  {
 			SetForbiddenMove(5, 14);
 		}
 		else if ((HANDICAP == 4 && nbrOfMoves == 3) || (playedTwoMoreStones && nbrOfMoves == 5)) {
-			isGamePaused = true;
-
 			if (offlineManager != null)
 				offlineManager.ShowSwapChoice();
 			else if (onlineManager != null)
 				onlineManager.ShowSwapChoice();
 		}
 		else if (HANDICAP == 5 && nbrOfMoves == 3) {
-			isGamePaused = true;
-			
 			if (offlineManager != null)
 				offlineManager.ShowSwap2Choice();
 			else if (onlineManager != null)

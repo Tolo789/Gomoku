@@ -131,7 +131,6 @@ public class MatchManager : AbstractPlayerInteractable {
 #region Commands functions
 	[Command]
 	public void CmdRegisterPlayer(NetworkInstanceId playerNetId, string pName, Color pColor, bool serverPlayer) {
-		Debug.Log("Registering.. playerId: " + playerNetId + ", player name: '" + pName + "', color: " + pColor + ", serverPlayer: " + serverPlayer);
 		if (playerNetId == NetworkInstanceId.Invalid || playerNetId == gomoku.p1NetId || playerNetId == gomoku.p2NetId) // just to be sure
 			return;
 		if (gomoku.p1NetId == NetworkInstanceId.Invalid && serverPlayer) {
@@ -458,9 +457,10 @@ public class MatchManager : AbstractPlayerInteractable {
 		panelScript.ShowOtherPlayerRequest(subject, playerName);
     }
 
-	public void ShowSwapChoice() {
+	public void ShowSwapChoice(bool isFromSwap2 = false) {
 		string playerName = "";
-		dialogAnswerId = gomoku.currentPlayerNetId;
+		dialogAnswerId = (gomoku.currentPlayerNetId == gomoku.p1NetId) ? gomoku.p2NetId : gomoku.p1NetId;
+		dialogAnswerId = (isFromSwap2) ? gomoku.currentPlayerNetId : dialogAnswerId;
 		NetworkConnection target = NetworkServer.objects[dialogAnswerId].connectionToClient;
 		NetworkConnection waiter = (dialogAnswerId == gomoku.p1NetId) ? NetworkServer.objects[gomoku.p2NetId].connectionToClient : NetworkServer.objects[gomoku.p1NetId].connectionToClient;
 
@@ -471,7 +471,7 @@ public class MatchManager : AbstractPlayerInteractable {
 
 	public void ShowSwap2Choice() {
 		string playerName = "";
-		dialogAnswerId = gomoku.currentPlayerNetId;
+		dialogAnswerId = (gomoku.currentPlayerNetId == gomoku.p1NetId) ? gomoku.p2NetId : gomoku.p1NetId;
 		NetworkConnection target = NetworkServer.objects[dialogAnswerId].connectionToClient;
 		NetworkConnection waiter = (dialogAnswerId == gomoku.p1NetId) ? NetworkServer.objects[gomoku.p2NetId].connectionToClient : NetworkServer.objects[gomoku.p1NetId].connectionToClient;
 
@@ -543,7 +543,7 @@ public class MatchManager : AbstractPlayerInteractable {
 			}
 		}
 		else if (ongoingSubject == DialogueSubject.DoSwap2) {
-			ShowSwapChoice();
+			ShowSwapChoice(isFromSwap2: true);
 			return;
 		}
 		else if (ongoingSubject == DialogueSubject.DoSwap && gomoku.playedTwoMoreStones) {
