@@ -1,8 +1,8 @@
 # Gomoku
-AI project done by Claudio Mutti and Hamza Louar
+AI and online project done by Claudio Mutti and Hamza Louar
 
 # Objective
-Create an AI which can play the Gomoku game, also create a player-vs-player mode where you can ask the help of the AI.
+Create an AI which can play the Gomoku game (a 2 players turn-based board game), also create a player-vs-player mode where you can ask the help of the AI.
 
 # Project's Constraints
 The AI must have the following constraints:
@@ -33,17 +33,25 @@ Here is how to launch an online game:
 - For both AI help and undo move (as well as for the restart options) both players have to agree in order to validate it, a special panel will be shown with the "accept" or "deny" choices
 
 # Prohibited moves
-Since it's matematically proven that while playong Gomoku, if both players play at their best, that the first player always wins there are some prohibithed moves that can be added to make the game more fair.
+When playing Gomoku with the standard rules, the first player is assured to win (as long as both players play at their best).
+In order to make the game more fair the following special moves can be set as prohibited.
 
 ## Double Threes
 Double threes prevent a player from putting a stone that will create at least two free-threes.
 
-A free three is an align of 3 stones of the same color that are not flanked neither by another stone (even of the same color) nor by the side of the board. It is to note that there can be one empty space (and only one) inside the alignment of the 3 stones and still be called a free-three.
+A free-three is an align of 3 stones of the same color that are not flanked neither by another stone (even of the same color) nor by the side of the board. It is to note that there can be one empty space (and only one) inside the alignment of the 3 stones and still be called a free-three.
 
-Creating a double three will inevitably lead to a win, so we prevent to create such a strong move to avoid to much lead for the player who starts first.
+There is, however, one exception to this prohibition: if the same move that will create a double three is also a capture then the move is permitted.
 
-There is, however, one exception for this prohibition: if a player can do a capture when creating the double-three then he will be able to play in that spot (you can see it as a reward for both creating a double-tree and preparing a capture at the same spot)
-
+Notes: In the Renju variant of Gomoku the double threes moves are prohibited only for the first player, but for this project both players must not be able to do such move.
 
 ## Self captures
-Self captures
+"Self capture" is an handicap imagined by ourselves that can actually bring some interesting twists to the game: if there are two stones of the same color with strictly two spaces between them, the other player will only be able to put one of his stones in-between the two enemy stones but not two of them.
+
+# Opening handicaps
+When playing Gomoku with the standard rules, the first player is assured to win (as long as both players play at their best).
+In order to make the game more fair, the following rules will reduce the capability of the first player to take control over the board within the first moves.
+
+# Long and LongPro
+
+# Swap and Swap2
