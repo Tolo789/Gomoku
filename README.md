@@ -4,6 +4,9 @@ AI and online project done by Claudio Mutti and Hamza Louar
 # Objective
 Create an AI which can play the Gomoku game (a 2 players turn-based board game), also create a player-vs-player mode where you can ask the help of the AI.
 
+#### Gomoku game
+![Alt text](/screenshots/gomoku.png?raw=true "Gomoku")
+
 # Project's Constraints
 The AI must have the following constraints:
 - It must use an algorithm from the MinMax family (we used an Alpha-beta pruning)
@@ -39,14 +42,29 @@ In order to make the game more fair the following special moves can be set as pr
 ## Double Threes
 Double threes prevent a player from putting a stone that will create at least two free-threes.
 
+#### Exemple of Double-three (black player)
+![Alt text](/screenshots/Double-three.png?raw=true "Double-three")
+
 A free-three is an align of 3 stones of the same color that are not flanked neither by another stone (even of the same color) nor by the side of the board. It is to note that there can be one empty space (and only one) inside the alignment of the 3 stones and still be called a free-three.
 
+#### Exemple of free-three (black player)
+![Alt text](/screenshots/free-three.png?raw=true "free-three")
+
+#### Exemple of free-three with a space inside (black player)
+![Alt text](/screenshots/free-three_2.png?raw=true "another free-three")
+
 There is, however, one exception to this prohibition: if the same move that will create a double three is also a capture then the move is permitted.
+
+#### Exemple of double-three exception (black player)
+![Alt text](/screenshots/Double-three_exception.png?raw=true "Double-three exception")
 
 Notes: In the Renju variant of Gomoku the double threes moves are prohibited only for the first player, but for this project both players must not be able to do such move.
 
 ## Self captures
 "Self capture" is an handicap imagined by ourselves that can actually bring some interesting twists to the game: if there are two stones of the same color with strictly two spaces between them, the other player will only be able to put one of his stones in-between the two enemy stones but not two of them.
+
+#### Exemple of self-capture (white player)
+![Alt text](/screenshots/self-capture.png?raw=true "self-capture")
 
 # Opening handicaps
 When playing Gomoku with the standard rules, the first player is assured to win (as long as both players play at their best).
@@ -56,6 +74,12 @@ In order to make the game more fair, the following rules will reduce the capabil
 Both Pro and LongPro opening handicaps try to reduce the first player influence by forcing to play his second stone (the third stone overall) far from the middle of the board.
 
 With the Pro opening the player must put his stones at least two row and columns away from the center, while with the LongPro variant the move must be at least four rows and columns away.
+
+#### Pro restriction
+![Alt text](/screenshots/Pro.png?raw=true "Pro opening")
+
+#### LongPro restriction
+![Alt text](/screenshots/LongPro.png?raw=true "LongPro opening")
 
 ## Swap and Swap2
 Swap and Swap2 openings, instead of restraining the first player moves, take a completely different approach:
