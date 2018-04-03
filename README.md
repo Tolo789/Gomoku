@@ -52,6 +52,13 @@ Notes: In the Renju variant of Gomoku the double threes moves are prohibited onl
 When playing Gomoku with the standard rules, the first player is assured to win (as long as both players play at their best).
 In order to make the game more fair, the following rules will reduce the capability of the first player to take control over the board within the first moves.
 
-# Long and LongPro
+## Pro and LongPro
+Both Pro and LongPro opening handicaps try to reduce the first player influence by forcing to play his second stone (the third stone overall) far from the middle of the board.
 
-# Swap and Swap2
+With the Pro opening the player must put his stones at least two row and columns away from the center, while with the LongPro variant the move must be at least four rows and columns away.
+
+## Swap and Swap2
+Swap and Swap2 openings, instead of restraining the first player moves, take a completely different approach:
+- The first player put the first three stones on the board (2 black and 1 white)
+- The second player is then asked to choose if he wants to keep playing as a white or to swap his color with the other player, if the second option is chosen then it's the first player who will have to play as white until the end of the game
+- Swap2 only: the player will also be able to choose if he prefers to put two more stones (1 white and 1 black) and then let the first player decide if swap colors or not
