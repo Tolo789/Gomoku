@@ -1,5 +1,5 @@
 # Gomoku
-AI and online project done by Claudio Mutti and Hamza Louar
+AI and online project done by Claudio Mutti and Hamza
 
 # Objective
 Create an AI which can play the Gomoku game (a 2 players turn-based board game), also create a player-vs-player mode where you can ask the help of the AI.
